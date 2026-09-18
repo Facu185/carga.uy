@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>uy.edu.fing.tse</groupId>
+        <artifactId>carga-uy</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>carga-ejb</artifactId>
+    <packaging>ejb</packaging>
+    <name>carga-ejb</name>
+    <description>Dominio, servicios de negocio, acceso a datos, mensajeria y migraciones.</description>
+
+    <dependencies>
+        <dependency><groupId>jakarta.platform</groupId><artifactId>jakarta.jakartaee-api</artifactId></dependency>
+        <dependency><groupId>jakarta.xml.ws</groupId><artifactId>jakarta.xml.ws-api</artifactId></dependency>
+        <dependency>
+            <groupId>uy.edu.fing.tse</groupId>
+            <artifactId>carga-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency><groupId>org.flywaydb</groupId><artifactId>flyway-core</artifactId></dependency>
+        <dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency>
+        <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId></dependency>
+    </dependencies>
+
+    <build>
+        <finalName>carga-ejb</finalName>
+        <plugins>
+            <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-ejb-plugin</artifactId></plugin>
+        </plugins>
+    </build>
+</project>

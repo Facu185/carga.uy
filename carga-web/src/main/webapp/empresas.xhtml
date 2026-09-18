@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<h:head>
+    <title>carga.uy - Empresas</title>
+</h:head>
+<h:body>
+    <h:form id="formulario">
+        <p:growl id="avisos" showDetail="true"/>
+
+        <p:panel header="Nueva empresa">
+            <h:panelGrid columns="2" cellpadding="4">
+                <p:outputLabel for="nombre" value="Nombre"/>
+                <p:inputText id="nombre" value="#{empresaVista.nueva.nombre}"/>
+
+                <p:outputLabel for="razon" value="Razon social"/>
+                <p:inputText id="razon" value="#{empresaVista.nueva.razonSocial}"/>
+
+                <p:outputLabel for="numero" value="Numero de empresa"/>
+                <p:inputNumber id="numero" value="#{empresaVista.nueva.numeroEmpresa}" decimalPlaces="0"/>
+            </h:panelGrid>
+            <p:commandButton value="Agregar" action="#{empresaVista.agregar}"
+                             update="formulario"/>
+        </p:panel>
+
+        <p:dataTable id="tabla" value="#{empresaVista.empresas}" var="e" emptyMessage="Sin empresas.">
+            <p:column headerText="Id"><h:outputText value="#{e.id}"/></p:column>
+            <p:column headerText="Nombre"><h:outputText value="#{e.nombre}"/></p:column>
+            <p:column headerText="Razon social"><h:outputText value="#{e.razonSocial}"/></p:column>
+            <p:column headerText="Numero"><h:outputText value="#{e.numeroEmpresa}"/></p:column>
+            <p:column headerText="Alta">
+                <h:outputText value="#{e.fechaAlta}">
+                    <f:convertDateTime type="localDate" pattern="dd/MM/yyyy"/>
+                </h:outputText>
+            </p:column>
+        </p:dataTable>
+    </h:form>
+</h:body>
+</html>

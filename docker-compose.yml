@@ -1,0 +1,69 @@
+# Levanta el sistema completo:
+#   db        PostgreSQL + PostGIS
+#   central   WildFly con carga.ear y el simulador de la PDI
+#   balanzas  nodo periferico (request-response)
+#   tracking  nodo periferico (emite eventos)
+#
+#   docker compose up -d --build
+#   http://localhost:8080/carga/
+#
+# Los valores de entorno salen de .env (copiar de .env.example).
+
+services:
+
+  db:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_DB: ${DB_NAME:-carga}
+      POSTGRES_USER: ${DB_USER:-carga}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-carga}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-carga} -d ${DB_NAME:-carga}"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  central:
+    build:
+      context: .
+      dockerfile: docker/central/Dockerfile
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-carga}
+      DB_USER: ${DB_USER:-carga}
+      DB_PASSWORD: ${DB_PASSWORD:-carga}
+      NODO_BALANZAS_URL: http://balanzas:8080/balanzas/api/pesadas
+      SIMULADOR_PDI_URL: http://localhost:8080/simulador-pdi/ServicioDnicImpl?wsdl
+    ports:
+      - "8080:8080"   # aplicacion
+      - "9990:9990"   # consola de administracion de WildFly
+    depends_on:
+      db:
+        condition: service_healthy
+
+  balanzas:
+    build:
+      context: .
+      dockerfile: docker/balanzas/Dockerfile
+    environment:
+      # Para probar el comportamiento del central ante un nodo lento o caido:
+      BALANZAS_DEMORA_MS: "0"
+      BALANZAS_FALLA: "false"
+    ports:
+      - "8081:8080"
+
+  tracking:
+    build:
+      context: .
+      dockerfile: docker/tracking/Dockerfile
+    environment:
+      CENTRAL_INGESTA_URL: http://central:8080/carga/api/tracking/posiciones
+      TRACKING_INTERVALO_MS: ${TRACKING_INTERVALO_MS:-5000}
+    depends_on:
+      - central
+
+volumes:
+  pgdata:

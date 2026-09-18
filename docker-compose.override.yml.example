@@ -1,0 +1,20 @@
+# Copiar a docker-compose.override.yml para cambios locales que NO se comparten
+# (el archivo esta en .gitignore). Docker Compose lo toma automaticamente.
+#
+# Ejemplos utiles:
+
+services:
+
+  central:
+    environment:
+      # Ver el SQL que emite Hibernate
+      JAVA_OPTS: "-Xms64m -Xmx768m -XX:MaxMetaspaceSize=256m"
+
+  balanzas:
+    environment:
+      # Simular un nodo lento (para probar el timeout de PesajeBean)
+      BALANZAS_DEMORA_MS: "8000"
+
+  tracking:
+    environment:
+      TRACKING_INTERVALO_MS: "1000"

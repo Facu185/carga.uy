@@ -1,0 +1,9 @@
+# Todo lo que no hace falta para construir la imagen.
+target/
+*/target/
+.git/
+.idea/
+*.iml
+.env
+docs/
+*.md

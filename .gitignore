@@ -1,0 +1,26 @@
+target/
+build/
+out/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+**/dependency-reduced-pom.xml
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+.vscode/
+
+# entorno local
+.env
+docker-compose.override.yml
+local.properties
+
+# sistema
+.DS_Store
+Thumbs.db

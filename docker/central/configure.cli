@@ -1,0 +1,47 @@
+# Configura WildFly (standalone-full.xml) en modo embebido, sin arrancar el server.
+embed-server --server-config=standalone-full.xml --std-out=echo
+
+# --- Driver PostgreSQL como modulo ---
+module add --name=org.postgresql \
+  --resources=/tmp/postgresql.jar \
+  --dependencies=jakarta.transaction.api
+
+/subsystem=datasources/jdbc-driver=postgresql:add( \
+  driver-name=postgresql, \
+  driver-module-name=org.postgresql, \
+  driver-class-name=org.postgresql.Driver, \
+  driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)
+
+# --- Datasource CargaDS ---
+# Los valores vienen del entorno; los default son los de docker-compose.
+# La configuracion del pool tolera bases que se suspenden por inactividad
+# (Neon y otras serverless), pensando en el despliegue en la nube:
+#  - min-pool-size=0 + idle-timeout-minutes=1: no retiene conexiones ociosas.
+#  - validate-on-match + check-valid-connection-sql: valida antes de entregar.
+#  - exception-sorter: ante un error fatal descarta la conexion en vez de reusarla.
+/subsystem=datasources/data-source=CargaDS:add( \
+  jndi-name=java:jboss/datasources/CargaDS, \
+  driver-name=postgresql, \
+  connection-url=${env.DB_URL:jdbc:postgresql://db:5432/carga}, \
+  user-name=${env.DB_USER:carga}, \
+  password=${env.DB_PASSWORD:carga}, \
+  min-pool-size=0, \
+  max-pool-size=20, \
+  pool-prefill=false, \
+  idle-timeout-minutes=1, \
+  validate-on-match=true, \
+  background-validation=false, \
+  check-valid-connection-sql="SELECT 1", \
+  exception-sorter-class-name=org.jboss.jca.adapters.jdbc.extensions.postgres.PostgreSQLExceptionSorter, \
+  enabled=true)
+
+# La cola JMS de posiciones la crea la anotacion @JMSDestinationDefinition del MDB
+# (ver PosicionMDB), por eso no se declara aca.
+
+# --- Direccion publicada en los WSDL ---
+# Sin esto WildFly publica la IP interna del contenedor y el WSDL no sirve para
+# clientes externos (SoapUI, la PDI, el despliegue en la nube).
+/subsystem=webservices:write-attribute(name=wsdl-host, value=jbossws.undefined.host)
+/subsystem=webservices:write-attribute(name=modify-wsdl-address, value=true)
+
+stop-embedded-server
