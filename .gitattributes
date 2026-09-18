@@ -1,0 +1,18 @@
+# Todo el texto se guarda con fin de linea LF en el repositorio.
+# Sin esto, un archivo commiteado desde Windows con CRLF rompe al ejecutarse
+# dentro de los contenedores Linux (Dockerfile, *.cli, *.sh).
+* text=auto eol=lf
+
+*.sh       text eol=lf
+*.cli      text eol=lf
+Dockerfile text eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.jar binary
+*.war binary
+*.ear binary
