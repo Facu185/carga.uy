@@ -31,6 +31,7 @@
         <flyway.version>13.7.0</flyway.version>
         <postgresql.version>42.7.4</postgresql.version>
         <junit.version>5.11.4</junit.version>
+        <nimbus-jose-jwt.version>9.48</nimbus-jose-jwt.version>
 
         <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
         <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
@@ -84,6 +85,12 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-database-postgresql</artifactId>
                 <version>${flyway.version}</version>
+            </dependency>
+            <!-- JWT propios (HS256) y validacion del id_token de gub.uy (frente P1) -->
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus-jose-jwt.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
