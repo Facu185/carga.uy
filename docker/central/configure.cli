@@ -44,4 +44,9 @@ module add --name=org.postgresql \
 /subsystem=webservices:write-attribute(name=wsdl-host, value=jbossws.undefined.host)
 /subsystem=webservices:write-attribute(name=modify-wsdl-address, value=true)
 
+# --- Seguridad (frente P1) ---
+# La autenticacion la hace MecanismoJwt (Jakarta Security) con usuarios que no estan en ningun
+# realm de WildFly: sin esto Elytron intenta validarlos contra el realm y rechaza el ingreso.
+/subsystem=undertow/application-security-domain=other:write-attribute(name=integrated-jaspi, value=false)
+
 stop-embedded-server

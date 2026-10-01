@@ -37,6 +37,33 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-carga}
       NODO_BALANZAS_URL: http://balanzas:8080/balanzas/api/pesadas
       SIMULADOR_PDI_URL: http://localhost:8080/simulador-pdi/ServicioDnicImpl?wsdl
+      PDI_TIMEOUT_MS: ${PDI_TIMEOUT_MS:-3000}
+      PDI_REINTENTOS: ${PDI_REINTENTOS:-1}
+      PDI_CIRCUITO_UMBRAL: ${PDI_CIRCUITO_UMBRAL:-3}
+      PDI_CIRCUITO_ESPERA_SEG: ${PDI_CIRCUITO_ESPERA_SEG:-30}
+      # --- Seguridad (P1). Los default son SOLO para desarrollo: en la nube se sobrescriben. ---
+      JWT_SECRET: ${JWT_SECRET:-solo-desarrollo-cambiar-en-la-nube-0123456789}
+      JWT_DURACION_MINUTOS: ${JWT_DURACION_MINUTOS:-30}
+      ADMIN_INICIAL_USUARIO: ${ADMIN_INICIAL_USUARIO:-admin}
+      ADMIN_INICIAL_PASSWORD: ${ADMIN_INICIAL_PASSWORD:-admin-solo-desarrollo}
+      # Backoffice: "bd" (default) o "ldap" (opcional, ADR 0003)
+      AUTENTICACION_INTERNA: ${AUTENTICACION_INTERNA:-bd}
+      LDAP_URL: ${LDAP_URL:-ldap://ldap:389}
+      LDAP_USUARIOS_DN: ${LDAP_USUARIOS_DN:-ou=usuarios,dc=mtop,dc=gub,dc=uy}
+      LDAP_GRUPOS_DN: ${LDAP_GRUPOS_DN:-ou=grupos,dc=mtop,dc=gub,dc=uy}
+      LDAP_BIND_DN: ${LDAP_BIND_DN:-cn=lectura,dc=mtop,dc=gub,dc=uy}
+      LDAP_BIND_PASSWORD: ${LDAP_BIND_PASSWORD:-lectura-solo-desarrollo}
+      LDAP_GRUPO_ADMINISTRADORES_DN: ${LDAP_GRUPO_ADMINISTRADORES_DN:-cn=administradores,ou=grupos,dc=mtop,dc=gub,dc=uy}
+      LDAP_GRUPO_AUTORIDADES_DN: ${LDAP_GRUPO_AUTORIDADES_DN:-cn=autoridades,ou=grupos,dc=mtop,dc=gub,dc=uy}
+      # gub.uy (OpenID Connect). Por defecto, el simulador; para ID Uruguay real, sobrescribir en .env
+      GUBUY_ISSUER: ${GUBUY_ISSUER:-http://gubuy-simulador:8080/gubuy}
+      GUBUY_AUTHORIZATION_ENDPOINT: ${GUBUY_AUTHORIZATION_ENDPOINT-http://localhost:8085/gubuy/authorize}
+      GUBUY_CLIENT_ID: ${GUBUY_CLIENT_ID:-carga-uy-local}
+      GUBUY_CLIENT_SECRET: ${GUBUY_CLIENT_SECRET:-secreto-solo-desarrollo}
+      GUBUY_REDIRECT_URI: ${GUBUY_REDIRECT_URI:-http://localhost:8080/carga/api/auth/gubuy/callback}
+      GUBUY_SCOPES: ${GUBUY_SCOPES:-openid personal_info email document}
+      FRONTEND_URL_WEB: ${FRONTEND_URL_WEB:-http://localhost:3000}
+      FRONTEND_URL_MOVIL: ${FRONTEND_URL_MOVIL:-cargauy://ingreso}
     ports:
       - "8080:8080"   # aplicacion
       - "9990:9990"   # consola de administracion de WildFly
