@@ -29,3 +29,28 @@ jobs:
           name: carga-ear
           path: carga-ear/target/carga.ear
           if-no-files-found: error
+
+  # Frontend React (ADR 0004): compila con TypeScript estricto y pasa el linter.
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: carga-front
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: carga-front/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Compilar
+        run: npm run build

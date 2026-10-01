@@ -39,6 +39,9 @@ Cuando termina:
 
 | Qué | URL |
 |---|---|
+| Frontend React (frontoffice y backoffice) | http://localhost:3000/ |
+| Backoffice — ingreso | http://localhost:3000/backoffice/login (usuario `admin` / `admin-solo-desarrollo`) |
+| Simulador gub.uy | http://localhost:8085/gubuy/.well-known/openid-configuration |
 | Aplicación (JSF) | http://localhost:8080/carga/ |
 | REST — salud | http://localhost:8080/carga/api/salud |
 | REST — empresas | http://localhost:8080/carga/api/empresas |
@@ -86,6 +89,7 @@ carga.uy
 ├── carga-ejb          Dominio (JPA), servicios (EJB), MDB, migraciones de la base.
 ├── carga-web          REST + SOAP + JSF/PrimeFaces del componente central.
 ├── carga-ear          Empaquetado desplegable (carga.ear).
+├── carga-front        Frontend React (fuera del EAR, servido por nginx; ADR 0004).
 ├── simulador-pdi      Simulador SOAP de la PDI (servicio de DNIC).
 ├── nodo-balanzas      Nodo periférico: pesadas de los peajes (REST, request-response).
 ├── nodo-tracking      Nodo periférico: emite posiciones GPS (proceso autónomo).
@@ -148,6 +152,16 @@ docker compose logs -f tracking
 
 El nodo Tracking postea posiciones cada 5 segundos; se ven llegar en los logs de `central` y
 quedan en la tabla `posicion_tracking`.
+
+Ingreso al backoffice y una llamada autenticada (el token va en `Authorization: Bearer`):
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8080/carga/api/auth/login -H "Content-Type: application/json" -d '{"usuario":"admin","password":"admin-solo-desarrollo"}' | sed -E 's/.*"token":"([^"]+)".*/\1/')
+curl -s http://localhost:8080/carga/api/auth/yo -H "Authorization: Bearer $TOKEN"
+```
+
+Ingreso con gub.uy: en http://localhost:3000/ingresar, con una cédula del padrón del simulador PDI
+(`1.111.111-1` es válida) para que además se complete la fecha de nacimiento desde DNIC.
 
 En **Windows PowerShell** usá `curl.exe` (no `curl`, que ahí es un alias de `Invoke-WebRequest`).
 
