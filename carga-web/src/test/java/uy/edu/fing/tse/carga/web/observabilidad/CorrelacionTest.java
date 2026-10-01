@@ -6,11 +6,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.jboss.logging.MDC;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import uy.edu.fing.tse.carga.api.MetricasLocal;
 import uy.edu.fing.tse.carga.api.observabilidad.Correlacion;
 
 import java.lang.reflect.Proxy;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -66,6 +69,7 @@ class CorrelacionTest {
                 "getHeader", "pedido-12345678",
                 "getRequestURI", "/carga/api/funcionarios",
                 "getMethod", "GET",
+                "getContextPath", "/carga",
                 "getUserPrincipal", (Principal) () -> "admin"));
         Map<String, Object> datosRespuesta = new HashMap<>(Map.of("getStatus", 200));
         HttpServletRequest pedido = falso(HttpServletRequest.class, datosPedido);
@@ -78,12 +82,46 @@ class CorrelacionTest {
             usuarioDuranteElPedido.set(MDC.get(Correlacion.CLAVE_USUARIO_MDC));
         };
 
-        new FiltroCorrelacion().doFilter(pedido, respuesta, cadena);
+        List<String> contados = new ArrayList<>();
+        FiltroCorrelacion filtro = new FiltroCorrelacion();
+        filtro.metricas = new MetricasLocal() {
+            @Override
+            public void contar(String metrica, String... etiquetas) {
+                contados.add(metrica + String.join(",", etiquetas));
+            }
+
+            @Override
+            public void observarDuracion(String metrica, long milisegundos, String... etiquetas) {
+            }
+
+            @Override
+            public void registrarMedidor(String metrica, java.util.function.Supplier<Number> fuente,
+                                         String... etiquetas) {
+            }
+
+            @Override
+            public String exportarPrometheus() {
+                return "";
+            }
+        };
+
+        filtro.doFilter(pedido, respuesta, cadena);
 
         assertEquals("pedido-12345678", idDuranteElPedido.get());
         assertEquals("admin", usuarioDuranteElPedido.get());
         assertEquals("pedido-12345678", datosRespuesta.get("header:" + Correlacion.HEADER));
         assertNull(MDC.get(Correlacion.CLAVE_MDC), "no queda pegado al hilo para el proximo pedido");
         assertNull(MDC.get(Correlacion.CLAVE_USUARIO_MDC));
+        assertEquals(List.of("carga_http_pedidos_totalmetodo,GET,ruta,/api/funcionarios,estado,200"), contados);
+    }
+
+    @Test
+    void lasRutasDeLasMetricasNoCrecenConLosDatos() {
+        assertEquals("/api/funcionarios/{id}/activo",
+                FiltroCorrelacion.rutaParaMetricas("/carga/api/funcionarios/12/activo", "/carga", 200));
+        assertEquals("/api/pdi/personas/{id}",
+                FiltroCorrelacion.rutaParaMetricas("/carga/api/pdi/personas/22222222", "/carga", 200));
+        assertEquals("/api/auth/yo", FiltroCorrelacion.rutaParaMetricas("/carga/api/auth/yo", "/carga", 401));
+        assertEquals("desconocida", FiltroCorrelacion.rutaParaMetricas("/carga/lo-que-sea", "/carga", 404));
     }
 }

@@ -10,6 +10,7 @@ import uy.edu.fing.tse.carga.api.AuditoriaLocal;
 import uy.edu.fing.tse.carga.api.AutenticacionLocal;
 import uy.edu.fing.tse.carga.api.CredencialesInvalidasException;
 import uy.edu.fing.tse.carga.api.CuentaBloqueadaException;
+import uy.edu.fing.tse.carga.api.MetricasLocal;
 import uy.edu.fing.tse.carga.api.dto.DatosSesionDTO;
 import uy.edu.fing.tse.carga.api.dto.LoginDTO;
 import uy.edu.fing.tse.carga.api.dto.SesionDTO;
@@ -65,6 +66,9 @@ public class AutenticacionBean implements AutenticacionLocal {
     @EJB
     AuditoriaLocal auditoria;
 
+    @EJB
+    MetricasLocal metricas;
+
     boolean ldapHabilitado;
 
     @PostConstruct
@@ -84,6 +88,7 @@ public class AutenticacionBean implements AutenticacionLocal {
         if (existente.isPresent() && existente.get().estaBloqueada(ahora)) {
             auditoria.registrarComo(nombreUsuario, null, AccionAuditada.INGRESO_FALLIDO, ENTIDAD, nombreUsuario,
                     null, "cuenta bloqueada");
+            contarIngreso("bloqueado");
             throw new CuentaBloqueadaException(minutosRestantes(existente.get(), ahora));
         }
         return ldapHabilitado
@@ -141,6 +146,7 @@ public class AutenticacionBean implements AutenticacionLocal {
         auditoria.registrarComo(nombreUsuario, null,
                 seBloqueo ? AccionAuditada.CUENTA_BLOQUEADA : AccionAuditada.INGRESO_FALLIDO,
                 ENTIDAD, nombreUsuario, null, seBloqueo ? MAXIMO_INTENTOS + " intentos fallidos seguidos" : motivo);
+        contarIngreso(seBloqueo ? "bloqueado" : "fallido");
         if (seBloqueo) {
             throw new CuentaBloqueadaException(DURACION_BLOQUEO.toMinutes());
         }
@@ -151,7 +157,13 @@ public class AutenticacionBean implements AutenticacionLocal {
         cuenta.registrarIngresoExitoso();
         auditoria.registrarComo(cuenta.getNombreUsuario(), cuenta.getRol().name(), AccionAuditada.INGRESO_EXITOSO,
                 ENTIDAD, cuenta.getNombreUsuario(), null, ldapHabilitado ? "backoffice (LDAP)" : "backoffice");
+        contarIngreso("exitoso");
         return sesion(cuenta, tokenService);
+    }
+
+    /** Intentos de ingreso al backoffice por resultado: un pico de fallidos es un ataque de fuerza bruta. */
+    private void contarIngreso(String resultado) {
+        metricas.contar("carga_ingresos_total", "mecanismo", ldapHabilitado ? "ldap" : "bd", "resultado", resultado);
     }
 
     /** Sesion de una cuenta interna (tambien la usan el cambio de clave y la renovacion). */

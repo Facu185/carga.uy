@@ -15,6 +15,8 @@ grupo antes de mergear: hay código de otra persona que depende.
 | `AuditoriaLocal` | P1 | Registra en la pista de solo agregado, en la misma transacción que la acción. Usuario y rol salen de la sesión. Las acciones de fiscalización exigen fundamento |
 | `AutenticacionLocal`, `CuentaLocal` | P1 | Ingreso al backoffice, validación de tokens, cambio de clave y renovación de sesión |
 | `IngresoGubUyLocal` | P1 | Ingreso de ciudadanos y funcionarios con gub.uy (OIDC + PKCE) |
+| `MetricasLocal` | P1 | Contadores, histogramas de duración y medidores, exportados en formato Prometheus |
+| `SaludLocal` | P1 | Estado del central y de sus dependencias (base de datos, PDI) |
 | `CuentasInternasLocal`, `FuncionariosLocal`, `SolicitudesFuncionarioLocal`, `PerfilLocal` | P1 | Gestión de accesos del backoffice y perfil de quien ingresó con gub.uy |
 
 Para proteger un servicio propio alcanza con `@RolesAllowed(Roles.X)` (constantes en
@@ -48,6 +50,8 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `GET /carga/api/auth/gubuy/iniciar?destino=web\|movil` · `GET /auth/gubuy/callback` | frontoffice, app móvil (redirecciones) |
 | `/carga/api/usuarios-internos` · `/funcionarios` · `/solicitudes-funcionario` · `/auditoria` | backoffice |
 | `GET /carga/api/mi-perfil` | frontoffice, app móvil |
+| `GET /carga/api/salud` · `GET /carga/api/salud/listo` | health checks (Docker, nube) |
+| `GET /carga/api/metricas` | Prometheus (texto) |
 
 Errores: `{"error": "mensaje"}` con `400` (regla de negocio), `401` (sin sesión o credenciales
 incorrectas), `403` (sin el rol), `429` (cuenta bloqueada) y `503` (sistema externo caído).
@@ -117,3 +121,9 @@ operación por todos los componentes. Convención:
 - Cada componente que el central llama (PDI, nodos) debería **leer el header y loguearlo**, y
   reenviarlo si a su vez llama a otro. La llamada a la PDI ya lo manda.
 - Los logs del central salen en JSON por consola.
+
+Métricas: `GET /carga/api/metricas` ya incluye pedidos HTTP por ruta y código de estado, latencia,
+ingresos (exitosos, fallidos, bloqueados), consultas a la PDI y estado de su circuito, y memoria e
+hilos de la JVM. Cada frente suma las suyas con `MetricasLocal`, con nombres `carga_<tema>_...`
+(contadores terminan en `_total`, duraciones en `_ms`). Nunca usar ids, cédulas ni matrículas como
+valor de etiqueta: cada valor distinto crea una serie nueva.

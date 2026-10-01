@@ -7,6 +7,7 @@ import jakarta.inject.Inject;
 import uy.edu.fing.tse.carga.api.AccionAuditada;
 import uy.edu.fing.tse.carga.api.AuditoriaLocal;
 import uy.edu.fing.tse.carga.api.IngresoGubUyLocal;
+import uy.edu.fing.tse.carga.api.MetricasLocal;
 import uy.edu.fing.tse.carga.api.NegocioException;
 import uy.edu.fing.tse.carga.api.PdiLocal;
 import uy.edu.fing.tse.carga.api.Roles;
@@ -78,6 +79,9 @@ public class IngresoGubUyBean implements IngresoGubUyLocal {
 
     @EJB
     AuditoriaLocal auditoria;
+
+    @EJB
+    MetricasLocal metricas;
 
     // ---------------- paso 1: ir a gub.uy ----------------
 
@@ -157,6 +161,7 @@ public class IngresoGubUyBean implements IngresoGubUyLocal {
         SesionDTO sesion = sesion(persona, tokens);
         auditoria.registrarComo(cedula, sesion.getRol(), AccionAuditada.INGRESO_EXITOSO, ENTIDAD, cedula, null,
                 "gub.uy");
+        metricas.contar("carga_ingresos_total", "mecanismo", "gubuy", "resultado", "exitoso");
         return sesion;
     }
 

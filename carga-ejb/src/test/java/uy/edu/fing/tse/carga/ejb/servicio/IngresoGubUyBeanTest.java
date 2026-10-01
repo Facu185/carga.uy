@@ -45,6 +45,7 @@ class IngresoGubUyBeanTest {
         servicio.funcionarios = funcionarios;
         servicio.tokens = tokens;
         servicio.auditoria = auditoria;
+        servicio.metricas = new uy.edu.fing.tse.carga.ejb.observabilidad.Metricas();
         conPdi(new PersonaDTO(CEDULA, "Ana Perez", "1990-05-20"));
     }
 

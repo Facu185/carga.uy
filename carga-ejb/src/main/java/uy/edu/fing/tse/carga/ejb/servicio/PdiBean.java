@@ -4,6 +4,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import jakarta.ejb.ConcurrencyManagement;
 import jakarta.ejb.ConcurrencyManagementType;
+import jakarta.ejb.EJB;
+import jakarta.ejb.LocalBean;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
@@ -12,6 +14,7 @@ import jakarta.xml.ws.BindingProvider;
 import jakarta.xml.ws.Service;
 import jakarta.xml.ws.handler.Handler;
 import jakarta.xml.ws.soap.SOAPBinding;
+import uy.edu.fing.tse.carga.api.MetricasLocal;
 import uy.edu.fing.tse.carga.api.PdiLocal;
 import uy.edu.fing.tse.carga.api.dto.PersonaDTO;
 import uy.edu.fing.tse.carga.api.observabilidad.Correlacion;
@@ -44,8 +47,10 @@ import java.util.logging.Logger;
  *
  * Singleton y no Stateless: el estado del circuito tiene que ser uno solo por instancia del central,
  * no uno por cada bean del pool. El circuito ya es thread-safe, por eso la concurrencia es BEAN.
+ * LocalBean: ademas de PdiLocal expone la propia clase, para que el chequeo de salud lea el circuito.
  */
 @Singleton
+@LocalBean
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class PdiBean implements PdiLocal {
@@ -54,8 +59,14 @@ public class PdiBean implements PdiLocal {
     private static final String NAMESPACE = "http://pdi.carga.uy/";
     private static final Duration PAUSA_BASE = Duration.ofMillis(200);
 
+    static final String METRICA_CONSULTAS = "carga_pdi_consultas_total";
+    static final String METRICA_DURACION = "carga_pdi_duracion_ms";
+
     @Resource
     ManagedExecutorService executor;
+
+    @EJB
+    MetricasLocal metricas;
 
     private String endpoint;
     private Duration timeout;
@@ -72,6 +83,8 @@ public class PdiBean implements PdiLocal {
                 entero("PDI_REINTENTOS", 1),
                 new CircuitBreaker("PDI", entero("PDI_CIRCUITO_UMBRAL", 3),
                         Duration.ofSeconds(entero("PDI_CIRCUITO_ESPERA_SEG", 30)), Clock.systemUTC()));
+        metricas.registrarMedidor("carga_pdi_circuito_abierto",
+                () -> circuito.estado() == CircuitBreaker.Estado.CERRADO ? 0 : 1);
     }
 
     void configurar(String url, Duration timeout, int reintentos, CircuitBreaker circuito) {
@@ -86,8 +99,10 @@ public class PdiBean implements PdiLocal {
     public PersonaDTO obtenerPersona(String cedula) {
         if (!circuito.permiteLlamada()) {
             LOG.warning("PDI con fallas sostenidas: circuito abierto, se responde sin consultar");
+            metricas.contar(METRICA_CONSULTAS, "resultado", "circuito_abierto");
             return null;
         }
+        long inicio = System.nanoTime();
         for (int intento = 0; intento <= reintentos; intento++) {
             if (intento > 0) {
                 pausar(PAUSA_BASE.multipliedBy(intento));
@@ -95,13 +110,21 @@ public class PdiBean implements PdiLocal {
             try {
                 PersonaDTO persona = invocar(cedula);
                 circuito.registrarExito();
+                metricas.contar(METRICA_CONSULTAS, "resultado", "ok");
+                metricas.observarDuracion(METRICA_DURACION, (System.nanoTime() - inicio) / 1_000_000);
                 return persona;
             } catch (Exception e) {
                 LOG.warning("Falla consultando la PDI (intento " + (intento + 1) + "): " + e);
             }
         }
         circuito.registrarFalla();
+        metricas.contar(METRICA_CONSULTAS, "resultado", "falla");
         return null;
+    }
+
+    /** Lo usa el chequeo de salud: con el circuito abierto, la PDI queda DEGRADADA. */
+    public CircuitBreaker.Estado estadoCircuito() {
+        return circuito.estado();
     }
 
     /** Llamada SOAP con tope de tiempo. Package-private para poder simular fallas en las pruebas. */

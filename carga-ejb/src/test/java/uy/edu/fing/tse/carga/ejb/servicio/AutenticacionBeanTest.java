@@ -44,6 +44,7 @@ class AutenticacionBeanTest {
         servicio.dao = cuentas;
         servicio.tokenService = new Falsos.TokensFalsos();
         servicio.auditoria = auditoria;
+        servicio.metricas = new uy.edu.fing.tse.carga.ejb.observabilidad.Metricas();
     }
 
     private SesionDTO login(String usuario, String clave) {
