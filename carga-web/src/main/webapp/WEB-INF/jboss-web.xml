@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dominio de seguridad "other" de WildFly (Elytron), el mismo que usan los EJB: asi la identidad
+     que establece MecanismoJwt llega a @RolesAllowed. -->
+<jboss-web>
+    <security-domain>other</security-domain>
+</jboss-web>
