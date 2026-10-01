@@ -10,15 +10,20 @@ import jakarta.ejb.TransactionAttributeType;
 import jakarta.enterprise.concurrent.ManagedExecutorService;
 import jakarta.xml.ws.BindingProvider;
 import jakarta.xml.ws.Service;
+import jakarta.xml.ws.handler.Handler;
 import jakarta.xml.ws.soap.SOAPBinding;
 import uy.edu.fing.tse.carga.api.PdiLocal;
 import uy.edu.fing.tse.carga.api.dto.PersonaDTO;
+import uy.edu.fing.tse.carga.api.observabilidad.Correlacion;
 import uy.edu.fing.tse.carga.api.soap.ServicioDnic;
 import uy.edu.fing.tse.carga.ejb.integracion.CircuitBreaker;
+import uy.edu.fing.tse.carga.ejb.integracion.EncabezadoCorrelacionHandler;
 
 import javax.xml.namespace.QName;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -101,7 +106,10 @@ public class PdiBean implements PdiLocal {
 
     /** Llamada SOAP con tope de tiempo. Package-private para poder simular fallas en las pruebas. */
     PersonaDTO invocar(String cedula) throws Exception {
-        Future<PersonaDTO> futuro = executor.submit(() -> puerto().obtenerPersona(cedula));
+        // La llamada corre en otro hilo: se le pasa el ID de correlacion para que la PDI lo reciba
+        String idCorrelacion = Correlacion.actual().orElse(null);
+        Future<PersonaDTO> futuro = executor.submit(
+                () -> Correlacion.ejecutarCon(idCorrelacion, () -> puerto().obtenerPersona(cedula)));
         try {
             return futuro.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
@@ -131,6 +139,10 @@ public class PdiBean implements PdiLocal {
                 contexto.put("jakarta.xml.ws.client.receiveTimeout", ms);
                 contexto.put("javax.xml.ws.client.connectionTimeout", ms);
                 contexto.put("javax.xml.ws.client.receiveTimeout", ms);
+                @SuppressWarnings("rawtypes")
+                List<Handler> manejadores = new ArrayList<>();
+                manejadores.add(new EncabezadoCorrelacionHandler());
+                ((BindingProvider) nuevo).getBinding().setHandlerChain(manejadores);
                 puerto = nuevo;
             }
             return puerto;

@@ -49,4 +49,12 @@ module add --name=org.postgresql \
 # realm de WildFly: sin esto Elytron intenta validarlos contra el realm y rechaza el ingreso.
 /subsystem=undertow/application-security-domain=other:write-attribute(name=integrated-jaspi, value=false)
 
+# --- Observabilidad (frente P1, Seccion 4.4 punto 7 de la letra) ---
+# Logs estructurados (JSON) en la consola. Incluyen el MDC, donde esta el ID de correlacion
+# ("idCorrelacion") y el usuario del pedido.
+/subsystem=logging/json-formatter=JSON:add(pretty-print=false, exception-output-type=formatted, meta-data={servicio=central})
+/subsystem=logging/console-handler=CONSOLE:write-attribute(name=named-formatter, value=JSON)
+# El log de acceso de cada pedido (FiltroCorrelacion) va en INFO
+/subsystem=logging/logger=uy.edu.fing.tse.carga:add(level=INFO)
+
 stop-embedded-server

@@ -104,3 +104,16 @@ Convenciones:
 
 Nada de URLs ni credenciales hardcodeadas en el código: todo por entorno, con un default que
 funcione en `docker compose`.
+
+## 7. Observabilidad: ID de correlación
+
+La letra (Sección 4.4, punto 7) pide logs estructurados con un identificador que siga una misma
+operación por todos los componentes. Convención:
+
+- El ID viaja en el header HTTP **`X-Correlation-Id`** (8 a 64 caracteres `A-Z a-z 0-9 . _ -`).
+  El frontend lo genera en cada pedido; si no viene, el central genera uno.
+- En el central queda en el MDC (`idCorrelacion`) durante todo el pedido: cualquier log de un EJB
+  lo incluye solo. Para propagarlo a otro hilo: `Correlacion.ejecutarCon(id, tarea)`.
+- Cada componente que el central llama (PDI, nodos) debería **leer el header y loguearlo**, y
+  reenviarlo si a su vez llama a otro. La llamada a la PDI ya lo manda.
+- Los logs del central salen en JSON por consola.

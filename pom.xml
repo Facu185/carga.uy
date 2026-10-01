@@ -31,6 +31,7 @@
         <flyway.version>13.7.0</flyway.version>
         <postgresql.version>42.7.4</postgresql.version>
         <junit.version>5.11.4</junit.version>
+        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
         <nimbus-jose-jwt.version>9.48</nimbus-jose-jwt.version>
 
         <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
@@ -85,6 +86,13 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-database-postgresql</artifactId>
                 <version>${flyway.version}</version>
+            </dependency>
+            <!-- MDC para el ID de correlacion en los logs: lo aporta WildFly -->
+            <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>jboss-logging</artifactId>
+                <version>${jboss-logging.version}</version>
+                <scope>provided</scope>
             </dependency>
             <!-- JWT propios (HS256) y validacion del id_token de gub.uy (frente P1) -->
             <dependency>
