@@ -13,6 +13,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -46,6 +48,16 @@ public class Usuario {
     @Column(name = "creado_en", nullable = false)
     private Instant creadoEn;
 
+    /** Viene de DNIC (via PDI). null mientras no se pudo verificar. */
+    @Column(name = "fecha_nacimiento")
+    private LocalDate fechaNacimiento;
+
+    @Column(name = "verificado_dnic_en")
+    private Instant verificadoDnicEn;
+
+    @Column(name = "ultimo_ingreso")
+    private Instant ultimoIngreso;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "usuario_rol",
             joinColumns = @JoinColumn(name = "usuario_id"),
@@ -61,6 +73,26 @@ public class Usuario {
         this.nombre = nombre;
         this.correo = correo;
         this.creadoEn = Instant.now();
+    }
+
+    /** Cada ingreso con gub.uy: actualiza lo que haya cambiado ahi y la fecha del ultimo ingreso. */
+    public void registrarIngreso(String nombreGubUy, String correoGubUy) {
+        sincronizarDatos(nombreGubUy, correoGubUy);
+        this.ultimoIngreso = Instant.now();
+    }
+
+    public void registrarDatosDnic(LocalDate fechaNacimientoDnic) {
+        this.fechaNacimiento = fechaNacimientoDnic;
+        this.verificadoDnicEn = Instant.now();
+    }
+
+    public boolean estaVerificadoConDnic() {
+        return verificadoDnicEn != null;
+    }
+
+    /** null = todavia no se sabe (DNIC no respondio o no devolvio la fecha). */
+    public Boolean esMayorDeEdad(LocalDate hoy) {
+        return fechaNacimiento == null ? null : Period.between(fechaNacimiento, hoy).getYears() >= 18;
     }
 
     public boolean tieneRol(Rol rol) {
@@ -94,5 +126,8 @@ public class Usuario {
     public String getNombre() { return nombre; }
     public Empresa getEmpresa() { return empresa; }
     public Instant getCreadoEn() { return creadoEn; }
+    public LocalDate getFechaNacimiento() { return fechaNacimiento; }
+    public Instant getVerificadoDnicEn() { return verificadoDnicEn; }
+    public Instant getUltimoIngreso() { return ultimoIngreso; }
     public Set<RolCatalogo> getRoles() { return Collections.unmodifiableSet(roles); }
 }
