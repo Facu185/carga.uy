@@ -1,0 +1,53 @@
+# =====================================================================
+# Directorio de desarrollo que simula el LDAP del MTOP.
+# Estructura: ou=usuarios (personas) y ou=grupos (rol interno: administradores / autoridades).
+# Contraseñas de prueba, solo para desarrollo. No usar estos datos fuera de este entorno.
+# =====================================================================
+
+dn: ou=usuarios,dc=mtop,dc=gub,dc=uy
+objectClass: organizationalUnit
+ou: usuarios
+
+dn: ou=grupos,dc=mtop,dc=gub,dc=uy
+objectClass: organizationalUnit
+ou: grupos
+
+# ---------- personas ----------
+
+dn: uid=admin.ldap,ou=usuarios,dc=mtop,dc=gub,dc=uy
+objectClass: inetOrgPerson
+uid: admin.ldap
+cn: Administrador LDAP
+sn: LDAP
+mail: admin.ldap@mtop.gub.uy
+userPassword: AdminLdap2026
+
+dn: uid=ministra.ldap,ou=usuarios,dc=mtop,dc=gub,dc=uy
+objectClass: inetOrgPerson
+uid: ministra.ldap
+cn: Ministra LDAP
+sn: LDAP
+mail: ministra.ldap@mtop.gub.uy
+userPassword: Autoridad2026x
+
+# Sin grupo asignado: sirve para probar el rechazo de alguien que está en el directorio
+# pero no tiene ningún rol interno de carga.uy
+dn: uid=sin-rol.ldap,ou=usuarios,dc=mtop,dc=gub,dc=uy
+objectClass: inetOrgPerson
+uid: sin-rol.ldap
+cn: Persona Sin Rol
+sn: LDAP
+mail: sin-rol.ldap@mtop.gub.uy
+userPassword: SinRol2026x
+
+# ---------- grupos (definen el rol interno) ----------
+
+dn: cn=administradores,ou=grupos,dc=mtop,dc=gub,dc=uy
+objectClass: groupOfNames
+cn: administradores
+member: uid=admin.ldap,ou=usuarios,dc=mtop,dc=gub,dc=uy
+
+dn: cn=autoridades,ou=grupos,dc=mtop,dc=gub,dc=uy
+objectClass: groupOfNames
+cn: autoridades
+member: uid=ministra.ldap,ou=usuarios,dc=mtop,dc=gub,dc=uy

@@ -3,9 +3,13 @@
 #   central   WildFly con carga.ear y el simulador de la PDI
 #   balanzas  nodo periferico (request-response)
 #   tracking  nodo periferico (emite eventos)
+#   frontend  React (backoffice y frontoffice) + nginx, mismo origen que la API
+#   gubuy-simulador  IdP OpenID Connect que imita a gub.uy
+#   ldap      directorio del MTOP (opcional: COMPOSE_PROFILES=ldap en el .env)
 #
 #   docker compose up -d --build
-#   http://localhost:8080/carga/
+#   http://localhost:8080/carga/   (central)
+#   http://localhost:3000/         (frontend)
 #
 # Los valores de entorno salen de .env (copiar de .env.example).
 
@@ -60,7 +64,7 @@ services:
       GUBUY_AUTHORIZATION_ENDPOINT: ${GUBUY_AUTHORIZATION_ENDPOINT-http://localhost:8085/gubuy/authorize}
       GUBUY_CLIENT_ID: ${GUBUY_CLIENT_ID:-carga-uy-local}
       GUBUY_CLIENT_SECRET: ${GUBUY_CLIENT_SECRET:-secreto-solo-desarrollo}
-      GUBUY_REDIRECT_URI: ${GUBUY_REDIRECT_URI:-http://localhost:8080/carga/api/auth/gubuy/callback}
+      GUBUY_REDIRECT_URI: ${GUBUY_REDIRECT_URI:-http://localhost:3000/carga/api/auth/gubuy/callback}
       GUBUY_SCOPES: ${GUBUY_SCOPES:-openid personal_info email document}
       FRONTEND_URL_WEB: ${FRONTEND_URL_WEB:-http://localhost:3000}
       FRONTEND_URL_MOVIL: ${FRONTEND_URL_MOVIL:-cargauy://ingreso}
@@ -91,6 +95,47 @@ services:
       TRACKING_INTERVALO_MS: ${TRACKING_INTERVALO_MS:-5000}
     depends_on:
       - central
+
+  # Frontend React servido por nginx. /carga/* se reenvia al central: un solo origen, sin CORS (ADR 0004).
+  frontend:
+    build:
+      context: carga-front
+    ports:
+      - "3000:80"
+    depends_on:
+      - central
+
+  # Simula el IdP de gub.uy (OpenID Connect) con los mismos claims que ID Uruguay.
+  # Pantalla de login propia (login.html): cedula, nombre y correo.
+  gubuy-simulador:
+    image: ghcr.io/navikt/mock-oauth2-server:6.0.2
+    environment:
+      JSON_CONFIG_PATH: /config/config.json
+    volumes:
+      - ./docker/gubuy-simulador:/config:ro
+    ports:
+      - "8085:8080"
+
+  # Directorio LDAP de desarrollo, solo para AUTENTICACION_INTERNA=ldap (opcional, ADR 0003).
+  # - Perfil "ldap": solo arranca con COMPOSE_PROFILES=ldap en el .env.
+  # - Sin puerto publicado: solo el central le habla, dentro de la red de Docker.
+  # - osixia/openldap solo existe para amd64: en Mac con Apple Silicon, Docker la emula.
+  # - LDAP_READONLY_USER crea cn=lectura,<base>: el central busca con esa cuenta de solo lectura.
+  ldap:
+    image: osixia/openldap:1.5.0
+    platform: linux/amd64
+    profiles: ["ldap"]
+    command: --copy-service
+    environment:
+      LDAP_ORGANISATION: MTOP
+      LDAP_DOMAIN: mtop.gub.uy
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-admin-solo-desarrollo}
+      LDAP_READONLY_USER: "true"
+      LDAP_READONLY_USER_USERNAME: lectura
+      LDAP_READONLY_USER_PASSWORD: ${LDAP_BIND_PASSWORD:-lectura-solo-desarrollo}
+      LDAP_TLS: "false"
+    volumes:
+      - ./docker/ldap/seed.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/seed.ldif:ro
 
 volumes:
   pgdata:

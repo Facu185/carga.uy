@@ -7,3 +7,5 @@ target/
 .env
 docs/
 *.md
+carga-front/node_modules/
+carga-front/dist/
