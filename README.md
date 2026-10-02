@@ -167,6 +167,20 @@ En **Windows PowerShell** usá `curl.exe` (no `curl`, que ahí es un alias de `I
 
 ---
 
+### Pruebas de integración
+
+Además de `mvn verify` (pruebas unitarias, sin Docker) hay dos niveles más. Los dos corren en el
+job `integracion` del CI:
+
+```bash
+# Migraciones contra un PostGIS real (Testcontainers; necesita Docker)
+mvn verify -Pintegracion -pl carga-ejb -am
+
+# El sistema completo: login, roles, gub.uy, PDI, auditoría, métricas
+docker compose up -d --build
+./pruebas/punta-a-punta.sh
+```
+
 ## 8. Cómo sigue cada uno
 
 - **División del trabajo:** [docs/frentes.md](docs/frentes.md)

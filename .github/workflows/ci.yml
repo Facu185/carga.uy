@@ -54,3 +54,34 @@ jobs:
 
       - name: Compilar
         run: npm run build
+
+  # Pruebas de verdad: migraciones contra PostgreSQL real (Testcontainers) y el sistema completo
+  # levantado con docker compose, recorrido con pedidos HTTP (login, roles, gub.uy, PDI, auditoria).
+  integracion:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar JDK 24
+        uses: actions/setup-java@v4
+        with:
+          java-version: '24'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Migraciones contra PostgreSQL real
+        run: mvn -B -ntp -Pintegracion -pl carga-ejb -am verify
+
+      - name: Levantar el sistema
+        run: docker compose up -d --build
+
+      - name: Prueba de punta a punta
+        run: ./pruebas/punta-a-punta.sh
+
+      - name: Logs del central (si fallo)
+        if: failure()
+        run: docker compose logs --no-color central | tail -n 200
+
+      - name: Bajar el sistema
+        if: always()
+        run: docker compose down -v
