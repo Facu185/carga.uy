@@ -1,0 +1,19 @@
+{
+  "interactiveLogin": true,
+  "loginPagePath": "/config/login.html",
+  "tokenCallbacks": [
+    {
+      "issuerId": "gubuy",
+      "tokenExpiry": 300,
+      "requestMappings": [
+        {
+          "requestParam": "subject",
+          "match": ".*",
+          "claims": {
+            "numero_documento": "${subject}"
+          }
+        }
+      ]
+    }
+  ]
+}
