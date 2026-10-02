@@ -67,6 +67,9 @@ button:disabled { opacity: 0.6; cursor: default; }
 .marca { font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 1.75rem; letter-spacing: -0.01em; color: var(--asfalto); text-decoration: none; }
 .marca:hover { color: var(--asfalto); }
 .sitio-organismo, .sitio-usuario { color: var(--grava); }
+/* Acceso al backoffice: discreto pero siempre a mano, sin tener que saberse la URL */
+.sitio-acceso { font-weight: 700; text-decoration: none; }
+.sitio-acceso:hover { text-decoration: underline; }
 .sitio-pie { border-top: 1px solid var(--borde); color: var(--grava); font-size: 0.9rem; }
 .sitio-pie > div { padding-top: 1.25rem; padding-bottom: 1.5rem; }
 .sitio-pie p { margin: 0.2rem 0; }
@@ -97,17 +100,17 @@ button:disabled { opacity: 0.6; cursor: default; }
 
 /* ---------- Portada ---------- */
 /* Hero: el texto a la izquierda y, a la derecha, una guía de carga de ejemplo (el objeto real del sistema) */
-.portada-hero { max-width: 1080px; margin: 0 auto; padding: clamp(2.5rem, 7vw, 5rem) 1.5rem 0; box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 3rem; align-items: center; }
+.portada-hero { max-width: 1080px; margin: 0 auto; padding: clamp(2rem, 5vw, 3.75rem) 1.5rem 0; box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 3rem; align-items: center; }
 .portada-hero h1 { font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 700; letter-spacing: -0.015em; max-width: 15ch; margin: 0 0 1.25rem; }
 .portada-hero p { font-size: 1.2rem; max-width: 46ch; color: var(--grava); margin: 0; }
 .portada-hero-accion { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }
 .portada-hero-accion span { color: var(--grava); font-size: 0.95rem; }
 
 /* La guía se dibuja como un comprobante: papel, encabezado institucional y un corte perforado antes del pesaje */
-.guia { margin: 0; background: #fff; border: 1px solid var(--borde); border-radius: 4px; box-shadow: 0 10px 28px rgba(38, 50, 58, 0.12); transform: rotate(-1.5deg); max-width: 380px; justify-self: end; width: 100%; }
+.guia { margin: 0; background: #fff; border: 1px solid var(--borde); border-radius: 4px; box-shadow: 0 10px 28px rgba(38, 50, 58, 0.12); max-width: 380px; justify-self: end; width: 100%; }
 .guia-encabezado { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; background: var(--azul); color: #fff; padding: 0.8rem 1.1rem; border-radius: 4px 4px 0 0; }
 .guia-titulo { font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 1.25rem; }
-.guia-numero { font-size: 0.85rem; color: #d6e3f3; }
+.guia-numero { font-size: 0.85rem; color: #d6e3f3; font-variant-numeric: tabular-nums; }
 .guia-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem 1rem; margin: 0; padding: 1.1rem 1.1rem 1.2rem; }
 .guia-datos div { min-width: 0; }
 .guia-dato-ancho { grid-column: 1 / -1; }
@@ -117,14 +120,15 @@ button:disabled { opacity: 0.6; cursor: default; }
 .guia-pesaje > div { display: flex; flex-direction: column; }
 .guia-pesaje-lugar { font-size: 0.85rem; color: var(--grava); }
 .guia-pesaje-peso { font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif; font-weight: 700; font-size: 1.6rem; line-height: 1.1; }
+.guia-pesaje-diferencia { font-size: 0.85rem; color: var(--verde); margin-top: 0.15rem; }
 .guia figcaption { font-size: 0.75rem; color: #8a949b; text-align: right; padding: 0 1.1rem 0.7rem; background: #fafbfa; border-radius: 0 0 4px 4px; }
 
 /* Cómo funciona: la ruta con el camión y, debajo, las etapas como mojones */
-.portada-recorrido { max-width: 1180px; margin: 0 auto; padding: clamp(3rem, 7vw, 4.5rem) 1.5rem 1rem; box-sizing: border-box; }
+.portada-recorrido { max-width: 1080px; margin: 0 auto; padding: clamp(3rem, 7vw, 4.5rem) 1.5rem 1rem; box-sizing: border-box; }
 .portada-recorrido h2 { font-size: clamp(1.9rem, 4vw, 2.5rem); margin: 0; }
 .portada-recorrido-ayuda { margin: 0.4rem 0 0; color: var(--grava); }
 
-.ruta-contenedor { margin: 1.5rem -1.5rem 0; }
+.ruta-contenedor { margin: 1.5rem -3rem 0; }
 .ruta { display: block; width: 100%; height: clamp(200px, 17vw, 220px); }
 .ruta-banquina, .ruta-asfalto, .ruta-linea { fill: none; }
 .ruta-icono { fill: #fff; }
@@ -285,9 +289,11 @@ button:disabled { opacity: 0.6; cursor: default; }
 
 /* ---------- Adaptación ---------- */
 @media (max-width: 760px) {
+  .portada .sitio-organismo { display: none; }
+  .ruta-contenedor { margin-left: -1.5rem; margin-right: -1.5rem; }
   .portada-hero { grid-template-columns: 1fr; gap: 2.5rem; }
   .portada-hero p { font-size: 1.1rem; }
-  .guia { justify-self: center; transform: rotate(-1deg); }
+  .guia { justify-self: center; }
   .etapas { gap: 0.5rem; }
   .etapa-nombre { font-size: 0.9rem; }
   .puertas { grid-template-columns: 1fr; }

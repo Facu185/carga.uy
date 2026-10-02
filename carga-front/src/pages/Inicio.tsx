@@ -38,6 +38,7 @@ function GuiaDeEjemplo() {
         <div>
           <span className="guia-pesaje-lugar">Peaje Pando, 14:05</span>
           <span className="guia-pesaje-peso">27,6 t</span>
+          <span className="guia-pesaje-diferencia">0,4 t menos que lo declarado</span>
         </div>
         <span className="etiqueta etiqueta-ok">En regla</span>
       </div>
@@ -64,7 +65,12 @@ export function Inicio() {
 
   return (
     <div className="pagina portada">
-      <EncabezadoSitio />
+      <EncabezadoSitio>
+        <span className="sitio-organismo">Ministerio de Transporte y Obras Públicas</span>
+        <Link className="sitio-acceso" to={conBackoffice ? '/backoffice' : '/backoffice/login'}>
+          {conBackoffice ? 'Backoffice' : 'Acceso MTOP'}
+        </Link>
+      </EncabezadoSitio>
 
       <main>
         <section className="portada-hero">
