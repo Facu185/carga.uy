@@ -33,8 +33,10 @@ a:hover { color: var(--azul-oscuro); }
 :focus-visible { outline: 3px solid var(--senal); outline-offset: 2px; }
 
 /* ---------- Controles ---------- */
-input, select, textarea { font: inherit; color: inherit; padding: 0.65rem 0.75rem; background: #fff; border: 1px solid var(--borde-campo); border-radius: var(--radio); }
+input, select, textarea { font: inherit; color: inherit; box-sizing: border-box; padding: 0.65rem 0.75rem; background: #fff; border: 1px solid var(--borde-campo); border-radius: var(--radio); }
 input:focus, select:focus, textarea:focus { border-color: var(--azul); }
+/* Campos de texto y listas desplegables con la misma altura: alineados en las barras de filtros */
+input:not([type='checkbox']):not([type='radio']), select { height: 2.75rem; }
 input::placeholder { color: #8a949b; }
 
 button, .boton-enlace { font: inherit; font-weight: 700; padding: 0.6rem 1.1rem; background: var(--azul); color: #fff; border: 2px solid var(--azul); border-radius: var(--radio); cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
@@ -95,6 +97,13 @@ button:disabled { opacity: 0.6; cursor: default; }
 .ficha-datos dd { margin: 0.15rem 0 0; font-size: 1.1rem; font-weight: 700; overflow-wrap: break-word; }
 .ficha-nota { margin: 1.25rem 0 0; padding-top: 1rem; border-top: 1px solid var(--borde); color: var(--grava); font-size: 0.9rem; }
 .ficha-texto { margin: 0 0 1rem; max-width: 60ch; }
+
+/* Mi cuenta: lo que la persona viene a hacer a la izquierda; sus datos, al costado */
+.cuenta-grilla { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }
+.cuenta-grilla-simple { grid-template-columns: minmax(0, 760px); }
+.cuenta-grilla .ficha { max-width: none; margin-bottom: 0; }
+.cuenta-principal { display: flex; flex-direction: column; gap: 1.5rem; }
+.cuenta-datos .ficha-datos { grid-template-columns: 1fr; gap: 0.9rem; }
 .formulario-en-linea { display: flex; align-items: flex-end; gap: 0.75rem; flex-wrap: wrap; }
 .formulario-en-linea .campo { flex: 1 1 280px; }
 
@@ -230,7 +239,19 @@ button:disabled { opacity: 0.6; cursor: default; }
 .llamado p { margin: 0; font-weight: 700; }
 
 /* Dos columnas: con 4 secciones queda una grilla de 2 x 2 sin tarjetas sueltas */
-.grilla-secciones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+.grilla-secciones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem; }
+
+/* Panel: actividad reciente (las ultimas acciones de la auditoria) */
+.actividad { background: #fff; border: 1px solid var(--borde); border-radius: 10px; padding: 1.4rem 1.5rem 0.6rem; }
+.actividad-encabezado { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.actividad-encabezado h2 { margin: 0; font-size: 1.45rem; }
+.actividad-lista { list-style: none; margin: 0; padding: 0; }
+.actividad-lista li { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr) minmax(0, 14rem); gap: 0.25rem 1.25rem; padding: 0.8rem 0; border-top: 1px solid #e6eae9; }
+.actividad-lista time { color: var(--grava); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.actividad-accion { font-weight: 700; }
+.actividad-quien { display: block; font-weight: 400; color: var(--grava); font-size: 0.9rem; }
+.actividad-sobre { color: var(--asfalto); }
+.actividad-vacia { margin: 0.5rem 0 1rem; color: var(--grava); }
 .tarjeta-seccion { display: flex; flex-direction: column; gap: 0.4rem; background: #fff; border: 1px solid var(--borde); border-left: 5px solid var(--borde); border-radius: 10px; padding: 1.4rem 1.5rem; color: var(--asfalto); text-decoration: none; transition: border-color 0.15s, box-shadow 0.15s; }
 .tarjeta-seccion:hover { color: var(--asfalto); border-color: var(--azul); border-left-color: var(--senal); box-shadow: 0 4px 14px rgba(38, 50, 58, 0.08); }
 .tarjeta-seccion h2 { margin: 0; font-size: 1.45rem; color: var(--azul); }
@@ -309,6 +330,9 @@ button:disabled { opacity: 0.6; cursor: default; }
   .avisos { left: 1rem; right: 1rem; }
   .ficha-datos { grid-template-columns: 1fr; }
   .grilla-secciones { grid-template-columns: 1fr; }
+  .cuenta-grilla { grid-template-columns: 1fr; }
+  .cuenta-datos { order: -1; }
+  .actividad-lista li { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
   .aviso-flotante { animation: none; }

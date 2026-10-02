@@ -2,7 +2,15 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { api } from '../../api/cliente'
 import { EncabezadoSeccion } from '../../componentes/EncabezadoSeccion'
 import { FilasCargando } from '../../componentes/FilasCargando'
-import { ENTIDADES, formatearMomento, nombreAccion, nombreEntidad, nombreRol } from '../../formato'
+import {
+  ENTIDADES,
+  formatearDetalle,
+  formatearMomento,
+  formatearUsuario,
+  nombreAccion,
+  nombreEntidad,
+  nombreRol,
+} from '../../formato'
 import type { PaginaAuditoria, RegistroAuditoria } from '../../tipos'
 import { useTituloPagina } from '../../titulo'
 
@@ -122,17 +130,22 @@ export function Auditoria() {
               <tr key={r.id}>
                 <td data-etiqueta="Momento" className="celda-nowrap">{formatearMomento(r.momento)}</td>
                 <td data-etiqueta="Usuario">
-                  <strong>{r.usuario}</strong>
+                  <strong>{formatearUsuario(r.usuario)}</strong>
                   {r.rol && <span className="celda-secundaria">{nombreRol(r.rol)}</span>}
                 </td>
                 <td data-etiqueta="Acción">{nombreAccion(r.accion)}</td>
                 <td data-etiqueta="Sobre">
                   {nombreEntidad(r.entidad)}
-                  <span className="celda-secundaria">{r.entidadId}</span>
+                  <span className="celda-secundaria">{formatearUsuario(r.entidadId)}</span>
                 </td>
                 <td data-etiqueta="Fundamento y detalle">
                   {r.fundamento && <span>{r.fundamento}</span>}
-                  {r.detalle && <span className="celda-secundaria">{r.detalle}</span>}
+                  {r.detalle &&
+                    formatearDetalle(r.detalle).map((linea) => (
+                      <span key={linea} className="celda-secundaria">
+                        {linea}
+                      </span>
+                    ))}
                   {!r.fundamento && !r.detalle && <span className="celda-vacia">Sin detalle</span>}
                 </td>
               </tr>

@@ -20,6 +20,7 @@ const NOMBRES_ROL: Record<string, string> = {
   AUTORIDAD: 'Autoridad',
   FUNCIONARIO: 'Funcionario del MTOP',
   CIUDADANO: 'Ciudadano',
+  CHOFER: 'Chofer',
 }
 
 export function nombreRol(rol: string | null | undefined): string {
@@ -74,4 +75,49 @@ export function nombreAccion(codigo: string): string {
 
 export function nombreEntidad(codigo: string): string {
   return ENTIDADES[codigo] ?? codigo
+}
+
+/** Quien hizo una acción: las personas de gub.uy se identifican por cédula, y se muestra con su formato. */
+export function formatearUsuario(usuario: string): string {
+  return formatearCedula(usuario)
+}
+
+const CLAVES_DETALLE: Record<string, string> = {
+  rol: 'Rol',
+  antes: 'Antes',
+  ahora: 'Ahora',
+  cedula: 'Cédula',
+  dependencia: 'Dependencia',
+  activo: 'Activo',
+  nombre: 'Nombre',
+}
+
+/** Detalles sin formato clave=valor que el central usa siempre igual. */
+const DETALLES_FIJOS: Record<string, string> = {
+  'gub.uy': 'Con gub.uy',
+  backoffice: 'En el backoffice',
+  'backoffice (LDAP)': 'En el backoffice, con el directorio LDAP',
+}
+
+function valorDetalle(clave: string, valor: string): string {
+  if (clave === 'cedula') return formatearCedula(valor)
+  if (clave === 'activo') return valor === 'true' ? 'Sí' : valor === 'false' ? 'No' : valor
+  if (valor === 'null') return 'Sin indicar'
+  return NOMBRES_ROL[valor] ?? valor
+}
+
+/**
+ * El central guarda el detalle como "clave=valor, clave=valor" (por ejemplo "antes=DNT, ahora=DNV").
+ * Se muestra como líneas legibles: "Antes: DNT". Un texto sin ese formato se muestra tal cual.
+ */
+export function formatearDetalle(detalle: string): string[] {
+  const partes = detalle.split(/,\s*(?=[a-zA-Z]+=)/)
+  if (!partes.every((p) => /^[a-zA-Z]+=/.test(p))) {
+    return [DETALLES_FIJOS[detalle] ?? detalle]
+  }
+  return partes.map((p) => {
+    const [clave, ...resto] = p.split('=')
+    const valor = resto.join('=')
+    return `${CLAVES_DETALLE[clave] ?? humanizar(clave)}: ${valorDetalle(clave, valor)}`
+  })
 }

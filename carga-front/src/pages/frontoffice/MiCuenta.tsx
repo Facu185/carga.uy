@@ -34,6 +34,7 @@ export function MiCuenta() {
   }, [])
 
   const verificado = perfil?.verificacionDnic === 'VERIFICADO'
+  const esCiudadano = sesion?.rol === ROLES.CIUDADANO
 
   return (
     <div className="pagina">
@@ -54,59 +55,65 @@ export function MiCuenta() {
           </p>
         )}
 
-        {perfil && (
-          <section className="ficha" aria-labelledby="titulo-datos">
-            <div className="ficha-encabezado">
-              <h2 id="titulo-datos" className="titulo-con-icono">
-                <UserRound size={22} aria-hidden="true" />
-                Tus datos
-              </h2>
-              {verificado ? (
-                <Etiqueta tono="ok">Verificado con DNIC</Etiqueta>
-              ) : (
-                <Etiqueta tono="aviso">Verificación pendiente</Etiqueta>
-              )}
+        {/* En pantallas anchas: lo que la persona viene a hacer a la izquierda y sus datos al costado */}
+        <div className={esCiudadano ? 'cuenta-grilla' : 'cuenta-grilla cuenta-grilla-simple'}>
+          {esCiudadano && (
+            <div className="cuenta-principal">
+              <section className="ficha" aria-labelledby="titulo-empresa">
+                <h2 id="titulo-empresa" className="titulo-con-icono">
+                  <Truck size={22} aria-hidden="true" />
+                  Tu empresa
+                </h2>
+                {/* P2 reemplaza este estado vacío por la empresa asociada y su gestión (o las guías, si es chofer) */}
+                <p className="ficha-texto sin-margen">
+                  Todavía no estás asociado a ninguna empresa de transporte. Cuando un funcionario del MTOP te asocie a tu
+                  empresa, vas a ver acá su gestión, o tus guías de carga si sos chofer.
+                </p>
+              </section>
+              <SolicitudAcceso />
             </div>
-            <dl className="ficha-datos">
-              <div>
-                <dt>Cédula</dt>
-                <dd>{formatearCedula(perfil.cedula)}</dd>
-              </div>
-              <div>
-                <dt>Fecha de nacimiento</dt>
-                <dd>{formatearFecha(perfil.fechaNacimiento)}</dd>
-              </div>
-              <div>
-                <dt>Correo</dt>
-                <dd>{perfil.email ?? '—'}</dd>
-              </div>
-              <div>
-                <dt>Edad</dt>
-                <dd>{textoEdad(perfil)}</dd>
-              </div>
-            </dl>
-            <p className="ficha-nota">
-              {verificado
-                ? 'Nombre y correo provienen de gub.uy; la fecha de nacimiento, de DNIC.'
-                : 'DNIC no estaba disponible cuando ingresaste. La verificación se reintenta en tu próximo ingreso.'}
-            </p>
-          </section>
-        )}
-
-        {sesion?.rol === ROLES.CIUDADANO && (
-          <section className="ficha" aria-labelledby="titulo-empresa">
-            <h2 id="titulo-empresa" className="titulo-con-icono">
-              <Truck size={22} aria-hidden="true" />
-              Tu empresa
-            </h2>
-            {/* P2 reemplaza este estado vacío por la empresa asociada y su gestión (o las guías, si es chofer) */}
-            <p className="ficha-texto sin-margen">
-              Todavía no estás asociado a ninguna empresa de transporte. Cuando un funcionario del MTOP te asocie a tu
-              empresa, vas a ver acá su gestión, o tus guías de carga si sos chofer.
-            </p>
-          </section>
-        )}
-        {sesion?.rol === ROLES.CIUDADANO && <SolicitudAcceso />}
+          )}
+          <div className="cuenta-datos">
+            {perfil && (
+              <section className="ficha" aria-labelledby="titulo-datos">
+                <div className="ficha-encabezado">
+                  <h2 id="titulo-datos" className="titulo-con-icono">
+                    <UserRound size={22} aria-hidden="true" />
+                    Tus datos
+                  </h2>
+                  {verificado ? (
+                    <Etiqueta tono="ok">Verificado con DNIC</Etiqueta>
+                  ) : (
+                    <Etiqueta tono="aviso">Verificación pendiente</Etiqueta>
+                  )}
+                </div>
+                <dl className="ficha-datos">
+                  <div>
+                    <dt>Cédula</dt>
+                    <dd>{formatearCedula(perfil.cedula)}</dd>
+                  </div>
+                  <div>
+                    <dt>Fecha de nacimiento</dt>
+                    <dd>{formatearFecha(perfil.fechaNacimiento)}</dd>
+                  </div>
+                  <div>
+                    <dt>Correo</dt>
+                    <dd>{perfil.email ?? '—'}</dd>
+                  </div>
+                  <div>
+                    <dt>Edad</dt>
+                    <dd>{textoEdad(perfil)}</dd>
+                  </div>
+                </dl>
+                <p className="ficha-nota">
+                  {verificado
+                    ? 'Nombre y correo provienen de gub.uy; la fecha de nacimiento, de DNIC.'
+                    : 'DNIC no estaba disponible cuando ingresaste. La verificación se reintenta en tu próximo ingreso.'}
+                </p>
+              </section>
+            )}
+          </div>
+        </div>
       </main>
 
       <PieSitio />

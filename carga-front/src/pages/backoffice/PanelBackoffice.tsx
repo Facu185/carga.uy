@@ -1,14 +1,15 @@
-import { IdCard, ScrollText, Users, type LucideIcon } from 'lucide-react'
+import { IdCard, Users, type LucideIcon } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../api/cliente'
 import { useAuth } from '../../auth/contexto'
 import { Etiqueta } from '../../componentes/Etiqueta'
-import { formatearMomento, nombreRol } from '../../formato'
+import { formatearMomento, formatearUsuario, nombreAccion, nombreEntidad, nombreRol } from '../../formato'
 import {
   ROLES,
   type Funcionario,
   type PaginaAuditoria,
+  type RegistroAuditoria,
   type SolicitudFuncionario,
   type UsuarioInterno,
 } from '../../tipos'
@@ -20,7 +21,8 @@ interface Resumen {
   funcionariosActivos?: number
   usuarios?: number
   bloqueados?: number
-  ultimaAccion?: string | null
+  /** Las últimas acciones de la auditoría (undefined si no se pudieron cargar). */
+  actividad?: RegistroAuditoria[]
 }
 
 /** Si un pedido falla, esa tarjeta queda sin dato y las demás se ven igual. */
@@ -62,6 +64,43 @@ function Tarjeta({
   )
 }
 
+const ACCIONES_RECIENTES = 6
+
+/** Lo último que pasó en el sistema: lo primero que quiere saber quien entra a administrar o fiscalizar. */
+function ActividadReciente({ actividad, cargando }: { actividad?: RegistroAuditoria[]; cargando: boolean }) {
+  return (
+    <section className="actividad" aria-labelledby="titulo-actividad" aria-busy={cargando}>
+      <div className="actividad-encabezado">
+        <h2 id="titulo-actividad">Actividad reciente</h2>
+        <Link to="/backoffice/auditoria">Ver la auditoría completa</Link>
+      </div>
+      {cargando && <p className="actividad-vacia">Cargando…</p>}
+      {!cargando && actividad === undefined && <p className="actividad-vacia">No se pudo cargar la actividad.</p>}
+      {!cargando && actividad?.length === 0 && <p className="actividad-vacia">Todavía no hay acciones registradas.</p>}
+      {actividad && actividad.length > 0 && (
+        <ol className="actividad-lista">
+          {actividad.map((r) => (
+            <li key={r.id}>
+              <time dateTime={r.momento}>{formatearMomento(r.momento)}</time>
+              <span className="actividad-accion">
+                {nombreAccion(r.accion)}
+                <span className="actividad-quien">
+                  {formatearUsuario(r.usuario)}
+                  {r.rol && `, ${nombreRol(r.rol)}`}
+                </span>
+              </span>
+              <span className="actividad-sobre">
+                {nombreEntidad(r.entidad)}
+                <span className="actividad-quien">{formatearUsuario(r.entidadId)}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  )
+}
+
 export function PanelBackoffice() {
   useTituloPagina('Inicio', true)
   const { sesion } = useAuth()
@@ -73,14 +112,14 @@ export function PanelBackoffice() {
     let vigente = true
     const soloAdmin = <T,>(ruta: string) => (esAdmin ? intentar(api<T>(ruta)) : Promise.resolve(undefined))
     Promise.all([
-      intentar(api<PaginaAuditoria>('/auditoria?tamano=1')),
+      intentar(api<PaginaAuditoria>(`/auditoria?tamano=${ACCIONES_RECIENTES}`)),
       soloAdmin<SolicitudFuncionario[]>('/solicitudes-funcionario?estado=PENDIENTE'),
       soloAdmin<Funcionario[]>('/funcionarios'),
       soloAdmin<UsuarioInterno[]>('/usuarios-internos'),
     ]).then(([auditoria, solicitudes, funcionarios, usuarios]) => {
       if (!vigente) return
       setResumen({
-        ultimaAccion: auditoria ? (auditoria.registros[0]?.momento ?? null) : undefined,
+        actividad: auditoria?.registros,
         pendientes: solicitudes?.length,
         funcionariosActivos: funcionarios?.filter((f) => f.activo).length,
         usuarios: usuarios?.length,
@@ -117,8 +156,8 @@ export function PanelBackoffice() {
         </div>
       )}
 
-      <div className="grilla-secciones">
-        {esAdmin && (
+      {esAdmin && (
+        <div className="grilla-secciones">
           <Tarjeta
             cargando={cargando}
             icono={IdCard}
@@ -135,8 +174,6 @@ export function PanelBackoffice() {
               <Etiqueta tono="aviso">{plural(datos.pendientes ?? 0, 'pendiente', 'pendientes')}</Etiqueta>
             )}
           </Tarjeta>
-        )}
-        {esAdmin && (
           <Tarjeta
             cargando={cargando}
             icono={Users}
@@ -149,23 +186,10 @@ export function PanelBackoffice() {
               <Etiqueta tono="aviso">{plural(datos.bloqueados ?? 0, 'bloqueado', 'bloqueados')}</Etiqueta>
             )}
           </Tarjeta>
-        )}
-        <Tarjeta
-            cargando={cargando}
-          icono={ScrollText}
-            ruta="/backoffice/auditoria"
-          titulo="Auditoría"
-          descripcion="Quién hizo cada acción, con qué fundamento y cuándo."
-        >
-          <span>
-            {datos.ultimaAccion === undefined
-              ? 'Sin datos'
-              : datos.ultimaAccion
-                ? `Última acción: ${formatearMomento(datos.ultimaAccion)}`
-                : 'Sin registros todavía'}
-          </span>
-        </Tarjeta>
-      </div>
+        </div>
+      )}
+
+      <ActividadReciente actividad={datos.actividad} cargando={cargando} />
     </>
   )
 }
