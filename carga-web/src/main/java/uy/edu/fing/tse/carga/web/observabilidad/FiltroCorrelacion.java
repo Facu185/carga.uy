@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.jboss.logging.MDC;
 import uy.edu.fing.tse.carga.api.MetricasLocal;
 import uy.edu.fing.tse.carga.api.observabilidad.Correlacion;
+import uy.edu.fing.tse.carga.api.observabilidad.Traza;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -25,6 +26,8 @@ import java.util.regex.Pattern;
  * Esa linea tambien sirve de evidencia para la prueba de performance (latencia por pedido).
  * Ademas cuenta cada pedido y su duracion en las metricas, por ruta y por codigo de estado
  * (los 4xx y 5xx son los errores por tipo que pide la letra).
+ * Y abre el tramo de servidor de la traza distribuida: continua el traceparent que mande el cliente
+ * o empieza una traza nueva, y devuelve el traceId en X-Trace-Id para buscarla en Jaeger.
  */
 @WebFilter(urlPatterns = "/*")
 public class FiltroCorrelacion implements Filter {
@@ -50,6 +53,13 @@ public class FiltroCorrelacion implements Filter {
         }
         respuesta.setHeader(Correlacion.HEADER, id);
 
+        Traza.Tramo tramo = Traza.iniciarDesde(pedido.getHeader(Traza.HEADER),
+                pedido.getMethod() + " " + rutaParaMetricas(pedido.getRequestURI(), pedido.getContextPath(), 200),
+                Traza.Tipo.SERVIDOR)
+                .atributo("http.method", pedido.getMethod())
+                .atributo("idCorrelacion", id);
+        respuesta.setHeader("X-Trace-Id", tramo.getTraceId());
+
         long inicio = System.nanoTime();
         try {
             chain.doFilter(request, response);
@@ -65,6 +75,11 @@ public class FiltroCorrelacion implements Filter {
                     "estado", String.valueOf(respuesta.getStatus()));
             metricas.observarDuracion("carga_http_duracion_ms", milisegundos, "metodo", pedido.getMethod(),
                     "ruta", ruta);
+            tramo.atributo("http.status_code", respuesta.getStatus());
+            if (respuesta.getStatus() >= 500) {
+                tramo.marcarError();
+            }
+            tramo.close();
             MDC.remove(Correlacion.CLAVE_MDC);
             MDC.remove(Correlacion.CLAVE_USUARIO_MDC);
         }

@@ -12,6 +12,7 @@ import com.nimbusds.jose.util.JSONObjectUtils;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
+import uy.edu.fing.tse.carga.api.observabilidad.Traza;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -80,17 +81,21 @@ public class ClienteOidcGubUy {
         String credenciales = Base64.getEncoder().encodeToString(
                 (enc(config.getClientId()) + ":" + enc(config.getClientSecret())).getBytes(StandardCharsets.UTF_8));
 
-        HttpRequest pedido = HttpRequest.newBuilder(URI.create(m.tokenEndpoint()))
-                .timeout(TIMEOUT)
-                .header("Content-Type", "application/x-www-form-urlencoded")
-                .header("Authorization", "Basic " + credenciales)
-                .POST(HttpRequest.BodyPublishers.ofString(cuerpo))
-                .build();
-
         String idToken;
-        try {
+        // Tramo de cliente de la traza: cuanto tarda gub.uy en canjear el codigo
+        try (Traza.Tramo tramo = Traza.iniciar("gub.uy POST /token", Traza.Tipo.CLIENTE)
+                .atributo("peer.service", "gub.uy")) {
+            HttpRequest pedido = HttpRequest.newBuilder(URI.create(m.tokenEndpoint()))
+                    .timeout(TIMEOUT)
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .header("Authorization", "Basic " + credenciales)
+                    .header(Traza.HEADER, tramo.traceparent())
+                    .POST(HttpRequest.BodyPublishers.ofString(cuerpo))
+                    .build();
             HttpResponse<String> respuesta = http.send(pedido, HttpResponse.BodyHandlers.ofString());
+            tramo.atributo("http.status_code", respuesta.statusCode());
             if (respuesta.statusCode() != 200) {
+                tramo.marcarError();
                 throw new GubUyException("gub.uy rechaz\u00f3 el ingreso (c\u00f3digo " + respuesta.statusCode() + ")");
             }
             idToken = JSONObjectUtils.getString(JSONObjectUtils.parse(respuesta.body()), "id_token");

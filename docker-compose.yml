@@ -6,10 +6,12 @@
 #   frontend  React (backoffice y frontoffice) + nginx, mismo origen que la API
 #   gubuy-simulador  IdP OpenID Connect que imita a gub.uy
 #   ldap      directorio del MTOP (opcional: COMPOSE_PROFILES=ldap en el .env)
+#   jaeger    trazas distribuidas (OpenTelemetry)
 #
 #   docker compose up -d --build
 #   http://localhost:8080/carga/   (central)
 #   http://localhost:3000/         (frontend)
+#   http://localhost:16686/        (Jaeger: trazas)
 #
 # Los valores de entorno salen de .env (copiar de .env.example).
 
@@ -68,6 +70,8 @@ services:
       GUBUY_SCOPES: ${GUBUY_SCOPES:-openid personal_info email document}
       FRONTEND_URL_WEB: ${FRONTEND_URL_WEB:-http://localhost:3000}
       FRONTEND_URL_MOVIL: ${FRONTEND_URL_MOVIL:-cargauy://ingreso}
+      # Trazas distribuidas (OTLP/HTTP). Vacio = no exportar.
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT-http://jaeger:4318}
     ports:
       - "8080:8080"   # aplicacion
       - "9990:9990"   # consola de administracion de WildFly
@@ -136,6 +140,14 @@ services:
       LDAP_TLS: "false"
     volumes:
       - ./docker/ldap/seed.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/seed.ldif:ro
+
+  # Recibe las trazas por OTLP (puerto 4318, solo dentro de la red) y las muestra en http://localhost:16686
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
 
 volumes:
   pgdata:

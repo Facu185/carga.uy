@@ -104,6 +104,7 @@ Convenciones:
 | `AUTENTICACION_INTERNA` y `LDAP_*` | central (backoffice) | `bd`; con `ldap` se usan las `LDAP_*` |
 | `GUBUY_ISSUER`, `GUBUY_AUTHORIZATION_ENDPOINT`, `GUBUY_CLIENT_ID`, `GUBUY_CLIENT_SECRET`, `GUBUY_REDIRECT_URI`, `GUBUY_SCOPES` | central (ingreso con gub.uy) | simulador local |
 | `COMPOSE_PROFILES=ldap` | docker compose | sin definir (el directorio LDAP no arranca) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | central (trazas a Jaeger) | `http://jaeger:4318`; vacío = no exporta |
 | `FRONTEND_URL_WEB`, `FRONTEND_URL_MOVIL` | central (a dónde vuelve el ingreso con gub.uy) | `http://localhost:3000`, `cargauy://ingreso` |
 
 Nada de URLs ni credenciales hardcodeadas en el código: todo por entorno, con un default que
@@ -127,3 +128,16 @@ ingresos (exitosos, fallidos, bloqueados), consultas a la PDI y estado de su cir
 hilos de la JVM. Cada frente suma las suyas con `MetricasLocal`, con nombres `carga_<tema>_...`
 (contadores terminan en `_total`, duraciones en `_ms`). Nunca usar ids, cédulas ni matrículas como
 valor de etiqueta: cada valor distinto crea una serie nueva.
+
+### Trazas distribuidas
+
+El central sigue el estándar W3C Trace Context: recibe y manda el header **`traceparent`** y exporta
+los tramos a Jaeger (http://localhost:16686). Cada respuesta trae `X-Trace-Id` para buscar su traza.
+Flujo trazado de punta a punta: el ingreso con gub.uy (central → canje del código en gub.uy → PDI
+→ simulador de DNIC). Para sumar un tramo propio:
+
+```java
+try (Traza.Tramo tramo = Traza.iniciar("Balanzas GET /pesadas", Traza.Tipo.CLIENTE)) {
+    // mandar tramo.traceparent() en el header "traceparent" de la llamada
+}
+```

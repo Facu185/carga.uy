@@ -18,6 +18,7 @@ import uy.edu.fing.tse.carga.api.MetricasLocal;
 import uy.edu.fing.tse.carga.api.PdiLocal;
 import uy.edu.fing.tse.carga.api.dto.PersonaDTO;
 import uy.edu.fing.tse.carga.api.observabilidad.Correlacion;
+import uy.edu.fing.tse.carga.api.observabilidad.Traza;
 import uy.edu.fing.tse.carga.api.soap.ServicioDnic;
 import uy.edu.fing.tse.carga.ejb.integracion.CircuitBreaker;
 import uy.edu.fing.tse.carga.ejb.integracion.EncabezadoCorrelacionHandler;
@@ -129,17 +130,25 @@ public class PdiBean implements PdiLocal {
 
     /** Llamada SOAP con tope de tiempo. Package-private para poder simular fallas en las pruebas. */
     PersonaDTO invocar(String cedula) throws Exception {
-        // La llamada corre en otro hilo: se le pasa el ID de correlacion para que la PDI lo reciba
-        String idCorrelacion = Correlacion.actual().orElse(null);
-        Future<PersonaDTO> futuro = executor.submit(
-                () -> Correlacion.ejecutarCon(idCorrelacion, () -> puerto().obtenerPersona(cedula)));
-        try {
-            return futuro.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
-        } catch (TimeoutException e) {
-            futuro.cancel(true);
-            throw e;
-        } catch (ExecutionException e) {
-            throw e.getCause() instanceof Exception causa ? causa : e;
+        try (Traza.Tramo tramo = Traza.iniciar("PDI ServicioDnic.obtenerPersona", Traza.Tipo.CLIENTE)
+                .atributo("rpc.system", "soap").atributo("peer.service", "pdi")) {
+            // La llamada corre en otro hilo: se le pasan el ID de correlacion y el contexto de la traza
+            // para que viajen como headers HTTP hasta la PDI
+            String idCorrelacion = Correlacion.actual().orElse(null);
+            String traceparent = tramo.traceparent();
+            Future<PersonaDTO> futuro = executor.submit(() -> Traza.ejecutarCon(traceparent,
+                    () -> Correlacion.ejecutarCon(idCorrelacion, () -> puerto().obtenerPersona(cedula))));
+            try {
+                return futuro.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                futuro.cancel(true);
+                tramo.error(e);
+                throw e;
+            } catch (ExecutionException e) {
+                Exception causa = e.getCause() instanceof Exception c ? c : e;
+                tramo.error(causa);
+                throw causa;
+            }
         }
     }
 

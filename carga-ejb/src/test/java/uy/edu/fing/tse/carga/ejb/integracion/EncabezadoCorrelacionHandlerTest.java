@@ -4,6 +4,7 @@ import jakarta.xml.ws.handler.MessageContext;
 import jakarta.xml.ws.handler.soap.SOAPMessageContext;
 import org.junit.jupiter.api.Test;
 import uy.edu.fing.tse.carga.api.observabilidad.Correlacion;
+import uy.edu.fing.tse.carga.api.observabilidad.Traza;
 
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
@@ -34,6 +35,18 @@ class EncabezadoCorrelacionHandlerTest {
 
         Map<String, List<String>> headers = (Map<String, List<String>>) datos.get(MessageContext.HTTP_REQUEST_HEADERS);
         assertEquals(List.of("id-12345678"), headers.get(Correlacion.HEADER));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void propagaElContextoDeLaTraza() throws Exception {
+        Map<String, Object> datos = new HashMap<>(Map.of(MessageContext.MESSAGE_OUTBOUND_PROPERTY, true));
+        String traceparent = "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01";
+
+        Traza.ejecutarCon(traceparent, () -> new EncabezadoCorrelacionHandler().handleMessage(contexto(datos)));
+
+        Map<String, List<String>> headers = (Map<String, List<String>>) datos.get(MessageContext.HTTP_REQUEST_HEADERS);
+        assertEquals(List.of(traceparent), headers.get(Traza.HEADER));
     }
 
     @Test

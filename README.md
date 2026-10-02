@@ -41,6 +41,7 @@ Cuando termina:
 |---|---|
 | Frontend React (frontoffice y backoffice) | http://localhost:3000/ |
 | Backoffice — ingreso | http://localhost:3000/backoffice/login (usuario `admin` / `admin-solo-desarrollo`) |
+| Jaeger (trazas distribuidas) | http://localhost:16686 |
 | Simulador gub.uy | http://localhost:8085/gubuy/.well-known/openid-configuration |
 | Aplicación (JSF) | http://localhost:8080/carga/ |
 | REST — salud | http://localhost:8080/carga/api/salud |
