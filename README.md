@@ -39,7 +39,7 @@ Cuando termina:
 
 | Qué | URL |
 |---|---|
-| Aplicación (JSF) | http://localhost:8080/carga/ |
+| **Inicio** (la raíz redirige sola) | **http://localhost:8080/** |
 | **Panel de operación de nodos** | **http://localhost:8080/carga/panel.xhtml** |
 | REST — salud | http://localhost:8080/carga/api/salud |
 | REST — empresas | http://localhost:8080/carga/api/empresas |

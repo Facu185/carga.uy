@@ -6,8 +6,12 @@
       xmlns:p="http://primefaces.org/ui">
 <h:head>
     <title>carga.uy - Empresas</title>
+    <link rel="stylesheet" href="recursos/estilos.css"/>
 </h:head>
 <h:body>
+<div class="contenedor">
+    <p class="migas"><h:link outcome="index" value="carga.uy"/> &#8250; Empresas</p>
+
     <h:form id="formulario">
         <p:growl id="avisos" showDetail="true"/>
 
@@ -38,5 +42,6 @@
             </p:column>
         </p:dataTable>
     </h:form>
+</div>
 </h:body>
 </html>
