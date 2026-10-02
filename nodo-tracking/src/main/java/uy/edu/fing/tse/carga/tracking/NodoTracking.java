@@ -47,8 +47,11 @@ public final class NodoTracking {
         double avance = 0;
         while (true) {
             avance = (avance + 0.02) % 1.0;
-            for (String matricula : MATRICULAS) {
-                enviar(matricula, avance);
+            for (int i = 0; i < MATRICULAS.size(); i++) {
+                // Cada vehiculo arranca en un punto distinto del recorrido: si viajaran
+                // todos juntos se superpondrian en el mapa y pareceria uno solo.
+                double propio = (avance + (double) i / MATRICULAS.size()) % 1.0;
+                enviar(MATRICULAS.get(i), propio);
             }
             Thread.sleep(INTERVALO_MS);
         }

@@ -9,7 +9,8 @@ grupo antes de mergear: hay código de otra persona que depende.
 |---|---|---|
 | `EmpresaServicio` / `...Local` / `...Remote` | P2 | Alta y consulta de empresas |
 | `IngestaTrackingLocal` | P4 | Recibe una posición y la encola; no bloquea |
-| `PesajeLocal` | P4 | Devuelve las pesadas de una matrícula en una fecha; lista vacía si el nodo no responde |
+| `PesajeLocal` | P4 | `obtenerPesadas` devuelve las pesadas; `consultarPesadas` además informa si el nodo respondió y cuánto tardó |
+| `MonitorLocal` | P4 | Métricas de ingesta, estado de los nodos y mapa de la flota (solo lectura) |
 | `PdiLocal` | P1 | Devuelve los datos de la persona, o `null` si la PDI no responde |
 | `ServicioDnic` (SOAP) | P1 | Contrato SOAP hacia la PDI |
 
@@ -35,6 +36,9 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `POST /carga/api/empresas` | backoffice |
 | `GET /carga/api/pdi/personas/{cedula}` | pruebas del frente P1 (atajo al cliente SOAP) |
 | `POST /carga/api/tracking/posiciones` | **nodo Tracking** — responde `202` |
+| `GET /carga/api/monitor/metricas` | panel de operación |
+| `GET /carga/api/monitor/nodos` | panel de operación, monitoreo externo |
+| `GET /carga/api/monitor/mapa?puntos=` | panel de operación (mapa de la flota) |
 | `GET /balanzas/api/pesadas?matricula=&fecha=` | **componente central** (`PesajeBean`) |
 
 Las rutas nuevas de cada frente cuelgan de `/carga/api/<tema>`. No reutilizar prefijos ajenos.

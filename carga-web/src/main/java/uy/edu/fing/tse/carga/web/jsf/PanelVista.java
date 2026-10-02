@@ -1,0 +1,60 @@
+package uy.edu.fing.tse.carga.web.jsf;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.ejb.EJB;
+import jakarta.faces.view.ViewScoped;
+import jakarta.inject.Named;
+import uy.edu.fing.tse.carga.api.MonitorLocal;
+import uy.edu.fing.tse.carga.api.PesajeLocal;
+import uy.edu.fing.tse.carga.api.dto.EstadoNodoDTO;
+import uy.edu.fing.tse.carga.api.dto.MetricasDTO;
+import uy.edu.fing.tse.carga.api.dto.ResultadoPesajeDTO;
+
+import java.io.Serializable;
+import java.time.LocalDate;
+import java.util.List;
+
+/** Backing bean del panel de operacion de nodos perifericos (frente P4). */
+@Named("panelVista")
+@ViewScoped
+public class PanelVista implements Serializable {
+
+    @EJB
+    private transient MonitorLocal monitor;
+
+    @EJB
+    private transient PesajeLocal pesaje;
+
+    private MetricasDTO metricas;
+    private List<EstadoNodoDTO> nodos;
+
+    private String matricula = "STZ1234";
+    private String fecha = LocalDate.now().toString();
+    private ResultadoPesajeDTO resultado;
+
+    @PostConstruct
+    public void iniciar() {
+        refrescar();
+    }
+
+    /** Lo invoca el p:poll de la pagina. */
+    public void refrescar() {
+        metricas = monitor.metricas();
+        nodos = monitor.estadoNodos();
+    }
+
+    /** Caso de uso critico "Obtener pesajes del nodo Balanzas", disparado a mano. */
+    public void consultarPesajes() {
+        resultado = pesaje.consultarPesadas(matricula, fecha);
+    }
+
+    public MetricasDTO getMetricas() { return metricas; }
+    public List<EstadoNodoDTO> getNodos() { return nodos; }
+    public ResultadoPesajeDTO getResultado() { return resultado; }
+
+    public String getMatricula() { return matricula; }
+    public void setMatricula(String matricula) { this.matricula = matricula; }
+
+    public String getFecha() { return fecha; }
+    public void setFecha(String fecha) { this.fecha = fecha; }
+}

@@ -40,9 +40,11 @@ Cuando termina:
 | Qué | URL |
 |---|---|
 | Aplicación (JSF) | http://localhost:8080/carga/ |
+| **Panel de operación de nodos** | **http://localhost:8080/carga/panel.xhtml** |
 | REST — salud | http://localhost:8080/carga/api/salud |
 | REST — empresas | http://localhost:8080/carga/api/empresas |
 | REST — consulta a la PDI | http://localhost:8080/carga/api/pdi/personas/22222222 |
+| REST — estado de los nodos | http://localhost:8080/carga/api/monitor/nodos |
 | SOAP — WSDL | http://localhost:8080/carga/EmpresaService?wsdl |
 | Simulador PDI (SOAP) | http://localhost:8080/simulador-pdi/ServicioDnicImpl?wsdl |
 | Nodo Balanzas (REST) | http://localhost:8081/balanzas/api/pesadas?matricula=STZ1234 |
@@ -109,6 +111,7 @@ Cada cosa de la lista tiene una implementación funcionando que se puede copiar:
 | Recurso REST | `carga-web/.../rest/EmpresaRecurso.java` |
 | Servicio SOAP | `carga-web/.../soap/EmpresaSoap.java` |
 | Pantalla JSF + PrimeFaces | `carga-web/src/main/webapp/empresas.xhtml` |
+| Pantalla con auto-refresco y mapa | `carga-web/src/main/webapp/panel.xhtml` |
 | Cola JMS + MDB (procesamiento asincrónico) | `carga-ejb/.../jms/PosicionMDB.java` |
 | Cliente REST a un nodo periférico (con timeout) | `carga-ejb/.../servicio/PesajeBean.java` |
 | Cliente SOAP a la PDI | `carga-ejb/.../servicio/PdiBean.java` (probalo con `/carga/api/pdi/personas/11111111`) |

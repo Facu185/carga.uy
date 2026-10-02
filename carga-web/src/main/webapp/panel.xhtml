@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<h:head>
+    <title>carga.uy - Panel de operacion</title>
+    <!-- Leaflet: si no hay internet, el mapa igual ubica los vehiculos, sin el fondo cartografico. -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { background: #f4f6f8; font-family: system-ui, Segoe UI, Arial, sans-serif; margin: 0; }
+        .contenedor { max-width: 1180px; margin: 0 auto; padding: 18px 16px 40px; }
+        .encabezado h1 { margin: 0 0 2px; font-size: 22px; color: #16324f; }
+        .encabezado p { margin: 0 0 18px; color: #5b6b7b; font-size: 13px; }
+        .tarjetas { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+        .tarjeta { flex: 1 1 170px; background: #fff; border: 1px solid #dfe5eb; border-radius: 8px; padding: 12px 14px; }
+        .tarjeta .n { font-size: 26px; font-weight: 600; color: #16324f; line-height: 1.1; }
+        .tarjeta .r { font-size: 12px; color: #667; margin-top: 3px; }
+        .bloque { background: #fff; border: 1px solid #dfe5eb; border-radius: 8px; padding: 14px; margin-bottom: 18px; }
+        .bloque h2 { margin: 0 0 10px; font-size: 15px; color: #16324f; }
+        #mapa { height: 420px; border-radius: 6px; border: 1px solid #dfe5eb; }
+        .pill { display: inline-block; padding: 2px 10px; border-radius: 11px; font-size: 12px; font-weight: 600; }
+        .ok { background: #e3f5e8; color: #1c6b34; }
+        .mal { background: #fde8e6; color: #9b2c22; }
+        .nota { font-size: 12px; color: #667; margin-top: 8px; }
+        .leyenda { font-size: 12px; color: #445; margin-top: 8px; }
+        .leyenda span { margin-right: 14px; }
+        .leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+    </style>
+</h:head>
+
+<h:body>
+<div class="contenedor">
+
+    <div class="encabezado">
+        <h1>Panel de operacion &#8212; nodos perifericos</h1>
+        <p>Frente P4. Estado de los nodos Balanzas y Tracking, e ingesta de posiciones en vivo.</p>
+    </div>
+
+    <h:form id="f">
+        <p:poll interval="5" listener="#{panelVista.refrescar}" update="tarjetas nodos"/>
+
+        <h:panelGroup id="tarjetas" layout="block" styleClass="tarjetas">
+            <div class="tarjeta">
+                <div class="n">#{panelVista.metricas.posicionesTotales}</div>
+                <div class="r">posiciones recibidas</div>
+            </div>
+            <div class="tarjeta">
+                <div class="n">#{panelVista.metricas.posicionesUltimosCincoMinutos}</div>
+                <div class="r">en los ultimos 5 minutos</div>
+            </div>
+            <div class="tarjeta">
+                <div class="n">#{panelVista.metricas.vehiculosReportando}</div>
+                <div class="r">vehiculos reportando</div>
+            </div>
+            <div class="tarjeta">
+                <div class="n" style="font-size:17px; padding-top:7px">#{panelVista.metricas.ultimaRecepcion}</div>
+                <div class="r">ultima posicion recibida</div>
+            </div>
+        </h:panelGroup>
+
+        <div class="bloque">
+            <h2>Estado de los nodos</h2>
+            <p:dataTable id="nodos" value="#{panelVista.nodos}" var="n" emptyMessage="Sin nodos configurados.">
+                <p:column headerText="Nodo"><h:outputText value="#{n.nombre}"/></p:column>
+                <p:column headerText="Tipo"><h:outputText value="#{n.tipo}"/></p:column>
+                <p:column headerText="Estado">
+                    <span class="pill #{n.enLinea ? 'ok' : 'mal'}">#{n.etiqueta}</span>
+                </p:column>
+                <p:column headerText="Latencia">
+                    <h:outputText value="#{n.latenciaMs} ms" rendered="#{n.tipo eq 'BALANZAS'}"/>
+                    <h:outputText value="&#8212;" escape="false" rendered="#{n.tipo ne 'BALANZAS'}"/>
+                </p:column>
+                <p:column headerText="Detalle"><h:outputText value="#{n.detalle}"/></p:column>
+                <p:column headerText="Origen"><h:outputText value="#{n.url}" style="font-size:11px;color:#667"/></p:column>
+            </p:dataTable>
+            <div class="nota">El estado se verifica contra el nodo real en cada actualizacion (cada 5 s),
+                no contra un valor guardado.</div>
+        </div>
+
+        <div class="bloque">
+            <h2>Obtener pesajes del nodo Balanzas</h2>
+            <p:outputLabel for="mat" value="Matricula" style="margin-right:6px"/>
+            <p:inputText id="mat" value="#{panelVista.matricula}" size="10"/>
+            <p:outputLabel for="fec" value="Fecha" style="margin:0 6px 0 14px"/>
+            <p:inputText id="fec" value="#{panelVista.fecha}" size="12"/>
+            <p:commandButton value="Consultar" action="#{panelVista.consultarPesajes}"
+                             update="resultado" style="margin-left:12px"/>
+
+            <h:panelGroup id="resultado" layout="block" style="margin-top:12px">
+                <h:panelGroup rendered="#{not empty panelVista.resultado}">
+                    <span class="pill #{panelVista.resultado.nodoDisponible ? 'ok' : 'mal'}">
+                        #{panelVista.resultado.nodoDisponible ? 'Nodo disponible' : 'Nodo no disponible'}
+                    </span>
+                    <span style="margin-left:10px; font-size:13px; color:#445">#{panelVista.resultado.mensaje}</span>
+
+                    <p:dataTable value="#{panelVista.resultado.pesadas}" var="pe" style="margin-top:10px"
+                                 emptyMessage="Sin pesadas para esa matricula y fecha."
+                                 rendered="#{panelVista.resultado.nodoDisponible}">
+                        <p:column headerText="Pesada"><h:outputText value="#{pe.idPesada}"/></p:column>
+                        <p:column headerText="Peaje"><h:outputText value="#{pe.peaje}"/></p:column>
+                        <p:column headerText="Peso (kg)"><h:outputText value="#{pe.pesoKg}"/></p:column>
+                        <p:column headerText="Instante"><h:outputText value="#{pe.instante}"/></p:column>
+                    </p:dataTable>
+                </h:panelGroup>
+            </h:panelGroup>
+            <div class="nota">Para ver el comportamiento degradado:
+                <code>docker compose stop balanzas</code> y volver a consultar.</div>
+        </div>
+    </h:form>
+
+    <div class="bloque">
+        <h2>Flota en vivo</h2>
+        <div id="mapa"></div>
+        <div class="leyenda" id="leyenda"></div>
+        <div class="nota">Punto lleno: ultima posicion conocida. Linea: recorrido de las ultimas 40 posiciones.
+            Se actualiza cada 5 segundos.</div>
+    </div>
+
+</div>
+
+<script>
+//<![CDATA[
+(function () {
+    var COLORES = ['#1f77b4', '#d62728', '#2ca02c', '#9467bd', '#ff7f0e', '#17becf'];
+    var mapa = L.map('mapa').setView([-33.9, -56.3], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18, attribution: '&copy; OpenStreetMap'
+    }).addTo(mapa);
+
+    var capa = L.layerGroup().addTo(mapa);
+    var primeraVez = true;
+
+    function pintar(flota) {
+        capa.clearLayers();
+        var leyenda = [];
+        var limites = [];
+
+        flota.forEach(function (v, i) {
+            var color = COLORES[i % COLORES.length];
+            if (v.puntos && v.puntos.length > 1) {
+                L.polyline(v.puntos, {color: color, weight: 3, opacity: 0.65}).addTo(capa);
+            }
+            L.circleMarker([v.latitud, v.longitud], {
+                radius: 7, color: '#fff', weight: 2, fillColor: color, fillOpacity: 1
+            }).bindTooltip(v.matricula + ' &#183; ' + v.instante, {permanent: false}).addTo(capa);
+
+            limites.push([v.latitud, v.longitud]);
+            leyenda.push('<span><i style="background:' + color + '"></i>' + v.matricula + '</span>');
+        });
+
+        document.getElementById('leyenda').innerHTML = leyenda.join('');
+        if (primeraVez && limites.length) {
+            // maxZoom evita que, cuando los vehiculos estan juntos, el mapa
+            // quede a nivel de calle y se pierda la referencia del pais
+            mapa.fitBounds(L.latLngBounds(limites).pad(0.45), {maxZoom: 10});
+            primeraVez = false;
+        }
+    }
+
+    function actualizar() {
+        fetch('api/monitor/mapa')
+            .then(function (r) { return r.json(); })
+            .then(pintar)
+            .catch(function (e) { console.warn('No se pudo leer el mapa', e); });
+    }
+
+    actualizar();
+    setInterval(actualizar, 5000);
+})();
+//]]>
+</script>
+</h:body>
+</html>

@@ -51,7 +51,11 @@ Tablas: `evento_viaje`. Patrón a seguir: el mismo de `PosicionDTO` / `PosicionM
 - Pruebas de las integraciones con el nodo lento y con el nodo caído (`BALANZAS_DEMORA_MS`, `BALANZAS_FALLA`).
 
 Tablas: `posicion_tracking`, `pesada`, `nodo_periferico`.
-Código de arranque: `PesajeBean`, `IngestaTrackingBean`, `PosicionMDB`, `nodo-balanzas`, `nodo-tracking`.
+Pantalla propia: **panel de operación** (`/carga/panel.xhtml`) con el estado de los nodos, los
+contadores de ingesta y el mapa de la flota en vivo.
+
+Código de arranque: `PesajeBean`, `MonitorBean`, `IngestaTrackingBean`, `PosicionMDB`,
+`nodo-balanzas`, `nodo-tracking`, `PanelVista` + `panel.xhtml`.
 
 ## P5 — Fiscalización y georreferenciación
 

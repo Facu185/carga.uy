@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
 import uy.edu.fing.tse.carga.api.PesajeLocal;
 import uy.edu.fing.tse.carga.api.dto.PesadaDTO;
+import uy.edu.fing.tse.carga.api.dto.ResultadoPesajeDTO;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -17,7 +18,7 @@ import java.util.logging.Logger;
  * (Secciones 3.7.2 y 4.1 de la letra).
  *
  * TODO (frente P4): agregar politica de reintentos y mecanismo de corte (circuit breaker),
- * exigidos por la Seccion 4.3 de la letra. Hoy solo hay timeout y degradacion.
+ * exigidos por la Seccion 4.3 de la letra. Hoy hay timeout y degradacion informada.
  */
 @Stateless
 public class PesajeBean implements PesajeLocal {
@@ -30,21 +31,29 @@ public class PesajeBean implements PesajeLocal {
 
     @Override
     public List<PesadaDTO> obtenerPesadas(String matricula, String fecha) {
+        return consultarPesadas(matricula, fecha).getPesadas();
+    }
+
+    @Override
+    public ResultadoPesajeDTO consultarPesadas(String matricula, String fecha) {
         Client cliente = ClientBuilder.newBuilder()
                 .connectTimeout(TIMEOUT_SEGUNDOS, TimeUnit.SECONDS)
                 .readTimeout(TIMEOUT_SEGUNDOS, TimeUnit.SECONDS)
                 .build();
+        long inicio = System.currentTimeMillis();
         try {
-            return cliente.target(URL_BASE)
-                    .queryParam("matricula", matricula)
-                    .queryParam("fecha", fecha)
+            List<PesadaDTO> pesadas = cliente.target(URL_BASE)
+                    .queryParam("matricula", matricula == null ? "" : matricula)
+                    .queryParam("fecha", fecha == null ? "" : fecha)
                     .request(MediaType.APPLICATION_JSON)
                     .get(new GenericType<List<PesadaDTO>>() { });
+            return ResultadoPesajeDTO.disponible(pesadas, System.currentTimeMillis() - inicio);
         } catch (RuntimeException e) {
             // Comportamiento degradado: el componente central sigue operativo (RNF 4.3).
-            LOG.warning("El nodo Balanzas no respondio (" + e.getClass().getSimpleName() + "): "
-                    + e.getMessage() + ". Se devuelve lista vacia.");
-            return List.of();
+            long demora = System.currentTimeMillis() - inicio;
+            String motivo = "El nodo Balanzas no respondio (" + e.getClass().getSimpleName() + ").";
+            LOG.warning(motivo + " Detalle: " + e.getMessage());
+            return ResultadoPesajeDTO.noDisponible(motivo, demora);
         } finally {
             cliente.close();
         }

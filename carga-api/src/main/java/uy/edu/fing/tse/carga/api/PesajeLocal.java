@@ -1,17 +1,23 @@
 package uy.edu.fing.tse.carga.api;
 
-import jakarta.ejb.Local;
 import uy.edu.fing.tse.carga.api.dto.PesadaDTO;
+import uy.edu.fing.tse.carga.api.dto.ResultadoPesajeDTO;
 
 import java.util.List;
 
 /**
- * Consulta sincronica (request-response) al nodo periferico Balanzas.
- * Si el nodo no responde, devuelve lista vacia: la indisponibilidad de un nodo
- * no debe provocar la indisponibilidad del componente central (RNF 4.3 de la letra).
+ * Consulta al nodo periferico Balanzas (integracion sincronica request-response).
+ * CONTRATO con el nodo: ver docs/contratos.md
  */
-@Local
 public interface PesajeLocal {
 
+    /**
+     * Pesadas de una matricula en una fecha (ISO-8601).
+     * Devuelve lista vacia si el nodo no responde; usar {@link #consultarPesadas}
+     * cuando haya que distinguir "sin pesadas" de "nodo caido".
+     */
     List<PesadaDTO> obtenerPesadas(String matricula, String fecha);
+
+    /** Igual que {@link #obtenerPesadas}, pero informa si el nodo respondio y cuanto tardo. */
+    ResultadoPesajeDTO consultarPesadas(String matricula, String fecha);
 }
