@@ -43,6 +43,8 @@ class ClienteOidcGubUyIntegracionTest {
     private volatile int estadoToken = 200;
     private volatile String cuerpoToken;
     private volatile String autorizacionToken;
+    private volatile String cuerpoUserinfo;
+    private volatile String autorizacionUserinfo;
 
     @BeforeEach
     void levantarGubUyFalso() throws Exception {
@@ -54,7 +56,12 @@ class ClienteOidcGubUyIntegracionTest {
         servidor.createContext("/gubuy/.well-known/openid-configuration", ex -> responder(ex, 200,
                 "{\"authorization_endpoint\":\"" + issuer + "/authorize\","
                         + "\"token_endpoint\":\"" + issuer + "/token\","
+                        + "\"userinfo_endpoint\":\"" + issuer + "/userinfo\","
                         + "\"jwks_uri\":\"" + issuer + "/jwks\"}"));
+        servidor.createContext("/gubuy/userinfo", ex -> {
+            autorizacionUserinfo = ex.getRequestHeaders().getFirst("Authorization");
+            responder(ex, 200, cuerpoUserinfo);
+        });
         servidor.createContext("/gubuy/jwks", ex -> responder(ex, 200, new JWKSet(clave.toPublicJWK()).toString()));
         servidor.createContext("/gubuy/token", ex -> {
             cuerpoToken = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
@@ -63,7 +70,8 @@ class ClienteOidcGubUyIntegracionTest {
                 responder(ex, estadoToken, "{\"error\":\"invalid_grant\"}");
                 return;
             }
-            responder(ex, 200, "{\"id_token\":\"" + firmar(claimsAEmitir, claveFirma) + "\"}");
+            responder(ex, 200, "{\"access_token\":\"at-1\",\"token_type\":\"Bearer\",\"id_token\":\""
+                    + firmar(claimsAEmitir, claveFirma) + "\"}");
         });
         servidor.start();
     }
@@ -109,6 +117,19 @@ class ClienteOidcGubUyIntegracionTest {
                 .build();
     }
 
+    /** Como ID Uruguay: el id_token solo identifica (sub); los datos de la persona van por UserInfo. */
+    private JWTClaimsSet claimsSoloIdentificacion(String nonce) {
+        Date ahora = new Date();
+        return new JWTClaimsSet.Builder()
+                .issuer(issuer)
+                .subject("uid-1")
+                .audience(CLIENT_ID)
+                .issueTime(ahora)
+                .expirationTime(new Date(ahora.getTime() + 300_000))
+                .claim("nonce", nonce)
+                .build();
+    }
+
     private ClienteOidcGubUy cliente(String issuerConfigurado, String endpointAutorizacion) {
         ConfiguracionGubUy config = new ConfiguracionGubUy();
         config.configurar(issuerConfigurado, CLIENT_ID, "secreto-cliente", REDIRECT, endpointAutorizacion,
@@ -132,6 +153,28 @@ class ClienteOidcGubUyIntegracionTest {
         assertTrue(cuerpoToken.contains("code=codigo-1"));
         assertTrue(cuerpoToken.contains("code_verifier=verifier-1"));
         assertTrue(autorizacionToken.startsWith("Basic "), "el secreto viaja en el header, no en la URL");
+    }
+
+    @Test
+    void siElIdTokenNoTraeLosDatosLosPideAlUserinfoComoIdUruguay() {
+        claimsAEmitir = claimsSoloIdentificacion("nonce-1");
+        cuerpoUserinfo = "{\"sub\":\"uid-1\",\"numero_documento\":\"12345672\",\"primer_nombre\":\"Ana\","
+                + "\"primer_apellido\":\"P\u00e9rez\",\"email\":\"ana@correo.uy\"}";
+
+        IdentidadGubUy identidad = cliente(issuer, null).canjearCodigo("codigo-1", "verifier-1", "nonce-1");
+
+        assertEquals("12345672", identidad.documento());
+        assertEquals("Ana P\u00e9rez", identidad.nombre());
+        assertEquals("ana@correo.uy", identidad.email());
+        assertEquals("Bearer at-1", autorizacionUserinfo);
+    }
+
+    @Test
+    void rechazaUnUserinfoDeOtraPersona() {
+        claimsAEmitir = claimsSoloIdentificacion("nonce-1");
+        cuerpoUserinfo = "{\"sub\":\"uid-OTRO\",\"numero_documento\":\"12345672\",\"nombre_completo\":\"X\"}";
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
     }
 
     @Test
