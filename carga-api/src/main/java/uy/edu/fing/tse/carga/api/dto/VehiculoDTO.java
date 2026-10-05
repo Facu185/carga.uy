@@ -1,6 +1,7 @@
 package uy.edu.fing.tse.carga.api.dto;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 /** Datos de un vehículo perteneciente a una empresa transportista. */
 public class VehiculoDTO implements Serializable {
@@ -14,6 +15,7 @@ public class VehiculoDTO implements Serializable {
     private String modelo;
     private Integer pesoKg;
     private Integer capacidadCargaKg;
+    private BigDecimal capacidadVolumenM3;
     private String numeroPermiso;
     private String permisoDesde;
     private String permisoHasta;
@@ -35,6 +37,8 @@ public class VehiculoDTO implements Serializable {
     public void setPesoKg(Integer pesoKg) { this.pesoKg = pesoKg; }
     public Integer getCapacidadCargaKg() { return capacidadCargaKg; }
     public void setCapacidadCargaKg(Integer capacidadCargaKg) { this.capacidadCargaKg = capacidadCargaKg; }
+    public BigDecimal getCapacidadVolumenM3() { return capacidadVolumenM3; }
+    public void setCapacidadVolumenM3(BigDecimal capacidadVolumenM3) { this.capacidadVolumenM3 = capacidadVolumenM3; }
     public String getNumeroPermiso() { return numeroPermiso; }
     public void setNumeroPermiso(String numeroPermiso) { this.numeroPermiso = numeroPermiso; }
     public String getPermisoDesde() { return permisoDesde; }

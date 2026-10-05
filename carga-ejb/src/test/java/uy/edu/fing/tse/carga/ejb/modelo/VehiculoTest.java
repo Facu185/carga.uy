@@ -3,6 +3,7 @@ package uy.edu.fing.tse.carga.ejb.modelo;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,5 +45,13 @@ class VehiculoTest {
     void pesoMaximoEsPesoMasCapacidad() {
         Vehiculo v = vehiculoCon(LocalDate.now(), LocalDate.now(), LocalDate.now());
         assertEquals(30000, v.pesoMaximoAdmitidoKg());
+    }
+
+    @Test
+    void exponeCapacidadDeVolumenEnMetrosCubicos() {
+        Vehiculo v = vehiculoCon(LocalDate.now(), LocalDate.now(), LocalDate.now());
+        v.setCapacidadVolumenM3(new BigDecimal("45.50"));
+
+        assertEquals(new BigDecimal("45.50"), v.getCapacidadVolumenM3());
     }
 }

@@ -14,7 +14,8 @@ public class GuiaDTO implements Serializable {
     private Long choferId;
     private Long rubroId;
     private Long tipoCargaId;
-    private BigDecimal cargaKg;
+    private BigDecimal pesoKg;
+    private BigDecimal volumenM3;
     private String fecha;
     private String origen;
     private Double origenLat;
@@ -39,8 +40,10 @@ public class GuiaDTO implements Serializable {
     public void setRubroId(Long rubroId) { this.rubroId = rubroId; }
     public Long getTipoCargaId() { return tipoCargaId; }
     public void setTipoCargaId(Long tipoCargaId) { this.tipoCargaId = tipoCargaId; }
-    public BigDecimal getCargaKg() { return cargaKg; }
-    public void setCargaKg(BigDecimal cargaKg) { this.cargaKg = cargaKg; }
+    public BigDecimal getPesoKg() { return pesoKg; }
+    public void setPesoKg(BigDecimal pesoKg) { this.pesoKg = pesoKg; }
+    public BigDecimal getVolumenM3() { return volumenM3; }
+    public void setVolumenM3(BigDecimal volumenM3) { this.volumenM3 = volumenM3; }
     public String getFecha() { return fecha; }
     public void setFecha(String fecha) { this.fecha = fecha; }
     public String getOrigen() { return origen; }

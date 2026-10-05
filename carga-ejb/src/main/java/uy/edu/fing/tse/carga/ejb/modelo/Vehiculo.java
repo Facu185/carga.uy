@@ -10,6 +10,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "vehiculo")
@@ -39,6 +40,14 @@ public class Vehiculo {
     /** Capacidad de carga declarada, en kg. Junto con el peso define el limite de exceso de carga. */
     @Column(name = "capacidad_carga_kg", nullable = false)
     private int capacidadCargaKg;
+
+    /**
+     * Capacidad volumetrica declarada, en metros cubicos. Puede ser null para
+     * vehiculos heredados pendientes de configuracion; no pueden recibir guias
+     * hasta que se informe este dato.
+     */
+    @Column(name = "capacidad_volumen_m3", precision = 12, scale = 2)
+    private BigDecimal capacidadVolumenM3;
 
     @Column(name = "numero_permiso", length = 50)
     private String numeroPermiso;
@@ -81,6 +90,8 @@ public class Vehiculo {
     public void setPesoKg(int pesoKg) { this.pesoKg = pesoKg; }
     public int getCapacidadCargaKg() { return capacidadCargaKg; }
     public void setCapacidadCargaKg(int capacidadCargaKg) { this.capacidadCargaKg = capacidadCargaKg; }
+    public BigDecimal getCapacidadVolumenM3() { return capacidadVolumenM3; }
+    public void setCapacidadVolumenM3(BigDecimal capacidadVolumenM3) { this.capacidadVolumenM3 = capacidadVolumenM3; }
     public String getNumeroPermiso() { return numeroPermiso; }
     public void setNumeroPermiso(String numeroPermiso) { this.numeroPermiso = numeroPermiso; }
     public LocalDate getPermisoDesde() { return permisoDesde; }
