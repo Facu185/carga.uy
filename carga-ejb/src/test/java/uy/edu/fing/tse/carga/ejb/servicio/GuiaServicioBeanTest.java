@@ -30,19 +30,19 @@ class GuiaServicioBeanTest {
     @Test void rechazaVehiculoDeOtraEmpresa() {
         Escenario e = new Escenario();
         e.vehiculo.setEmpresa(e.otraEmpresa);
-        assertFalla(e, "deben pertenecer a la empresa responsable");
+        assertFalla(e, e.comando(), "deben pertenecer a la empresa responsable");
     }
 
     @Test void rechazaChoferDeOtraEmpresa() {
         Escenario e = new Escenario();
         e.chofer.setEmpresa(e.otraEmpresa);
-        assertFalla(e, "deben pertenecer a la empresa responsable");
+        assertFalla(e, e.comando(), "deben pertenecer a la empresa responsable");
     }
 
     @Test void rechazaPermisoOItvNoVigentes() {
         Escenario e = new Escenario();
         e.vehiculo.setItvVencimiento(LocalDate.parse("2026-10-05"));
-        assertFalla(e, "no estan vigentes");
+        assertFalla(e, e.comando(), "no estan vigentes");
     }
 
     @Test void evaluaElFinConPrecisionNanosegundoEnElBordeUtc() {
@@ -51,17 +51,17 @@ class GuiaServicioBeanTest {
         e.vehiculo.setItvVencimiento(LocalDate.parse("2026-10-06"));
         CrearGuiaCommand comando = e.comando();
         comando.setFin("2026-10-07T00:00:00.000000001Z");
-        assertFalla(e, "no estan vigentes");
+        assertFalla(e, comando, "no estan vigentes");
     }
 
     @Test void rechazaConflictoPorVehiculo() {
         Escenario e = new Escenario(); e.conflictosVehiculo = 1L;
-        assertFalla(e, "ya tiene una guia asignada");
+        assertFalla(e, e.comando(), "ya tiene una guia asignada");
     }
 
     @Test void rechazaConflictoPorChofer() {
         Escenario e = new Escenario(); e.conflictosChofer = 1L;
-        assertFalla(e, "ya tiene una guia asignada");
+        assertFalla(e, e.comando(), "ya tiene una guia asignada");
     }
 
     @Test void bloqueaVehiculoYChoferAntesDeConsultarConflictos() throws Exception {
@@ -84,8 +84,8 @@ class GuiaServicioBeanTest {
         assertEquals(10L, e.parametros.get("choferId"));
     }
 
-    private static void assertFalla(Escenario e, String esperado) {
-        NegocioException ex = assertThrows(NegocioException.class, () -> e.bean().crear(e.comando()));
+    private static void assertFalla(Escenario e, CrearGuiaCommand comando, String esperado) {
+        NegocioException ex = assertThrows(NegocioException.class, () -> e.bean().crear(comando));
         assertTrue(ex.getMessage().contains(esperado), ex::getMessage);
     }
 
