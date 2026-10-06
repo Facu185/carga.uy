@@ -9,7 +9,7 @@ import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import uy.edu.fing.tse.carga.api.dto.PosicionDTO;
+import uy.edu.fing.tse.carga.api.dto.comun.PosicionDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.PosicionTracking;
 
 import java.time.OffsetDateTime;

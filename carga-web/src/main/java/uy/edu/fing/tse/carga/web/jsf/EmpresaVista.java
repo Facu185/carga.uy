@@ -6,9 +6,9 @@ import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
-import uy.edu.fing.tse.carga.api.EmpresaServicioLocal;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.dto.EmpresaDTO;
+import uy.edu.fing.tse.carga.api.contract.service.EmpresaServicioLocal;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.dto.comun.EmpresaDTO;
 
 import java.io.Serializable;
 import java.time.LocalDate;

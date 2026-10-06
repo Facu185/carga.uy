@@ -6,10 +6,10 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.ejb.SessionContext;
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.PerfilLocal;
-import uy.edu.fing.tse.carga.api.Roles;
-import uy.edu.fing.tse.carga.api.dto.PerfilDTO;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.contract.service.PerfilLocal;
+import uy.edu.fing.tse.carga.api.security.Roles;
+import uy.edu.fing.tse.carga.api.dto.cuenta.PerfilDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.Usuario;
 import uy.edu.fing.tse.carga.ejb.persistencia.UsuarioDAO;
 

@@ -3,10 +3,10 @@ package uy.edu.fing.tse.carga.ejb.servicio;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import uy.edu.fing.tse.carga.api.EmpresaServicioLocal;
-import uy.edu.fing.tse.carga.api.EmpresaServicioRemote;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.dto.EmpresaDTO;
+import uy.edu.fing.tse.carga.api.contract.service.EmpresaServicioLocal;
+import uy.edu.fing.tse.carga.api.contract.service.EmpresaServicioRemote;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.dto.comun.EmpresaDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.Empresa;
 
 import java.time.LocalDate;

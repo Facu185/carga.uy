@@ -4,7 +4,7 @@ import jakarta.ejb.EJB;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import uy.edu.fing.tse.carga.api.MetricasLocal;
+import uy.edu.fing.tse.carga.api.contract.service.MetricasLocal;
 
 /**
  * Metricas del central en formato Prometheus (Seccion 4.4, punto 8). Sin autenticacion para que un

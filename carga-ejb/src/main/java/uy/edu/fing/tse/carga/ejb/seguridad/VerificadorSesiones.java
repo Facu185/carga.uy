@@ -2,7 +2,7 @@ package uy.edu.fing.tse.carga.ejb.seguridad;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import uy.edu.fing.tse.carga.api.Roles;
+import uy.edu.fing.tse.carga.api.security.Roles;
 import uy.edu.fing.tse.carga.ejb.modelo.Funcionario;
 import uy.edu.fing.tse.carga.ejb.persistencia.CuentaInternaDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.FuncionarioDAO;

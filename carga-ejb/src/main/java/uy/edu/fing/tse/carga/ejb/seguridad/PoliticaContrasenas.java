@@ -1,6 +1,6 @@
 package uy.edu.fing.tse.carga.ejb.seguridad;
 
-import uy.edu.fing.tse.carga.api.NegocioException;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
 
 import java.security.SecureRandom;
 

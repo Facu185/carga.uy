@@ -1,7 +1,7 @@
 package uy.edu.fing.tse.carga.ejb.seguridad;
 
 import org.junit.jupiter.api.Test;
-import uy.edu.fing.tse.carga.api.Roles;
+import uy.edu.fing.tse.carga.api.security.Roles;
 
 import java.time.Duration;
 import java.util.Set;

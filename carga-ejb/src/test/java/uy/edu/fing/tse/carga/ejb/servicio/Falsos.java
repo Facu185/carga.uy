@@ -1,10 +1,10 @@
 package uy.edu.fing.tse.carga.ejb.servicio;
 
 import jakarta.ejb.SessionContext;
-import uy.edu.fing.tse.carga.api.AccionAuditada;
-import uy.edu.fing.tse.carga.api.AuditoriaLocal;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.dto.PaginaAuditoriaDTO;
+import uy.edu.fing.tse.carga.api.contract.annotation.AccionAuditada;
+import uy.edu.fing.tse.carga.api.contract.service.AuditoriaLocal;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.dto.comun.PaginaAuditoriaDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.CuentaInterna;
 import uy.edu.fing.tse.carga.ejb.modelo.EstadoSolicitud;
 import uy.edu.fing.tse.carga.ejb.modelo.Funcionario;

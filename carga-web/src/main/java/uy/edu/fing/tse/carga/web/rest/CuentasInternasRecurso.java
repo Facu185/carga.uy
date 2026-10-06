@@ -10,12 +10,12 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import uy.edu.fing.tse.carga.api.CuentasInternasLocal;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.dto.CambioRolDTO;
-import uy.edu.fing.tse.carga.api.dto.CuentaInternaDTO;
-import uy.edu.fing.tse.carga.api.dto.NuevaCuentaInternaDTO;
-import uy.edu.fing.tse.carga.api.dto.PasswordTemporalDTO;
+import uy.edu.fing.tse.carga.api.contract.service.CuentasInternasLocal;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.dto.cuenta.CambioRolDTO;
+import uy.edu.fing.tse.carga.api.dto.cuenta.CuentaInternaDTO;
+import uy.edu.fing.tse.carga.api.dto.cuenta.NuevaCuentaInternaDTO;
+import uy.edu.fing.tse.carga.api.dto.cuenta.PasswordTemporalDTO;
 
 import java.util.List;
 

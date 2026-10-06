@@ -7,15 +7,16 @@ import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
-import uy.edu.fing.tse.carga.api.GuiaServicioLocal;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.Roles;
-import uy.edu.fing.tse.carga.api.dto.CrearGuiaCommand;
-import uy.edu.fing.tse.carga.api.dto.GuiaDTO;
+import uy.edu.fing.tse.carga.api.contract.service.GuiaServicioLocal;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.security.Roles;
+import uy.edu.fing.tse.carga.api.dto.guia.CrearGuiaCommand;
+import uy.edu.fing.tse.carga.api.dto.guia.GuiaDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.*;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 
 /**
  * Caso de uso P2. El bloqueo pesimista de vehiculo y chofer serializa asignaciones
@@ -34,9 +35,10 @@ public class GuiaServicioBean implements GuiaServicioLocal {
     @Override
     public GuiaDTO crear(CrearGuiaCommand comando) throws NegocioException {
         if (comando == null) throw new NegocioException("Los datos de la guia son obligatorios.");
-        LocalDate fecha = fecha(comando.getFecha());
+        Instant inicio = instante(comando.getInicio(), "inicio");
+        Instant fin = instante(comando.getFin(), "fin");
         try {
-            Guia.validarDatos(comando.getPesoKg(), comando.getVolumenM3(), fecha, comando.getOrigen(), comando.getDestino());
+            Guia.validarDatos(comando.getPesoKg(), comando.getVolumenM3(), inicio, fin, comando.getOrigen(), comando.getDestino());
         } catch (java.lang.IllegalArgumentException e) {
             throw new NegocioException(e.getMessage());
         }
@@ -50,22 +52,24 @@ public class GuiaServicioBean implements GuiaServicioLocal {
         if (vehiculo == null || chofer == null) throw new NegocioException("El vehiculo o el chofer no existe.");
         if (!empresa.getId().equals(vehiculo.getEmpresa().getId()) || !empresa.getId().equals(chofer.getEmpresa().getId()))
             throw new NegocioException("El vehiculo y el chofer deben pertenecer a la empresa responsable.");
-        if (!vehiculo.habilitadoEn(fecha))
+        // El intervalo es [inicio, fin): para verificar su ultimo instante se resta
+        // exactamente un nanosegundo, que es la precision de Instant (no un milisegundo).
+        if (!vehiculo.habilitadoEn(inicio.atZone(java.time.ZoneOffset.UTC).toLocalDate()) || !vehiculo.habilitadoEn(fin.minusNanos(1).atZone(java.time.ZoneOffset.UTC).toLocalDate()))
             throw new NegocioException("El permiso nacional de circulacion o la ITV no estan vigentes para la fecha del viaje.");
         try {
             Guia.validarCapacidades(vehiculo, comando.getPesoKg(), comando.getVolumenM3());
         } catch (IllegalArgumentException e) {
             throw new NegocioException(e.getMessage());
         }
-        if (hayConflicto(vehiculo.getId(), chofer.getId(), fecha))
-            throw new NegocioException("El vehiculo o el chofer ya tiene una guia asignada para esa fecha.");
+        if (hayConflicto(vehiculo.getId(), chofer.getId(), inicio, fin))
+            throw new NegocioException("El vehiculo o el chofer ya tiene una guia asignada en ese periodo.");
 
         Rubro rubro = em.find(Rubro.class, comando.getRubroId());
         if (rubro == null) throw new NegocioException("El rubro seleccionado no existe.");
         TipoCarga tipoCarga = comando.getTipoCargaId() == null ? null : em.find(TipoCarga.class, comando.getTipoCargaId());
         if (comando.getTipoCargaId() != null && tipoCarga == null) throw new NegocioException("El tipo de carga seleccionado no existe.");
 
-        Guia guia = new Guia(empresa, vehiculo, chofer, rubro, tipoCarga, comando.getPesoKg(), comando.getVolumenM3(), fecha,
+        Guia guia = new Guia(empresa, vehiculo, chofer, rubro, tipoCarga, comando.getPesoKg(), comando.getVolumenM3(), inicio, fin,
                 comando.getOrigen(), comando.getOrigenLat(), comando.getOrigenLon(), comando.getDestino(),
                 comando.getDestinoLat(), comando.getDestinoLon());
         em.persist(guia);
@@ -73,9 +77,19 @@ public class GuiaServicioBean implements GuiaServicioLocal {
         return guia.aDTO();
     }
 
+    @Override
+    @RolesAllowed(Roles.CHOFER)
+    public List<GuiaDTO> guiasDelChoferAutenticado() throws NegocioException {
+        String cedula = principalAutenticado();
+        Chofer chofer = em.createQuery("select c from Chofer c where c.cedula = :cedula", Chofer.class)
+                .setParameter("cedula", cedula).getResultStream().findFirst().orElse(null);
+        if (chofer == null) throw new NegocioException("El usuario autenticado no esta registrado como chofer.");
+        return em.createQuery("select g from Guia g where g.chofer.id = :choferId order by g.inicio desc", Guia.class)
+                .setParameter("choferId", chofer.getId()).getResultList().stream().map(Guia::aDTO).toList();
+    }
+
     private Empresa empresaDelResponsable() throws NegocioException {
-        if (contexto == null || contexto.getCallerPrincipal() == null) throw new NegocioException("No hay un responsable autenticado.");
-        String cedula = contexto.getCallerPrincipal().getName();
+        String cedula = principalAutenticado();
         Usuario usuario = em.createQuery("select u from Usuario u join fetch u.empresa where u.cedula = :cedula", Usuario.class)
                 .setParameter("cedula", cedula).getResultStream().findFirst().orElse(null);
         if (usuario == null || usuario.getEmpresa() == null)
@@ -83,17 +97,22 @@ public class GuiaServicioBean implements GuiaServicioLocal {
         return usuario.getEmpresa();
     }
 
-    private boolean hayConflicto(Long vehiculoId, Long choferId, LocalDate fecha) {
-        Long cantidad = em.createQuery("select count(g) from Guia g where g.fecha = :fecha and " +
+    private boolean hayConflicto(Long vehiculoId, Long choferId, Instant inicio, Instant fin) {
+        Long cantidad = em.createQuery("select count(g) from Guia g where g.inicio < :fin and g.fin > :inicio and " +
                         "(g.vehiculo.id = :vehiculoId or g.chofer.id = :choferId) and g.estado <> 'FINALIZADA'", Long.class)
-                .setParameter("fecha", fecha).setParameter("vehiculoId", vehiculoId).setParameter("choferId", choferId)
+                .setParameter("inicio", inicio).setParameter("fin", fin).setParameter("vehiculoId", vehiculoId).setParameter("choferId", choferId)
                 .getSingleResult();
         return cantidad != null && cantidad > 0;
     }
 
-    private LocalDate fecha(String valor) throws NegocioException {
-        if (valor == null || valor.isBlank()) throw new NegocioException("La fecha del viaje es obligatoria.");
-        try { return LocalDate.parse(valor); }
-        catch (DateTimeParseException e) { throw new NegocioException("La fecha del viaje debe tener formato ISO (yyyy-MM-dd)."); }
+    private String principalAutenticado() throws NegocioException {
+        if (contexto == null || contexto.getCallerPrincipal() == null || contexto.getCallerPrincipal().getName() == null || contexto.getCallerPrincipal().getName().isBlank())
+            throw new NegocioException("No hay un usuario autenticado.");
+        return contexto.getCallerPrincipal().getName();
+    }
+    private Instant instante(String valor, String campo) throws NegocioException {
+        if (valor == null || valor.isBlank()) throw new NegocioException("El " + campo + " del viaje es obligatorio.");
+        try { return Instant.parse(valor); }
+        catch (DateTimeParseException e) { throw new NegocioException("El " + campo + " debe tener formato ISO-8601 con zona horaria."); }
     }
 }

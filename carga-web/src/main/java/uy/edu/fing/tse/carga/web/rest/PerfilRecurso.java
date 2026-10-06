@@ -5,9 +5,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.PerfilLocal;
-import uy.edu.fing.tse.carga.api.dto.PerfilDTO;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.contract.service.PerfilLocal;
+import uy.edu.fing.tse.carga.api.dto.cuenta.PerfilDTO;
 
 @Path("/mi-perfil")
 @Produces(MediaType.APPLICATION_JSON)

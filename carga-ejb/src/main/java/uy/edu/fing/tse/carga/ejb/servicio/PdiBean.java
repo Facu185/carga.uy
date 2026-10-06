@@ -14,12 +14,12 @@ import jakarta.xml.ws.BindingProvider;
 import jakarta.xml.ws.Service;
 import jakarta.xml.ws.handler.Handler;
 import jakarta.xml.ws.soap.SOAPBinding;
-import uy.edu.fing.tse.carga.api.MetricasLocal;
-import uy.edu.fing.tse.carga.api.PdiLocal;
-import uy.edu.fing.tse.carga.api.dto.PersonaDTO;
+import uy.edu.fing.tse.carga.api.contract.service.MetricasLocal;
+import uy.edu.fing.tse.carga.api.contract.service.PdiLocal;
+import uy.edu.fing.tse.carga.api.dto.comun.PersonaDTO;
 import uy.edu.fing.tse.carga.api.observabilidad.Correlacion;
 import uy.edu.fing.tse.carga.api.observabilidad.Traza;
-import uy.edu.fing.tse.carga.api.soap.ServicioDnic;
+import uy.edu.fing.tse.carga.api.contract.soap.ServicioDnic;
 import uy.edu.fing.tse.carga.ejb.integracion.CircuitBreaker;
 import uy.edu.fing.tse.carga.ejb.integracion.EncabezadoCorrelacionHandler;
 

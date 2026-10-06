@@ -6,8 +6,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import uy.edu.fing.tse.carga.api.SaludLocal;
-import uy.edu.fing.tse.carga.api.dto.EstadoSaludDTO;
+import uy.edu.fing.tse.carga.api.contract.service.SaludLocal;
+import uy.edu.fing.tse.carga.api.dto.comun.EstadoSaludDTO;
 
 import java.time.OffsetDateTime;
 import java.util.Map;

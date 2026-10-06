@@ -1,7 +1,7 @@
 package uy.edu.fing.tse.carga.ejb.servicio;
 
 import org.junit.jupiter.api.Test;
-import uy.edu.fing.tse.carga.api.dto.EstadoSaludDTO;
+import uy.edu.fing.tse.carga.api.dto.comun.EstadoSaludDTO;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

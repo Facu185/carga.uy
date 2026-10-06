@@ -10,11 +10,11 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import uy.edu.fing.tse.carga.api.FuncionariosLocal;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.dto.CambioDependenciaDTO;
-import uy.edu.fing.tse.carga.api.dto.FuncionarioDTO;
-import uy.edu.fing.tse.carga.api.dto.NuevoFuncionarioDTO;
+import uy.edu.fing.tse.carga.api.contract.service.FuncionariosLocal;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.dto.funcionario.CambioDependenciaDTO;
+import uy.edu.fing.tse.carga.api.dto.funcionario.FuncionarioDTO;
+import uy.edu.fing.tse.carga.api.dto.funcionario.NuevoFuncionarioDTO;
 
 import java.util.List;
 

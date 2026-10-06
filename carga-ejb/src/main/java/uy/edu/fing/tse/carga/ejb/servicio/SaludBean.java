@@ -6,8 +6,8 @@ import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import uy.edu.fing.tse.carga.api.SaludLocal;
-import uy.edu.fing.tse.carga.api.dto.EstadoSaludDTO;
+import uy.edu.fing.tse.carga.api.contract.service.SaludLocal;
+import uy.edu.fing.tse.carga.api.dto.comun.EstadoSaludDTO;
 import uy.edu.fing.tse.carga.ejb.integracion.CircuitBreaker;
 
 import java.time.Instant;

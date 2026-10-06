@@ -9,12 +9,12 @@ import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.inject.Inject;
-import uy.edu.fing.tse.carga.api.AccionAuditada;
-import uy.edu.fing.tse.carga.api.AuditoriaLocal;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.Roles;
-import uy.edu.fing.tse.carga.api.dto.PaginaAuditoriaDTO;
-import uy.edu.fing.tse.carga.api.dto.RegistroAuditoriaDTO;
+import uy.edu.fing.tse.carga.api.contract.annotation.AccionAuditada;
+import uy.edu.fing.tse.carga.api.contract.service.AuditoriaLocal;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.security.Roles;
+import uy.edu.fing.tse.carga.api.dto.comun.PaginaAuditoriaDTO;
+import uy.edu.fing.tse.carga.api.dto.comun.RegistroAuditoriaDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.RegistroAuditoria;
 import uy.edu.fing.tse.carga.ejb.persistencia.RegistroAuditoriaDAO;
 

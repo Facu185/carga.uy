@@ -5,8 +5,8 @@ import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
-import uy.edu.fing.tse.carga.api.PesajeLocal;
-import uy.edu.fing.tse.carga.api.dto.PesadaDTO;
+import uy.edu.fing.tse.carga.api.contract.service.PesajeLocal;
+import uy.edu.fing.tse.carga.api.dto.comun.PesadaDTO;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;

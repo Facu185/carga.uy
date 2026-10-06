@@ -2,10 +2,10 @@ package uy.edu.fing.tse.carga.ejb.servicio;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uy.edu.fing.tse.carga.api.AccionAuditada;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.dto.PersonaDTO;
-import uy.edu.fing.tse.carga.api.dto.SesionDTO;
+import uy.edu.fing.tse.carga.api.contract.annotation.AccionAuditada;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.dto.comun.PersonaDTO;
+import uy.edu.fing.tse.carga.api.dto.cuenta.SesionDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.Funcionario;
 import uy.edu.fing.tse.carga.ejb.modelo.Rol;
 import uy.edu.fing.tse.carga.ejb.modelo.Usuario;
