@@ -60,7 +60,7 @@ module add --name=org.postgresql \
 # --- La raiz del servidor lleva a la aplicacion ---
 # Sin esto, http://localhost:8080/ muestra la pagina de bienvenida de WildFly y
 # parece que no hubiera nada desplegado.
-/subsystem=undertow/configuration=filter/expression-filter=raiz-a-carga:add( \n  expression="path('/') -> redirect('/carga/')")
+/subsystem=undertow/configuration=filter/expression-filter=raiz-a-carga:add(expression="path('/') -> redirect('/carga/')")
 /subsystem=undertow/server=default-server/host=default-host/filter-ref=raiz-a-carga:add()
 
 stop-embedded-server
