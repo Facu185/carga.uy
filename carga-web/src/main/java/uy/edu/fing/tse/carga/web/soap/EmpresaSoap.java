@@ -4,8 +4,8 @@ import jakarta.ejb.EJB;
 import jakarta.jws.WebMethod;
 import jakarta.jws.WebParam;
 import jakarta.jws.WebService;
-import uy.edu.fing.tse.carga.api.EmpresaServicioLocal;
-import uy.edu.fing.tse.carga.api.dto.EmpresaDTO;
+import uy.edu.fing.tse.carga.api.contract.service.EmpresaServicioLocal;
+import uy.edu.fing.tse.carga.api.dto.comun.EmpresaDTO;
 
 import java.util.List;
 

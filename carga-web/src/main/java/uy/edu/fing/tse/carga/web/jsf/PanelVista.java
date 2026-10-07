@@ -4,11 +4,11 @@ import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
-import uy.edu.fing.tse.carga.api.MonitorLocal;
-import uy.edu.fing.tse.carga.api.PesajeLocal;
-import uy.edu.fing.tse.carga.api.dto.EstadoNodoDTO;
-import uy.edu.fing.tse.carga.api.dto.MetricasDTO;
-import uy.edu.fing.tse.carga.api.dto.ResultadoPesajeDTO;
+import uy.edu.fing.tse.carga.api.contract.service.MonitorLocal;
+import uy.edu.fing.tse.carga.api.contract.service.PesajeLocal;
+import uy.edu.fing.tse.carga.api.dto.nodo.EstadoNodoDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.MetricasDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoPesajeDTO;
 
 import java.io.Serializable;
 import java.time.LocalDate;

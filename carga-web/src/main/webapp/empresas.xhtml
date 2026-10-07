@@ -40,6 +40,11 @@
                     <f:convertDateTime type="localDate" pattern="dd/MM/yyyy"/>
                 </h:outputText>
             </p:column>
+            <p:column headerText="Estado"><h:outputText value="#{e.activa ? 'Activa' : 'Inactiva'}"/></p:column>
+            <p:column headerText="Acciones">
+                <p:commandButton value="Guardar" action="#{empresaVista.modificar(e)}" update="formulario"/>
+                <p:commandButton value="Baja" action="#{empresaVista.darDeBaja(e)}" update="formulario" disabled="#{not e.activa}"/>
+            </p:column>
         </p:dataTable>
     </h:form>
 </div>

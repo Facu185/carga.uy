@@ -31,6 +31,8 @@
         <flyway.version>13.7.0</flyway.version>
         <postgresql.version>42.7.4</postgresql.version>
         <junit.version>5.11.4</junit.version>
+        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
+        <nimbus-jose-jwt.version>9.48</nimbus-jose-jwt.version>
 
         <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
         <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
@@ -38,6 +40,10 @@
         <maven.ear.plugin.version>3.3.0</maven.ear.plugin.version>
         <maven.shade.plugin.version>3.6.0</maven.shade.plugin.version>
         <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
+        <!-- Las pruebas de integracion (@Tag("integracion")) levantan contenedores: no corren con
+             "mvn verify" sino con "mvn verify -Pintegracion" (y en el job de integracion del CI). -->
+        <pruebas.excluidas>integracion</pruebas.excluidas>
     </properties>
 
     <dependencyManagement>
@@ -85,6 +91,32 @@
                 <artifactId>flyway-database-postgresql</artifactId>
                 <version>${flyway.version}</version>
             </dependency>
+            <!-- Pruebas de integracion contra un PostgreSQL real en Docker -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers</artifactId>
+                <version>${testcontainers.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <!-- MDC para el ID de correlacion en los logs: lo aporta WildFly -->
+            <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>jboss-logging</artifactId>
+                <version>${jboss-logging.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <!-- JWT propios (HS256) y validacion del id_token de gub.uy (frente P1) -->
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus-jose-jwt.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
@@ -113,6 +145,16 @@
         </dependencies>
     </dependencyManagement>
 
+    <profiles>
+        <!-- mvn verify -Pintegracion: corre tambien las pruebas con contenedores (necesita Docker) -->
+        <profile>
+            <id>integracion</id>
+            <properties>
+                <pruebas.excluidas>ninguna</pruebas.excluidas>
+            </properties>
+        </profile>
+    </profiles>
+
     <build>
         <pluginManagement>
             <plugins>
@@ -121,7 +163,7 @@
                 <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-ejb-plugin</artifactId><version>${maven.ejb.plugin.version}</version><configuration><ejbVersion>4.0</ejbVersion></configuration></plugin>
                 <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-ear-plugin</artifactId><version>${maven.ear.plugin.version}</version></plugin>
                 <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-shade-plugin</artifactId><version>${maven.shade.plugin.version}</version></plugin>
-                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>${maven.surefire.plugin.version}</version></plugin>
+                <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>${maven.surefire.plugin.version}</version><configuration><excludedGroups>${pruebas.excluidas}</excludedGroups></configuration></plugin>
             </plugins>
         </pluginManagement>
     </build>

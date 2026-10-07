@@ -44,10 +44,23 @@ module add --name=org.postgresql \
 /subsystem=webservices:write-attribute(name=wsdl-host, value=jbossws.undefined.host)
 /subsystem=webservices:write-attribute(name=modify-wsdl-address, value=true)
 
+# --- Seguridad (frente P1) ---
+# La autenticacion la hace MecanismoJwt (Jakarta Security) con usuarios que no estan en ningun
+# realm de WildFly: sin esto Elytron intenta validarlos contra el realm y rechaza el ingreso.
+/subsystem=undertow/application-security-domain=other:write-attribute(name=integrated-jaspi, value=false)
+
+# --- Observabilidad (frente P1, Seccion 4.4 punto 7 de la letra) ---
+# Logs estructurados (JSON) en la consola. Incluyen el MDC, donde esta el ID de correlacion
+# ("idCorrelacion") y el usuario del pedido.
+/subsystem=logging/json-formatter=JSON:add(pretty-print=false, exception-output-type=formatted, meta-data={servicio=central})
+/subsystem=logging/console-handler=CONSOLE:write-attribute(name=named-formatter, value=JSON)
+# El log de acceso de cada pedido (FiltroCorrelacion) va en INFO
+/subsystem=logging/logger=uy.edu.fing.tse.carga:add(level=INFO)
+
 # --- La raiz del servidor lleva a la aplicacion ---
 # Sin esto, http://localhost:8080/ muestra la pagina de bienvenida de WildFly y
 # parece que no hubiera nada desplegado.
-/subsystem=undertow/configuration=filter/expression-filter=raiz-a-carga:add(   expression="path('/') -> redirect('/carga/')")
+/subsystem=undertow/configuration=filter/expression-filter=raiz-a-carga:add( \n  expression="path('/') -> redirect('/carga/')")
 /subsystem=undertow/server=default-server/host=default-host/filter-ref=raiz-a-carga:add()
 
 stop-embedded-server

@@ -34,19 +34,7 @@ tablas compartidas, rutas REST ya publicadas. Si tenés que cambiarlo, avisá **
 Cambios de esquema = migración nueva (`V<n>__descripcion.sql`). Nunca editar una ya aplicada, nunca
 usar `hbm2ddl.auto=update`. Ver la sección 6 del [README](README.md).
 
-## 6. Pantallas
-
-Todas las pantallas se enlazan desde la de inicio (`carga-web/src/main/webapp/index.xhtml`): cuando
-agregues una, sumala a esa lista para que el resto la encuentre y para que se vea qué falta.
-
-Usá la hoja compartida `recursos/estilos.css` y las clases que ya están (`bloque`, `tarjeta`,
-`pill`), así no terminamos con cinco estilos distintos. `empresas.xhtml` sirve de ejemplo de
-formulario y tabla; `panel.xhtml`, de tarjetas, auto-refresco y mapa.
-
-La pantalla no lleva lógica de negocio: eso va en un EJB de `carga-ejb`, detrás de una interfaz de
-`carga-api`.
-
-## 7. Estilo
+## 6. Estilo
 
 - Código, comentarios, nombres de clases y variables **en español** (salvo términos técnicos).
 - Sin tildes ni ñ en el código fuente Java (sí en la documentación y en los textos de la interfaz):
@@ -55,13 +43,13 @@ La pantalla no lleva lógica de negocio: eso va en un EJB de `carga-ejb`, detrá
   lo respete.
 - Comentá el *por qué*, no el *qué*. Si el comentario repite lo que dice el código, sobra.
 
-## 8. Pruebas
+## 7. Pruebas
 
 La letra pide ~80% de cobertura sobre la lógica de negocio (Sección 4.5). La regla práctica: **toda
 regla de negocio que escribas tiene que tener al menos una prueba que la verifique cuando se cumple
 y otra cuando no.** Ejemplo: `carga-ejb/src/test/java/.../VehiculoTest.java`.
 
-## 9. Antes de cada entrega
+## 8. Antes de cada entrega
 
 1. `mvn clean package` en verde.
 2. `docker compose down -v && docker compose up -d --build` levanta desde cero.

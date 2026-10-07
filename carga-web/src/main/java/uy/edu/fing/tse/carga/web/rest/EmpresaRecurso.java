@@ -4,14 +4,17 @@ import jakarta.ejb.EJB;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import uy.edu.fing.tse.carga.api.EmpresaServicioLocal;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.dto.EmpresaDTO;
+import uy.edu.fing.tse.carga.api.contract.service.EmpresaServicioLocal;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.dto.comun.EmpresaDTO;
 
 import java.util.List;
 import java.util.Map;
@@ -41,5 +44,17 @@ public class EmpresaRecurso {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", e.getMessage())).build();
         }
+    }
+
+    @PUT @Path("/{id}")
+    public Response modificar(@PathParam("id") Long id, EmpresaDTO empresa) {
+        try { return Response.ok(servicio.modificar(id, empresa)).build(); }
+        catch (NegocioException e) { return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", e.getMessage())).build(); }
+    }
+
+    @DELETE @Path("/{id}")
+    public Response baja(@PathParam("id") Long id) {
+        try { servicio.darDeBaja(id); return Response.noContent().build(); }
+        catch (NegocioException e) { return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", e.getMessage())).build(); }
     }
 }

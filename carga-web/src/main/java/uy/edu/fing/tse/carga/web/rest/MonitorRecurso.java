@@ -6,10 +6,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import uy.edu.fing.tse.carga.api.MonitorLocal;
-import uy.edu.fing.tse.carga.api.dto.EstadoNodoDTO;
-import uy.edu.fing.tse.carga.api.dto.MetricasDTO;
-import uy.edu.fing.tse.carga.api.dto.RecorridoDTO;
+import uy.edu.fing.tse.carga.api.contract.service.MonitorLocal;
+import uy.edu.fing.tse.carga.api.dto.nodo.EstadoNodoDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.MetricasDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.RecorridoDTO;
 
 import java.util.List;
 

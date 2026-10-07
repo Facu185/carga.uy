@@ -4,12 +4,12 @@ import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import uy.edu.fing.tse.carga.api.MonitorLocal;
-import uy.edu.fing.tse.carga.api.PesajeLocal;
-import uy.edu.fing.tse.carga.api.dto.EstadoNodoDTO;
-import uy.edu.fing.tse.carga.api.dto.MetricasDTO;
-import uy.edu.fing.tse.carga.api.dto.RecorridoDTO;
-import uy.edu.fing.tse.carga.api.dto.ResultadoPesajeDTO;
+import uy.edu.fing.tse.carga.api.contract.service.MonitorLocal;
+import uy.edu.fing.tse.carga.api.contract.service.PesajeLocal;
+import uy.edu.fing.tse.carga.api.dto.nodo.EstadoNodoDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.MetricasDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.RecorridoDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoPesajeDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.PosicionTracking;
 
 import java.time.Duration;

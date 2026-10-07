@@ -6,8 +6,8 @@ import jakarta.jms.JMSContext;
 import jakarta.jms.Queue;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
-import uy.edu.fing.tse.carga.api.IngestaTrackingLocal;
-import uy.edu.fing.tse.carga.api.dto.PosicionDTO;
+import uy.edu.fing.tse.carga.api.contract.service.IngestaTrackingLocal;
+import uy.edu.fing.tse.carga.api.dto.comun.PosicionDTO;
 import uy.edu.fing.tse.carga.ejb.jms.PosicionMDB;
 
 import jakarta.annotation.Resource;

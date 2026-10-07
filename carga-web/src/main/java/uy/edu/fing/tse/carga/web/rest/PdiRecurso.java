@@ -7,8 +7,8 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import uy.edu.fing.tse.carga.api.PdiLocal;
-import uy.edu.fing.tse.carga.api.dto.PersonaDTO;
+import uy.edu.fing.tse.carga.api.contract.service.PdiLocal;
+import uy.edu.fing.tse.carga.api.dto.comun.PersonaDTO;
 
 import java.util.Map;
 
