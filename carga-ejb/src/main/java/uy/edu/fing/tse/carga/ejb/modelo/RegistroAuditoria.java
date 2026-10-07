@@ -6,7 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import uy.edu.fing.tse.carga.api.AccionAuditada;
+import uy.edu.fing.tse.carga.api.contract.annotation.AccionAuditada;
 
 import java.time.Instant;
 

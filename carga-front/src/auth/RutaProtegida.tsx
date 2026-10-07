@@ -30,7 +30,7 @@ export function RutaProtegida({
     const estado = motivo === 'manual' ? null : { desde: ubicacion.pathname, vencida: motivo === 'vencida' }
     return <Navigate to={login} replace state={estado} />
   }
-  if (!roles.includes(sesion.rol)) {
+  if (!roles.some((rol) => (sesion.roles ?? [sesion.rol]).includes(rol))) {
     // Pasa si hay una sesión abierta de otro tipo (p. ej. ciudadano de gub.uy entrando al backoffice)
     function cambiarDeCuenta() {
       logout()

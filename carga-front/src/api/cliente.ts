@@ -74,3 +74,18 @@ export async function api<T>(ruta: string, opciones: RequestInit = {}): Promise<
   }
   return (await respuesta.json()) as T
 }
+
+/** Descarga autenticada: conserva el Bearer y devuelve el archivo sin parsearlo como JSON. */
+export async function descargarArchivo(ruta: string): Promise<Blob> {
+  const headers = new Headers({ 'X-Correlation-Id': nuevoIdCorrelacion() })
+  const token = leerSesionGuardada()?.token
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+  const respuesta = await fetch(BASE + ruta, { headers })
+  if (respuesta.status === 401 && token) { borrarSesion(); avisarSesionExpirada() }
+  if (!respuesta.ok) {
+    let mensaje = `No se pudo descargar el archivo (código ${respuesta.status}).`
+    try { mensaje = (await respuesta.json())?.error ?? mensaje } catch { /* respuesta no JSON */ }
+    throw new ErrorApi(respuesta.status, mensaje)
+  }
+  return respuesta.blob()
+}

@@ -2,7 +2,7 @@ package uy.edu.fing.tse.carga.ejb.seguridad;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import uy.edu.fing.tse.carga.api.ServicioNoDisponibleException;
+import uy.edu.fing.tse.carga.api.exception.ServicioNoDisponibleException;
 import uy.edu.fing.tse.carga.ejb.modelo.Rol;
 
 import javax.naming.AuthenticationException;

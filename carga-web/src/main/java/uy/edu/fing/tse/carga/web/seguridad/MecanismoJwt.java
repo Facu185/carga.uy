@@ -7,8 +7,8 @@ import jakarta.security.enterprise.authentication.mechanism.http.HttpAuthenticat
 import jakarta.security.enterprise.authentication.mechanism.http.HttpMessageContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import uy.edu.fing.tse.carga.api.AutenticacionLocal;
-import uy.edu.fing.tse.carga.api.dto.DatosSesionDTO;
+import uy.edu.fing.tse.carga.api.contract.service.AutenticacionLocal;
+import uy.edu.fing.tse.carga.api.dto.cuenta.DatosSesionDTO;
 
 import java.util.Set;
 

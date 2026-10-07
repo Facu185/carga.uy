@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.jboss.logging.MDC;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import uy.edu.fing.tse.carga.api.MetricasLocal;
+import uy.edu.fing.tse.carga.api.contract.service.MetricasLocal;
 import uy.edu.fing.tse.carga.api.observabilidad.Correlacion;
 
 import java.lang.reflect.Proxy;

@@ -4,22 +4,23 @@ import jakarta.annotation.security.PermitAll;
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
-import uy.edu.fing.tse.carga.api.AccionAuditada;
-import uy.edu.fing.tse.carga.api.AuditoriaLocal;
-import uy.edu.fing.tse.carga.api.IngresoGubUyLocal;
-import uy.edu.fing.tse.carga.api.MetricasLocal;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.PdiLocal;
-import uy.edu.fing.tse.carga.api.Roles;
-import uy.edu.fing.tse.carga.api.dto.PersonaDTO;
-import uy.edu.fing.tse.carga.api.dto.RedireccionDTO;
-import uy.edu.fing.tse.carga.api.dto.SesionDTO;
+import uy.edu.fing.tse.carga.api.contract.annotation.AccionAuditada;
+import uy.edu.fing.tse.carga.api.contract.service.AuditoriaLocal;
+import uy.edu.fing.tse.carga.api.contract.service.IngresoGubUyLocal;
+import uy.edu.fing.tse.carga.api.contract.service.MetricasLocal;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.contract.service.PdiLocal;
+import uy.edu.fing.tse.carga.api.security.Roles;
+import uy.edu.fing.tse.carga.api.dto.comun.PersonaDTO;
+import uy.edu.fing.tse.carga.api.dto.comun.RedireccionDTO;
+import uy.edu.fing.tse.carga.api.dto.cuenta.SesionDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.Funcionario;
 import uy.edu.fing.tse.carga.ejb.modelo.RolCatalogo;
 import uy.edu.fing.tse.carga.ejb.modelo.Rol;
 import uy.edu.fing.tse.carga.ejb.modelo.Usuario;
 import uy.edu.fing.tse.carga.ejb.modelo.ValidadorCedula;
 import uy.edu.fing.tse.carga.ejb.persistencia.FuncionarioDAO;
+import uy.edu.fing.tse.carga.ejb.persistencia.ChoferDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.UsuarioDAO;
 import uy.edu.fing.tse.carga.ejb.seguridad.ClienteOidcGubUy;
 import uy.edu.fing.tse.carga.ejb.seguridad.ConfiguracionGubUy;
@@ -73,6 +74,9 @@ public class IngresoGubUyBean implements IngresoGubUyLocal {
 
     @Inject
     FuncionarioDAO funcionarios;
+
+    @Inject
+    ChoferDAO choferes;
 
     @EJB
     PdiLocal pdi;
@@ -131,7 +135,8 @@ public class IngresoGubUyBean implements IngresoGubUyLocal {
                     + "&expiraEn=" + enc(sesion.getExpiraEn())
                     + "&usuario=" + enc(sesion.getUsuario())
                     + "&nombre=" + enc(sesion.getNombre())
-                    + "&rol=" + enc(sesion.getRol());
+                    + "&rol=" + enc(sesion.getRol())
+                    + "&roles=" + enc(String.join(",", sesion.getRoles()));
             return redireccion(config.urlDestino(destino).orElseThrow() + "#" + fragmento);
         } catch (GubUyException | NegocioException e) {
             LOG.log(Level.WARNING, "Fall\u00f3 el ingreso con gub.uy", e);
@@ -166,11 +171,18 @@ public class IngresoGubUyBean implements IngresoGubUyLocal {
     }
 
     /**
-     * Todos los que ingresan con gub.uy son ciudadanos; FUNCIONARIO solo si hay un funcionario activo
-     * con esa cedula. Se corrige en cada ingreso, asi usuario_rol nunca queda desalineado.
+     * Todos los que ingresan con gub.uy son ciudadanos. CHOFER se deriva de la vinculacion de dominio
+     * por cedula y FUNCIONARIO del padron de funcionarios activos. Se corrige en cada ingreso, asi
+     * usuario_rol nunca queda desalineado.
      */
     private void sincronizarRoles(Usuario persona) {
         persona.asignarRol(usuarios.rol(Rol.CIUDADANO));
+        boolean esChofer = choferes.buscarPorCedula(persona.getCedula()).isPresent();
+        if (esChofer) {
+            persona.asignarRol(usuarios.rol(Rol.CHOFER));
+        } else {
+            persona.quitarRol(Rol.CHOFER);
+        }
         boolean esFuncionario = funcionarios.buscarPorCedula(persona.getCedula())
                 .map(Funcionario::isActivo).orElse(false);
         if (esFuncionario) {
@@ -199,13 +211,16 @@ public class IngresoGubUyBean implements IngresoGubUyLocal {
     /** Sesion de una persona que ingreso con gub.uy (tambien la usa la renovacion). */
     static SesionDTO sesion(Usuario persona, TokenService tokens) {
         Set<String> roles = persona.getRoles().stream().map(RolCatalogo::getNombre).collect(Collectors.toSet());
-        String principal = roles.contains(Roles.FUNCIONARIO) ? Roles.FUNCIONARIO : Roles.CIUDADANO;
+        String principal = roles.contains(Roles.FUNCIONARIO) ? Roles.FUNCIONARIO
+                : roles.contains(Roles.CHOFER) ? Roles.CHOFER : Roles.CIUDADANO;
         TokenService.TokenEmitido token = tokens.emitir(persona.getCedula(), roles, TokenService.ORIGEN_GUBUY, 0,
                 false);
         String nombre = persona.getNombre() == null || persona.getNombre().isBlank()
                 ? persona.getCedula() : persona.getNombre();
-        return new SesionDTO(token.token(), token.expiraEn().toString(), persona.getCedula(), nombre, principal,
+        SesionDTO sesion = new SesionDTO(token.token(), token.expiraEn().toString(), persona.getCedula(), nombre, principal,
                 false, "GUBUY");
+        sesion.setRoles(roles);
+        return sesion;
     }
 
     // ---------------- utilidades ----------------

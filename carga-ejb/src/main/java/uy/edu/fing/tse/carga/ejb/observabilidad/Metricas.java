@@ -6,7 +6,7 @@ import jakarta.ejb.ConcurrencyManagementType;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
-import uy.edu.fing.tse.carga.api.MetricasLocal;
+import uy.edu.fing.tse.carga.api.contract.service.MetricasLocal;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;

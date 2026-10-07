@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<h:head>
+    <title>carga.uy - Choferes</title>
+</h:head>
+<h:body>
+    <h:form id="formulario">
+        <p:growl id="avisos" showDetail="true"/>
+
+        <p:panel header="Nuevo chofer">
+            <h:panelGrid columns="2" cellpadding="4">
+                <p:outputLabel for="empresa" value="Empresa"/>
+                <p:selectOneMenu id="empresa" value="#{choferVista.nuevo.empresaId}">
+                    <f:selectItem itemLabel="Seleccione una empresa" noSelectionOption="true"/>
+                    <f:selectItems value="#{choferVista.empresas}" var="empresa"
+                                   itemValue="#{empresa.id}" itemLabel="#{empresa.nombre}"/>
+                </p:selectOneMenu>
+
+                <p:outputLabel for="cedula" value="Cedula"/>
+                <p:inputText id="cedula" value="#{choferVista.nuevo.cedula}"/>
+
+                <p:outputLabel for="nombre" value="Nombre"/>
+                <p:inputText id="nombre" value="#{choferVista.nuevo.nombre}"/>
+            </h:panelGrid>
+            <p:commandButton value="Agregar" action="#{choferVista.agregar}" update="formulario"/>
+        </p:panel>
+
+        <p:dataTable id="tabla" value="#{choferVista.choferes}" var="chofer" emptyMessage="Sin choferes.">
+            <p:column headerText="Id"><h:outputText value="#{chofer.id}"/></p:column>
+            <p:column headerText="Empresa"><h:outputText value="#{chofer.empresaId}"/></p:column>
+            <p:column headerText="Cedula"><p:inputText value="#{chofer.cedula}"/></p:column>
+            <p:column headerText="Nombre"><p:inputText value="#{chofer.nombre}"/></p:column>
+            <p:column headerText="Estado"><h:outputText value="#{chofer.activo ? 'Activo' : 'Inactivo'}"/></p:column>
+            <p:column headerText="Acciones">
+                <p:commandButton value="Guardar" action="#{choferVista.modificar(chofer)}" update="formulario"/>
+                <p:commandButton value="Baja" action="#{choferVista.darDeBaja(chofer)}" update="formulario" disabled="#{not chofer.activo}"/>
+                <p:commandButton value="Alta" action="#{choferVista.darDeAlta(chofer)}" update="formulario" disabled="#{chofer.activo}"/>
+            </p:column>
+        </p:dataTable>
+    </h:form>
+</h:body>
+</html>

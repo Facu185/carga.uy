@@ -6,8 +6,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
-import uy.edu.fing.tse.carga.api.AuditoriaLocal;
-import uy.edu.fing.tse.carga.api.dto.PaginaAuditoriaDTO;
+import uy.edu.fing.tse.carga.api.contract.service.AuditoriaLocal;
+import uy.edu.fing.tse.carga.api.dto.comun.PaginaAuditoriaDTO;
 
 /** Solo lectura: no hay POST, PUT ni DELETE sobre la auditoria. */
 @Path("/auditoria")

@@ -1,4 +1,4 @@
-import { House, IdCard, KeyRound, LogOut, ScrollText, Users } from 'lucide-react'
+import { House, IdCard, KeyRound, LogOut, ScrollText, Truck, Users } from 'lucide-react'
 import { Link, Navigate, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../../auth/contexto'
 import { PieSitio } from '../../componentes/PieSitio'
@@ -40,6 +40,12 @@ export function LayoutBackoffice() {
                 <NavLink to="/backoffice/usuarios">
                   <Users size={18} aria-hidden="true" />
                   Usuarios
+                </NavLink>
+              )}
+              {esAdmin && (
+                <NavLink to="/backoffice/choferes">
+                  <Truck size={18} aria-hidden="true" />
+                  Choferes
                 </NavLink>
               )}
               <NavLink to="/backoffice/auditoria">

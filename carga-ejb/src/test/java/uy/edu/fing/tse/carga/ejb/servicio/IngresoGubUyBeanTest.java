@@ -2,11 +2,12 @@ package uy.edu.fing.tse.carga.ejb.servicio;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uy.edu.fing.tse.carga.api.AccionAuditada;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.dto.PersonaDTO;
-import uy.edu.fing.tse.carga.api.dto.SesionDTO;
+import uy.edu.fing.tse.carga.api.contract.annotation.AccionAuditada;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.dto.comun.PersonaDTO;
+import uy.edu.fing.tse.carga.api.dto.cuenta.SesionDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.Funcionario;
+import uy.edu.fing.tse.carga.ejb.modelo.Chofer;
 import uy.edu.fing.tse.carga.ejb.modelo.Rol;
 import uy.edu.fing.tse.carga.ejb.modelo.Usuario;
 import uy.edu.fing.tse.carga.ejb.seguridad.IdentidadGubUy;
@@ -29,6 +30,7 @@ class IngresoGubUyBeanTest {
     private IngresoGubUyBean servicio;
     private Falsos.UsuariosEnMemoria usuarios;
     private Falsos.FuncionariosEnMemoria funcionarios;
+    private Falsos.ChoferesEnMemoria choferes;
     private Falsos.TokensFalsos tokens;
     private Falsos.AuditoriaFalsa auditoria;
     private AtomicInteger consultasPdi;
@@ -37,12 +39,14 @@ class IngresoGubUyBeanTest {
     void preparar() {
         usuarios = new Falsos.UsuariosEnMemoria();
         funcionarios = new Falsos.FuncionariosEnMemoria();
+        choferes = new Falsos.ChoferesEnMemoria();
         tokens = new Falsos.TokensFalsos();
         auditoria = new Falsos.AuditoriaFalsa();
         consultasPdi = new AtomicInteger();
         servicio = new IngresoGubUyBean();
         servicio.usuarios = usuarios;
         servicio.funcionarios = funcionarios;
+        servicio.choferes = choferes;
         servicio.tokens = tokens;
         servicio.auditoria = auditoria;
         servicio.metricas = new uy.edu.fing.tse.carga.ejb.observabilidad.Metricas();
@@ -111,6 +115,19 @@ class IngresoGubUyBeanTest {
         f.setActivo(false);
         assertEquals("CIUDADANO", ingresar(CEDULA, "Ana Perez", null).getRol());
         assertFalse(ana.tieneRol(Rol.FUNCIONARIO));
+    }
+
+    @Test
+    void unChoferRegistradoRecibeElRolAlIngresarConGubUy() throws NegocioException {
+        Chofer chofer = new Chofer();
+        chofer.setCedula(CEDULA);
+        choferes.guardar(chofer);
+
+        SesionDTO sesion = ingresar(CEDULA, "Ana Perez", null);
+
+        assertEquals("CHOFER", sesion.getRol());
+        assertEquals(Set.of("CIUDADANO", "CHOFER"), tokens.ultimosRoles);
+        assertTrue(usuarios.buscarPorCedula(CEDULA).orElseThrow().tieneRol(Rol.CHOFER));
     }
 
     @Test

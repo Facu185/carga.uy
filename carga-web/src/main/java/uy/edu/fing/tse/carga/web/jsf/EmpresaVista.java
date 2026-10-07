@@ -6,9 +6,9 @@ import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
-import uy.edu.fing.tse.carga.api.EmpresaServicioLocal;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.dto.EmpresaDTO;
+import uy.edu.fing.tse.carga.api.contract.service.EmpresaServicioLocal;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.dto.comun.EmpresaDTO;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -45,6 +45,22 @@ public class EmpresaVista implements Serializable {
         } catch (NegocioException e) {
             mensaje(FacesMessage.SEVERITY_ERROR, e.getMessage());
         }
+    }
+
+    public void modificar(EmpresaDTO empresa) {
+        try {
+            servicio.modificar(empresa.getId(), empresa);
+            mensaje(FacesMessage.SEVERITY_INFO, "Empresa actualizada.");
+            refrescar();
+        } catch (NegocioException e) { mensaje(FacesMessage.SEVERITY_ERROR, e.getMessage()); }
+    }
+
+    public void darDeBaja(EmpresaDTO empresa) {
+        try {
+            servicio.darDeBaja(empresa.getId());
+            mensaje(FacesMessage.SEVERITY_INFO, "Empresa dada de baja.");
+            refrescar();
+        } catch (NegocioException e) { mensaje(FacesMessage.SEVERITY_ERROR, e.getMessage()); }
     }
 
     private void mensaje(FacesMessage.Severity severidad, String texto) {

@@ -4,10 +4,10 @@ import jakarta.annotation.Resource;
 import jakarta.jws.WebService;
 import jakarta.xml.ws.WebServiceContext;
 import jakarta.xml.ws.handler.MessageContext;
-import uy.edu.fing.tse.carga.api.dto.PersonaDTO;
+import uy.edu.fing.tse.carga.api.dto.comun.PersonaDTO;
 import uy.edu.fing.tse.carga.api.observabilidad.Correlacion;
 import uy.edu.fing.tse.carga.api.observabilidad.Traza;
-import uy.edu.fing.tse.carga.api.soap.ServicioDnic;
+import uy.edu.fing.tse.carga.api.contract.soap.ServicioDnic;
 
 import java.util.List;
 import java.util.Map;
@@ -22,7 +22,7 @@ import java.util.logging.Logger;
  */
 @WebService(serviceName = "ServicioDnicService", portName = "ServicioDnicPort",
         targetNamespace = "http://pdi.carga.uy/",
-        endpointInterface = "uy.edu.fing.tse.carga.api.soap.ServicioDnic")
+        endpointInterface = "uy.edu.fing.tse.carga.api.contract.soap.ServicioDnic")
 public class ServicioDnicImpl implements ServicioDnic {
 
     private static final Logger LOG = Logger.getLogger(ServicioDnicImpl.class.getName());

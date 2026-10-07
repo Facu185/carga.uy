@@ -6,7 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import uy.edu.fing.tse.carga.api.dto.EmpresaDTO;
+import uy.edu.fing.tse.carga.api.dto.comun.EmpresaDTO;
 
 import java.time.LocalDate;
 
@@ -30,18 +30,23 @@ public class Empresa {
     @Column(name = "fecha_alta")
     private LocalDate fechaAlta;
 
+    @Column(nullable = false)
+    private boolean activa = true;
+
     public static Empresa desdeDTO(EmpresaDTO dto) {
         Empresa e = new Empresa();
         e.nombre = dto.getNombre();
         e.razonSocial = dto.getRazonSocial();
         e.numeroEmpresa = dto.getNumeroEmpresa();
         e.fechaAlta = dto.getFechaAlta();
+        e.activa = dto.isActiva();
         return e;
     }
 
     public EmpresaDTO aDTO() {
         EmpresaDTO dto = new EmpresaDTO(nombre, razonSocial, numeroEmpresa, fechaAlta);
         dto.setId(id);
+        dto.setActiva(activa);
         return dto;
     }
 
@@ -54,4 +59,6 @@ public class Empresa {
     public void setNumeroEmpresa(long numeroEmpresa) { this.numeroEmpresa = numeroEmpresa; }
     public LocalDate getFechaAlta() { return fechaAlta; }
     public void setFechaAlta(LocalDate fechaAlta) { this.fechaAlta = fechaAlta; }
+    public boolean isActiva() { return activa; }
+    public void setActiva(boolean activa) { this.activa = activa; }
 }

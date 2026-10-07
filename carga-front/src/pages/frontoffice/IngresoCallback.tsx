@@ -24,6 +24,7 @@ function leerFragmento(): { sesion: Sesion | null; error: string | null; cancela
       usuario: datos.get('usuario') ?? '',
       nombre: datos.get('nombre') ?? '',
       rol: datos.get('rol') as Rol,
+      roles: (datos.get('roles')?.split(',').filter(Boolean) ?? [datos.get('rol')]) as Rol[],
     },
     error: null,
     cancelado: false,

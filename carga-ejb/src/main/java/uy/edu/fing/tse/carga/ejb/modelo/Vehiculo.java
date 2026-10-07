@@ -10,6 +10,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "vehiculo")
@@ -40,6 +41,17 @@ public class Vehiculo {
     @Column(name = "capacidad_carga_kg", nullable = false)
     private int capacidadCargaKg;
 
+    /**
+     * Capacidad volumetrica declarada, en metros cubicos. Puede ser null para
+     * vehiculos heredados pendientes de configuracion; no pueden recibir guias
+     * hasta que se informe este dato.
+     */
+    @Column(name = "capacidad_volumen_m3", precision = 12, scale = 2)
+    private BigDecimal capacidadVolumenM3;
+
+    @Column(nullable = false)
+    private boolean habilitado = true;
+
     @Column(name = "numero_permiso", length = 50)
     private String numeroPermiso;
 
@@ -63,6 +75,10 @@ public class Vehiculo {
         return permisoVigente && itvVigente;
     }
 
+    public boolean estaHabilitadoEn(LocalDate fecha) {
+        return habilitado && habilitadoEn(fecha);
+    }
+
     /** Peso maximo admitido en una balanza antes de configurar exceso de carga. */
     public int pesoMaximoAdmitidoKg() {
         return pesoKg + capacidadCargaKg;
@@ -81,6 +97,10 @@ public class Vehiculo {
     public void setPesoKg(int pesoKg) { this.pesoKg = pesoKg; }
     public int getCapacidadCargaKg() { return capacidadCargaKg; }
     public void setCapacidadCargaKg(int capacidadCargaKg) { this.capacidadCargaKg = capacidadCargaKg; }
+    public BigDecimal getCapacidadVolumenM3() { return capacidadVolumenM3; }
+    public void setCapacidadVolumenM3(BigDecimal capacidadVolumenM3) { this.capacidadVolumenM3 = capacidadVolumenM3; }
+    public boolean isHabilitado() { return habilitado; }
+    public void setHabilitado(boolean habilitado) { this.habilitado = habilitado; }
     public String getNumeroPermiso() { return numeroPermiso; }
     public void setNumeroPermiso(String numeroPermiso) { this.numeroPermiso = numeroPermiso; }
     public LocalDate getPermisoDesde() { return permisoDesde; }

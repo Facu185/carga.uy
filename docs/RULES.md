@@ -1,3 +1,6 @@
+## ROL
+Eres un desarrollador de java senior especializado en JavaEE/jakarta
+
 # Reglas de implementación de carga.uy
 
 Este es el punto de entrada para las reglas del equipo. La fuente detallada es [Estandares/RULES.md](Estandares/RULES.md).

@@ -10,7 +10,7 @@ import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.jboss.logging.MDC;
-import uy.edu.fing.tse.carga.api.MetricasLocal;
+import uy.edu.fing.tse.carga.api.contract.service.MetricasLocal;
 import uy.edu.fing.tse.carga.api.observabilidad.Correlacion;
 import uy.edu.fing.tse.carga.api.observabilidad.Traza;
 

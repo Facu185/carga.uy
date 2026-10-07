@@ -2,12 +2,12 @@ package uy.edu.fing.tse.carga.ejb.servicio;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uy.edu.fing.tse.carga.api.AccionAuditada;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.dto.CambioRolDTO;
-import uy.edu.fing.tse.carga.api.dto.CuentaInternaDTO;
-import uy.edu.fing.tse.carga.api.dto.NuevaCuentaInternaDTO;
-import uy.edu.fing.tse.carga.api.dto.PasswordTemporalDTO;
+import uy.edu.fing.tse.carga.api.contract.annotation.AccionAuditada;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.dto.cuenta.CambioRolDTO;
+import uy.edu.fing.tse.carga.api.dto.cuenta.CuentaInternaDTO;
+import uy.edu.fing.tse.carga.api.dto.cuenta.NuevaCuentaInternaDTO;
+import uy.edu.fing.tse.carga.api.dto.cuenta.PasswordTemporalDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.CuentaInterna;
 import uy.edu.fing.tse.carga.ejb.modelo.Rol;
 import uy.edu.fing.tse.carga.ejb.seguridad.HashContrasenas;

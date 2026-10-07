@@ -20,7 +20,7 @@ grupo antes de mergear: hay código de otra persona que depende.
 | `CuentasInternasLocal`, `FuncionariosLocal`, `SolicitudesFuncionarioLocal`, `PerfilLocal` | P1 | Gestión de accesos del backoffice y perfil de quien ingresó con gub.uy |
 
 Para proteger un servicio propio alcanza con `@RolesAllowed(Roles.X)` (constantes en
-`uy.edu.fing.tse.carga.api.Roles`). La identidad la establece la capa web a partir del token
+`uy.edu.fing.tse.carga.api.security.Roles`). La identidad la establece la capa web a partir del token
 (`Authorization: Bearer ...`); ningún servicio recibe el usuario por parámetro.
 
 Regla: **las interfaces viven en `carga-api`, las implementaciones en `carga-ejb`.** Quien consume
@@ -71,6 +71,12 @@ listas de clases permitidas en Artemis y ata productor y consumidor a la misma v
 que ya procesó. Un mensaje puede llegar más de una vez y eso tiene que ser inofensivo.
 
 ## 5. Esquema de base de datos
+
+## Guías P2
+
+`POST /api/guias` recibe `inicio` y `fin` ISO-8601 con zona horaria, además de los datos de carga. El periodo es semiabierto `[inicio, fin)`: dos viajes consecutivos cuyo fin/inicio coinciden son válidos. La creación toma bloqueos pesimistas de vehículo y chofer y rechaza solapamientos. El responsable se resuelve exclusivamente desde el principal autenticado (`usuario.cedula -> usuario.empresa_id`).
+
+`GET /api/guias/mis-guias` requiere el rol `CHOFER` y resuelve el chofer por la cédula del principal; nunca acepta un identificador de chofer del cliente.
 
 Tablas compartidas (las toca más de un frente): `empresa`, `vehiculo`, `chofer`, `guia`, `usuario`,
 `rol`, `auditoria`. Cambiarlas requiere aviso.

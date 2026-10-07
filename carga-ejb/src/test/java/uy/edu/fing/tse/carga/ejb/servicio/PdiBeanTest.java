@@ -2,7 +2,7 @@ package uy.edu.fing.tse.carga.ejb.servicio;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uy.edu.fing.tse.carga.api.dto.PersonaDTO;
+import uy.edu.fing.tse.carga.api.dto.comun.PersonaDTO;
 import uy.edu.fing.tse.carga.ejb.integracion.CircuitBreaker;
 import uy.edu.fing.tse.carga.ejb.observabilidad.Metricas;
 

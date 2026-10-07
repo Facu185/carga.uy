@@ -10,9 +10,9 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
-import uy.edu.fing.tse.carga.api.IngresoGubUyLocal;
-import uy.edu.fing.tse.carga.api.NegocioException;
-import uy.edu.fing.tse.carga.api.dto.RedireccionDTO;
+import uy.edu.fing.tse.carga.api.contract.service.IngresoGubUyLocal;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.dto.comun.RedireccionDTO;
 
 import java.net.URI;
 

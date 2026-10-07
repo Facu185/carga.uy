@@ -3,6 +3,7 @@ export const ROLES = {
   AUTORIDAD: 'AUTORIDAD',
   FUNCIONARIO: 'FUNCIONARIO',
   CIUDADANO: 'CIUDADANO',
+  CHOFER: 'CHOFER',
 } as const
 
 export type Rol = (typeof ROLES)[keyof typeof ROLES]
@@ -13,6 +14,8 @@ export interface Sesion {
   usuario: string
   nombre: string
   rol: Rol
+  /** Todos los roles autorizados en el JWT; rol permanece como rol principal para compatibilidad. */
+  roles?: Rol[]
   /** La contraseña es temporal: hay que cambiarla antes de usar el backoffice. */
   debeCambiarPassword?: boolean
   /** BASE_DE_DATOS o LDAP (usuarios internos), GUBUY (ciudadanos y funcionarios) */
@@ -52,6 +55,22 @@ export interface Funcionario {
   activo: boolean
 }
 
+/** Chofer habilitado para conducir vehículos de una empresa transportista. */
+export interface Chofer {
+  id: number
+  empresaId: number
+  cedula: string
+  nombre: string
+  activo: boolean
+}
+
+/** Empresa disponible para asignar al registrar o modificar un chofer. */
+export interface Empresa {
+  id: number
+  nombre: string
+  activa: boolean
+}
+
 export interface Perfil {
   cedula: string
   nombre: string | null
@@ -60,6 +79,50 @@ export interface Perfil {
   mayorDeEdad: boolean | null
   verificacionDnic: 'VERIFICADO' | 'PENDIENTE'
 }
+
+/** Datos requeridos por P2 para registrar una guía de carga. */
+export interface CrearGuia {
+  vehiculoId: number
+  choferId: number
+  rubroId: number
+  tipoCargaId?: number
+  pesoKg: number
+  volumenM3: number
+  inicio: string
+  fin: string
+  origen: string
+  origenLat?: number
+  origenLon?: number
+  destino: string
+  destinoLat?: number
+  destinoLon?: number
+}
+
+/** Guía devuelta por P2 al registrarla o al consultar las asignadas a un chofer. */
+export interface Guia {
+  id: number
+  empresaId: number
+  vehiculoId: number
+  choferId: number
+  rubroId: number | null
+  tipoCargaId: number | null
+  pesoKg: number
+  volumenM3: number
+  inicio: string
+  fin: string
+  origen: string
+  origenLat: number | null
+  origenLon: number | null
+  destino: string
+  destinoLat: number | null
+  destinoLon: number | null
+  estado: string
+  creadaEn: string
+}
+
+export interface VehiculoCatalogo { id: number; matricula: string; marca: string | null; modelo: string | null; capacidadCargaKg: number; capacidadVolumenM3: number | null }
+export interface ChoferCatalogo { id: number; cedula: string; nombre: string }
+export interface OpcionCatalogo { id: number; nombre: string }
 
 export interface RegistroAuditoria {
   id: number

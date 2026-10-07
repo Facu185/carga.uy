@@ -7,8 +7,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import uy.edu.fing.tse.carga.api.IngestaTrackingLocal;
-import uy.edu.fing.tse.carga.api.dto.PosicionDTO;
+import uy.edu.fing.tse.carga.api.contract.service.IngestaTrackingLocal;
+import uy.edu.fing.tse.carga.api.dto.comun.PosicionDTO;
 
 import java.util.Map;
 

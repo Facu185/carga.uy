@@ -50,7 +50,7 @@ function GuiaDeEjemplo() {
 export function Inicio() {
   useTituloPagina('')
   const { sesion } = useAuth()
-  const conGubUy = sesion?.rol === ROLES.CIUDADANO || sesion?.rol === ROLES.FUNCIONARIO
+  const conGubUy = sesion?.rol === ROLES.CIUDADANO || sesion?.rol === ROLES.CHOFER || sesion?.rol === ROLES.FUNCIONARIO
   const conBackoffice = sesion?.rol === ROLES.ADMINISTRADOR || sesion?.rol === ROLES.AUTORIDAD
 
   const accesoGubUy = conGubUy ? (
