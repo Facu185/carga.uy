@@ -11,6 +11,7 @@ public class ChoferDTO implements Serializable {
     private Long empresaId;
     private String cedula;
     private String nombre;
+    private boolean activo = true;
 
     public ChoferDTO() { }
 
@@ -22,4 +23,6 @@ public class ChoferDTO implements Serializable {
     public void setCedula(String cedula) { this.cedula = cedula; }
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
+    public boolean isActivo() { return activo; }
+    public void setActivo(boolean activo) { this.activo = activo; }
 }

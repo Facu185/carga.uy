@@ -2,10 +2,12 @@ package uy.edu.fing.tse.carga.ejb.seguridad;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import uy.edu.fing.tse.carga.ejb.modelo.Chofer;
 import uy.edu.fing.tse.carga.ejb.modelo.CuentaInterna;
 import uy.edu.fing.tse.carga.ejb.modelo.Funcionario;
 import uy.edu.fing.tse.carga.ejb.modelo.Rol;
 import uy.edu.fing.tse.carga.ejb.modelo.Usuario;
+import uy.edu.fing.tse.carga.ejb.persistencia.ChoferDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.CuentaInternaDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.FuncionarioDAO;
 
@@ -20,11 +22,14 @@ class VerificadorSesionesTest {
     private VerificadorSesiones verificador;
     private CuentaInterna admin;
     private Funcionario funcionario;
+    private Chofer chofer;
 
     @BeforeEach
     void preparar() {
         admin = new CuentaInterna("admin", "Admin", "hash", Rol.ADMINISTRADOR);
         funcionario = new Funcionario(new Usuario("12345672", "Ana", null), "DNT");
+        chofer = new Chofer();
+        chofer.setCedula("12345672");
         verificador = new VerificadorSesiones();
         verificador.cuentas = new CuentaInternaDAO() {
             @Override
@@ -36,6 +41,12 @@ class VerificadorSesionesTest {
             @Override
             public Optional<Funcionario> buscarPorCedula(String c) {
                 return "12345672".equals(c) ? Optional.of(funcionario) : Optional.empty();
+            }
+        };
+        verificador.choferes = new ChoferDAO() {
+            @Override
+            public Optional<Chofer> buscarPorCedula(String c) {
+                return "12345672".equals(c) ? Optional.of(chofer) : Optional.empty();
             }
         };
     }
@@ -63,6 +74,17 @@ class VerificadorSesionesTest {
         assertTrue(verificador.sigueVigente(token("12345672", "FUNCIONARIO", TokenService.ORIGEN_GUBUY, 0)));
         funcionario.setActivo(false);
         assertFalse(verificador.sigueVigente(token("12345672", "FUNCIONARIO", TokenService.ORIGEN_GUBUY, 0)));
+    }
+
+    @Test
+    void unChoferDadoDeBajaPierdeElAccesoEnElActoInclusoSiTambienEsFuncionario() {
+        assertTrue(verificador.sigueVigente(token("12345672", "CHOFER", TokenService.ORIGEN_GUBUY, 0)));
+        assertTrue(verificador.sigueVigente(new TokenService.DatosToken("12345672",
+                Set.of("FUNCIONARIO", "CHOFER"), TokenService.ORIGEN_GUBUY, 0, false)));
+        chofer.setActivo(false);
+        assertFalse(verificador.sigueVigente(token("12345672", "CHOFER", TokenService.ORIGEN_GUBUY, 0)));
+        assertFalse(verificador.sigueVigente(new TokenService.DatosToken("12345672",
+                Set.of("FUNCIONARIO", "CHOFER"), TokenService.ORIGEN_GUBUY, 0, false)));
     }
 
     @Test

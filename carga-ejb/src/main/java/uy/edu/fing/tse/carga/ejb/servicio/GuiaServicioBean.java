@@ -12,6 +12,10 @@ import uy.edu.fing.tse.carga.api.exception.NegocioException;
 import uy.edu.fing.tse.carga.api.security.Roles;
 import uy.edu.fing.tse.carga.api.dto.guia.CrearGuiaCommand;
 import uy.edu.fing.tse.carga.api.dto.guia.GuiaDTO;
+import uy.edu.fing.tse.carga.api.dto.guia.ChoferDTO;
+import uy.edu.fing.tse.carga.api.dto.guia.RubroDTO;
+import uy.edu.fing.tse.carga.api.dto.guia.TipoCargaDTO;
+import uy.edu.fing.tse.carga.api.dto.guia.VehiculoDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.*;
 
 import java.time.Instant;
@@ -50,12 +54,13 @@ public class GuiaServicioBean implements GuiaServicioLocal {
         Vehiculo vehiculo = em.find(Vehiculo.class, comando.getVehiculoId(), LockModeType.PESSIMISTIC_WRITE);
         Chofer chofer = em.find(Chofer.class, comando.getChoferId(), LockModeType.PESSIMISTIC_WRITE);
         if (vehiculo == null || chofer == null) throw new NegocioException("El vehiculo o el chofer no existe.");
-        if (!empresa.getId().equals(vehiculo.getEmpresa().getId()) || !empresa.getId().equals(chofer.getEmpresa().getId()))
+        if (!empresa.isActiva() || !empresa.getId().equals(vehiculo.getEmpresa().getId()) || !empresa.getId().equals(chofer.getEmpresa().getId()))
             throw new NegocioException("El vehiculo y el chofer deben pertenecer a la empresa responsable.");
         // El intervalo es [inicio, fin): para verificar su ultimo instante se resta
         // exactamente un nanosegundo, que es la precision de Instant (no un milisegundo).
-        if (!vehiculo.habilitadoEn(inicio.atZone(java.time.ZoneOffset.UTC).toLocalDate()) || !vehiculo.habilitadoEn(fin.minusNanos(1).atZone(java.time.ZoneOffset.UTC).toLocalDate()))
-            throw new NegocioException("El permiso nacional de circulacion o la ITV no estan vigentes para la fecha del viaje.");
+        if (!vehiculo.estaHabilitadoEn(inicio.atZone(java.time.ZoneOffset.UTC).toLocalDate()) || !vehiculo.estaHabilitadoEn(fin.minusNanos(1).atZone(java.time.ZoneOffset.UTC).toLocalDate()))
+            throw new NegocioException("La habilitacion, el permiso nacional de circulacion o la ITV no estan vigentes para la fecha del viaje.");
+        if (!chofer.isActivo()) throw new NegocioException("El chofer seleccionado esta inactivo.");
         try {
             Guia.validarCapacidades(vehiculo, comando.getPesoKg(), comando.getVolumenM3());
         } catch (IllegalArgumentException e) {
@@ -87,6 +92,40 @@ public class GuiaServicioBean implements GuiaServicioLocal {
         return em.createQuery("select g from Guia g where g.chofer.id = :choferId order by g.inicio desc", Guia.class)
                 .setParameter("choferId", chofer.getId()).getResultList().stream().map(Guia::aDTO).toList();
     }
+
+    @Override
+    public List<VehiculoDTO> vehiculosDeLaEmpresaAutenticada() throws NegocioException {
+        Empresa empresa = empresaDelResponsable();
+        return em.createQuery("select v from Vehiculo v where v.empresa.id = :empresaId and v.habilitado = true order by v.matricula", Vehiculo.class)
+                .setParameter("empresaId", empresa.getId()).getResultList().stream().map(this::vehiculoDTO).toList();
+    }
+
+    @Override
+    public List<ChoferDTO> choferesDeLaEmpresaAutenticada() throws NegocioException {
+        Empresa empresa = empresaDelResponsable();
+        return em.createQuery("select c from Chofer c where c.empresa.id = :empresaId and c.activo = true order by c.nombre", Chofer.class)
+                .setParameter("empresaId", empresa.getId()).getResultList().stream().map(this::choferDTO).toList();
+    }
+
+    @Override
+    public List<RubroDTO> rubros() {
+        return em.createQuery("select r from Rubro r order by r.nombre", Rubro.class).getResultList().stream().map(this::rubroDTO).toList();
+    }
+
+    @Override
+    public List<TipoCargaDTO> tiposCarga() {
+        return em.createQuery("select t from TipoCarga t order by t.nombre", TipoCarga.class).getResultList().stream().map(this::tipoCargaDTO).toList();
+    }
+
+    private VehiculoDTO vehiculoDTO(Vehiculo v) {
+        VehiculoDTO dto = new VehiculoDTO(); dto.setId(v.getId()); dto.setEmpresaId(v.getEmpresa().getId()); dto.setMatricula(v.getMatricula());
+        dto.setMarca(v.getMarca()); dto.setModelo(v.getModelo()); dto.setPesoKg(v.getPesoKg()); dto.setCapacidadCargaKg(v.getCapacidadCargaKg()); dto.setCapacidadVolumenM3(v.getCapacidadVolumenM3());
+        dto.setNumeroPermiso(v.getNumeroPermiso()); dto.setPermisoDesde(texto(v.getPermisoDesde())); dto.setPermisoHasta(texto(v.getPermisoHasta())); dto.setItvVencimiento(texto(v.getItvVencimiento())); dto.setHabilitado(v.isHabilitado()); return dto;
+    }
+    private ChoferDTO choferDTO(Chofer c) { ChoferDTO dto = new ChoferDTO(); dto.setId(c.getId()); dto.setEmpresaId(c.getEmpresa().getId()); dto.setCedula(c.getCedula()); dto.setNombre(c.getNombre()); dto.setActivo(c.isActivo()); return dto; }
+    private RubroDTO rubroDTO(Rubro r) { RubroDTO dto = new RubroDTO(); dto.setId(r.getId()); dto.setNombre(r.getNombre()); return dto; }
+    private TipoCargaDTO tipoCargaDTO(TipoCarga t) { TipoCargaDTO dto = new TipoCargaDTO(); dto.setId(t.getId()); dto.setNombre(t.getNombre()); return dto; }
+    private static String texto(Object valor) { return valor == null ? null : valor.toString(); }
 
     private Empresa empresaDelResponsable() throws NegocioException {
         String cedula = principalAutenticado();

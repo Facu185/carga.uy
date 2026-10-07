@@ -14,6 +14,7 @@ public class EmpresaDTO implements Serializable {
     private String razonSocial;
     private long numeroEmpresa;
     private LocalDate fechaAlta;
+    private boolean activa = true;
 
     public EmpresaDTO() {
     }
@@ -40,6 +41,8 @@ public class EmpresaDTO implements Serializable {
     @XmlJavaTypeAdapter(FechaAdapter.class)
     public LocalDate getFechaAlta() { return fechaAlta; }
     public void setFechaAlta(LocalDate fechaAlta) { this.fechaAlta = fechaAlta; }
+    public boolean isActiva() { return activa; }
+    public void setActiva(boolean activa) { this.activa = activa; }
 
     @Override
     public String toString() {

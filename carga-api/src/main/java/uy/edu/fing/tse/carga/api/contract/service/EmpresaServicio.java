@@ -10,6 +10,10 @@ public interface EmpresaServicio {
 
     EmpresaDTO agregar(EmpresaDTO empresa) throws NegocioException;
 
+    EmpresaDTO modificar(Long id, EmpresaDTO empresa) throws NegocioException;
+
+    void darDeBaja(Long id) throws NegocioException;
+
     List<EmpresaDTO> listar();
 
     List<EmpresaDTO> buscarPorNombre(String nombre);

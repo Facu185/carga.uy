@@ -54,4 +54,12 @@ class VehiculoTest {
 
         assertEquals(new BigDecimal("45.50"), v.getCapacidadVolumenM3());
     }
+
+    @Test
+    void noPuedeAsignarseCuandoEstaDeshabilitadoAunquePermisoEItvEstanVigentes() {
+        Vehiculo v = vehiculoCon(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31), LocalDate.of(2026, 12, 31));
+        v.setHabilitado(false);
+
+        assertFalse(v.estaHabilitadoEn(LocalDate.of(2026, 6, 1)));
+    }
 }

@@ -1,6 +1,7 @@
 package uy.edu.fing.tse.carga.api.dto.cuenta;
 
 import java.io.Serializable;
+import java.util.Set;
 
 /**
  * Sesion emitida por el central. origen: BASE_DE_DATOS o LDAP (backoffice) o GUBUY (ciudadanos y funcionarios).
@@ -17,6 +18,7 @@ public class SesionDTO implements Serializable {
     private String rol;
     private boolean debeCambiarPassword;
     private String origen;
+    private Set<String> roles;
 
     public SesionDTO() {
     }
@@ -51,5 +53,8 @@ public class SesionDTO implements Serializable {
 
     public String getOrigen() { return origen; }
     public void setOrigen(String origen) { this.origen = origen; }
+
+    public Set<String> getRoles() { return roles; }
+    public void setRoles(Set<String> roles) { this.roles = roles; }
 
 }

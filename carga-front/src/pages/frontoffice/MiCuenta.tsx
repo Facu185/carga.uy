@@ -1,5 +1,6 @@
-import { Truck, UserRound } from 'lucide-react'
+﻿import { Truck, UserRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../../api/cliente'
 import { useAuth } from '../../auth/contexto'
 import { EncabezadoSitio } from '../../componentes/EncabezadoSitio'
@@ -34,7 +35,9 @@ export function MiCuenta() {
   }, [])
 
   const verificado = perfil?.verificacionDnic === 'VERIFICADO'
-  const esCiudadano = sesion?.rol === ROLES.CIUDADANO
+  const roles = sesion?.roles ?? (sesion ? [sesion.rol] : [])
+  const esCiudadano = roles.includes(ROLES.CIUDADANO)
+  const esChofer = roles.includes(ROLES.CHOFER)
 
   return (
     <div className="pagina">
@@ -56,21 +59,27 @@ export function MiCuenta() {
         )}
 
         {/* En pantallas anchas: lo que la persona viene a hacer a la izquierda y sus datos al costado */}
-        <div className={esCiudadano ? 'cuenta-grilla' : 'cuenta-grilla cuenta-grilla-simple'}>
-          {esCiudadano && (
+        <div className={esCiudadano || esChofer ? 'cuenta-grilla' : 'cuenta-grilla cuenta-grilla-simple'}>
+          {(esCiudadano || esChofer) && (
             <div className="cuenta-principal">
               <section className="ficha" aria-labelledby="titulo-empresa">
                 <h2 id="titulo-empresa" className="titulo-con-icono">
                   <Truck size={22} aria-hidden="true" />
-                  Tu empresa
+                  {esChofer ? 'Tus guías' : 'Guías de tu empresa'}
                 </h2>
-                {/* P2 reemplaza este estado vacío por la empresa asociada y su gestión (o las guías, si es chofer) */}
-                <p className="ficha-texto sin-margen">
-                  Todavía no estás asociado a ninguna empresa de transporte. Cuando un funcionario del MTOP te asocie a tu
-                  empresa, vas a ver acá su gestión, o tus guías de carga si sos chofer.
-                </p>
+                {esChofer ? (
+                  <>
+                    <p className="ficha-texto">Consultá las guías de carga que fueron asignadas a tu cédula.</p>
+                    <Link className="boton-enlace" to="/mis-guias">Ver mis guías</Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="ficha-texto">Registrá una guía para tu empresa. El sistema verifica que el vehículo y el chofer estén habilitados y disponibles.</p>
+                    <Link className="boton-enlace" to="/guias/nueva">Registrar guía</Link>
+                  </>
+                )}
               </section>
-              <SolicitudAcceso />
+              {esCiudadano && <SolicitudAcceso />}
             </div>
           )}
           <div className="cuenta-datos">

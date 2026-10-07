@@ -6,6 +6,7 @@ import uy.edu.fing.tse.carga.api.contract.service.AuditoriaLocal;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 import uy.edu.fing.tse.carga.api.dto.comun.PaginaAuditoriaDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.CuentaInterna;
+import uy.edu.fing.tse.carga.ejb.modelo.Chofer;
 import uy.edu.fing.tse.carga.ejb.modelo.EstadoSolicitud;
 import uy.edu.fing.tse.carga.ejb.modelo.Funcionario;
 import uy.edu.fing.tse.carga.ejb.modelo.Rol;
@@ -13,6 +14,7 @@ import uy.edu.fing.tse.carga.ejb.modelo.RolCatalogo;
 import uy.edu.fing.tse.carga.ejb.modelo.SolicitudFuncionario;
 import uy.edu.fing.tse.carga.ejb.modelo.Usuario;
 import uy.edu.fing.tse.carga.ejb.persistencia.CuentaInternaDAO;
+import uy.edu.fing.tse.carga.ejb.persistencia.ChoferDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.FuncionarioDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.SolicitudFuncionarioDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.UsuarioDAO;
@@ -214,6 +216,21 @@ final class Falsos {
         public Funcionario guardar(Funcionario funcionario) {
             funcionarios.add(conId(funcionario, siguienteId++));
             return funcionario;
+        }
+    }
+
+    static class ChoferesEnMemoria extends ChoferDAO {
+        final List<Chofer> choferes = new ArrayList<>();
+        private long siguienteId = 1;
+
+        @Override
+        public Optional<Chofer> buscarPorCedula(String cedula) {
+            return choferes.stream().filter(c -> c.getCedula().equals(cedula)).findFirst();
+        }
+
+        Chofer guardar(Chofer chofer) {
+            choferes.add(conId(chofer, siguienteId++));
+            return chofer;
         }
     }
 

@@ -24,12 +24,7 @@ public class EmpresaServicioBean implements EmpresaServicioLocal, EmpresaServici
 
     @Override
     public EmpresaDTO agregar(EmpresaDTO dto) throws NegocioException {
-        if (dto == null || dto.getNombre() == null || dto.getNombre().isBlank()) {
-            throw new NegocioException("El nombre de la empresa es obligatorio.");
-        }
-        if (dto.getNumeroEmpresa() <= 0) {
-            throw new NegocioException("El numero de empresa debe ser positivo.");
-        }
+        validar(dto);
         if (existeNumero(dto.getNumeroEmpresa())) {
             throw new NegocioException("Ya existe una empresa con numero " + dto.getNumeroEmpresa() + ".");
         }
@@ -43,6 +38,28 @@ public class EmpresaServicioBean implements EmpresaServicioLocal, EmpresaServici
         em.persist(empresa);
         em.flush();
         return empresa.aDTO();
+    }
+
+    @Override
+    public EmpresaDTO modificar(Long id, EmpresaDTO dto) throws NegocioException {
+        if (id == null) throw new NegocioException("La empresa es obligatoria.");
+        validar(dto);
+        Empresa empresa = em.find(Empresa.class, id);
+        if (empresa == null) throw new NegocioException("La empresa no existe.");
+        if (empresa.getNumeroEmpresa() != dto.getNumeroEmpresa() && existeNumero(dto.getNumeroEmpresa()))
+            throw new NegocioException("Ya existe una empresa con numero " + dto.getNumeroEmpresa() + ".");
+        empresa.setNombre(dto.getNombre().trim());
+        empresa.setRazonSocial(dto.getRazonSocial());
+        empresa.setNumeroEmpresa(dto.getNumeroEmpresa());
+        empresa.setFechaAlta(dto.getFechaAlta());
+        return empresa.aDTO();
+    }
+
+    @Override
+    public void darDeBaja(Long id) throws NegocioException {
+        Empresa empresa = em.find(Empresa.class, id);
+        if (empresa == null) throw new NegocioException("La empresa no existe.");
+        empresa.setActiva(false);
     }
 
     @Override
@@ -66,5 +83,15 @@ public class EmpresaServicioBean implements EmpresaServicioLocal, EmpresaServici
                 .setParameter("num", numeroEmpresa)
                 .getSingleResult();
         return cantidad != null && cantidad > 0;
+    }
+
+    private void validar(EmpresaDTO dto) throws NegocioException {
+        if (dto == null || dto.getNombre() == null || dto.getNombre().isBlank())
+            throw new NegocioException("El nombre de la empresa es obligatorio.");
+        if (dto.getNumeroEmpresa() <= 0)
+            throw new NegocioException("El numero de empresa debe ser positivo.");
+        if (dto.getFechaAlta() == null) dto.setFechaAlta(LocalDate.now());
+        if (dto.getFechaAlta().isAfter(LocalDate.now()))
+            throw new NegocioException("La fecha de alta no puede ser futura.");
     }
 }

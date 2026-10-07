@@ -20,6 +20,7 @@ public class VehiculoDTO implements Serializable {
     private String permisoDesde;
     private String permisoHasta;
     private String itvVencimiento;
+    private boolean habilitado = true;
 
     public VehiculoDTO() { }
 
@@ -47,4 +48,6 @@ public class VehiculoDTO implements Serializable {
     public void setPermisoHasta(String permisoHasta) { this.permisoHasta = permisoHasta; }
     public String getItvVencimiento() { return itvVencimiento; }
     public void setItvVencimiento(String itvVencimiento) { this.itvVencimiento = itvVencimiento; }
+    public boolean isHabilitado() { return habilitado; }
+    public void setHabilitado(boolean habilitado) { this.habilitado = habilitado; }
 }

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<h:head>
+    <title>carga.uy - Vehiculos</title>
+</h:head>
+<h:body>
+    <h:form id="formulario">
+        <p:growl id="avisos" showDetail="true"/>
+
+        <p:panel header="Nuevo vehiculo">
+            <h:panelGrid columns="2" cellpadding="4">
+                <p:outputLabel for="empresa" value="Empresa"/>
+                <p:selectOneMenu id="empresa" value="#{vehiculoVista.nuevo.empresaId}">
+                    <f:selectItem itemLabel="Seleccione una empresa" noSelectionOption="true"/>
+                    <f:selectItems value="#{vehiculoVista.empresas}" var="empresa"
+                                   itemValue="#{empresa.id}" itemLabel="#{empresa.nombre}"/>
+                </p:selectOneMenu>
+
+                <p:outputLabel for="matricula" value="Matricula"/>
+                <p:inputText id="matricula" value="#{vehiculoVista.nuevo.matricula}"/>
+
+                <p:outputLabel for="marca" value="Marca"/>
+                <p:inputText id="marca" value="#{vehiculoVista.nuevo.marca}"/>
+
+                <p:outputLabel for="modelo" value="Modelo"/>
+                <p:inputText id="modelo" value="#{vehiculoVista.nuevo.modelo}"/>
+
+                <p:outputLabel for="peso" value="Peso (kg)"/>
+                <p:inputNumber id="peso" value="#{vehiculoVista.nuevo.pesoKg}" decimalPlaces="0"/>
+
+                <p:outputLabel for="capacidadCarga" value="Capacidad de carga (kg)"/>
+                <p:inputNumber id="capacidadCarga" value="#{vehiculoVista.nuevo.capacidadCargaKg}" decimalPlaces="0"/>
+
+                <p:outputLabel for="capacidadVolumen" value="Capacidad volumetrica (m3)"/>
+                <p:inputNumber id="capacidadVolumen" value="#{vehiculoVista.nuevo.capacidadVolumenM3}"/>
+
+                <p:outputLabel for="permiso" value="Numero de permiso"/>
+                <p:inputText id="permiso" value="#{vehiculoVista.nuevo.numeroPermiso}"/>
+
+                <p:outputLabel for="permisoDesde" value="Permiso desde (AAAA-MM-DD)"/>
+                <p:inputText id="permisoDesde" value="#{vehiculoVista.nuevo.permisoDesde}"/>
+
+                <p:outputLabel for="permisoHasta" value="Permiso hasta (AAAA-MM-DD)"/>
+                <p:inputText id="permisoHasta" value="#{vehiculoVista.nuevo.permisoHasta}"/>
+
+                <p:outputLabel for="itv" value="Vencimiento ITV (AAAA-MM-DD)"/>
+                <p:inputText id="itv" value="#{vehiculoVista.nuevo.itvVencimiento}"/>
+            </h:panelGrid>
+            <p:commandButton value="Agregar" action="#{vehiculoVista.agregar}" update="formulario"/>
+        </p:panel>
+
+        <p:dataTable id="tabla" value="#{vehiculoVista.vehiculos}" var="vehiculo" emptyMessage="Sin vehiculos.">
+            <p:column headerText="Id"><h:outputText value="#{vehiculo.id}"/></p:column>
+            <p:column headerText="Empresa"><h:outputText value="#{vehiculo.empresaId}"/></p:column>
+            <p:column headerText="Matricula"><p:inputText value="#{vehiculo.matricula}"/></p:column>
+            <p:column headerText="Marca"><p:inputText value="#{vehiculo.marca}"/></p:column>
+            <p:column headerText="Modelo"><p:inputText value="#{vehiculo.modelo}"/></p:column>
+            <p:column headerText="Peso (kg)"><p:inputNumber value="#{vehiculo.pesoKg}" decimalPlaces="0"/></p:column>
+            <p:column headerText="Carga (kg)"><p:inputNumber value="#{vehiculo.capacidadCargaKg}" decimalPlaces="0"/></p:column>
+            <p:column headerText="Volumen (m3)"><p:inputNumber value="#{vehiculo.capacidadVolumenM3}"/></p:column>
+            <p:column headerText="Permiso"><p:inputText value="#{vehiculo.numeroPermiso}"/></p:column>
+            <p:column headerText="Desde"><p:inputText value="#{vehiculo.permisoDesde}"/></p:column>
+            <p:column headerText="Hasta"><p:inputText value="#{vehiculo.permisoHasta}"/></p:column>
+            <p:column headerText="ITV"><p:inputText value="#{vehiculo.itvVencimiento}"/></p:column>
+            <p:column headerText="Estado"><h:outputText value="#{vehiculo.habilitado ? 'Habilitado' : 'Inhabilitado'}"/></p:column>
+            <p:column headerText="Acciones">
+                <p:commandButton value="Guardar" action="#{vehiculoVista.modificar(vehiculo)}" update="formulario"/>
+                <p:commandButton value="Baja" action="#{vehiculoVista.darDeBaja(vehiculo)}" update="formulario" disabled="#{not vehiculo.habilitado}"/>
+            </p:column>
+        </p:dataTable>
+    </h:form>
+</h:body>
+</html>

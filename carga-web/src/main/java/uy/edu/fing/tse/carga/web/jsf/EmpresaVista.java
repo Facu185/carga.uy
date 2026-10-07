@@ -47,6 +47,22 @@ public class EmpresaVista implements Serializable {
         }
     }
 
+    public void modificar(EmpresaDTO empresa) {
+        try {
+            servicio.modificar(empresa.getId(), empresa);
+            mensaje(FacesMessage.SEVERITY_INFO, "Empresa actualizada.");
+            refrescar();
+        } catch (NegocioException e) { mensaje(FacesMessage.SEVERITY_ERROR, e.getMessage()); }
+    }
+
+    public void darDeBaja(EmpresaDTO empresa) {
+        try {
+            servicio.darDeBaja(empresa.getId());
+            mensaje(FacesMessage.SEVERITY_INFO, "Empresa dada de baja.");
+            refrescar();
+        } catch (NegocioException e) { mensaje(FacesMessage.SEVERITY_ERROR, e.getMessage()); }
+    }
+
     private void mensaje(FacesMessage.Severity severidad, String texto) {
         FacesContext.getCurrentInstance().addMessage(null, new FacesMessage(severidad, texto, null));
     }
