@@ -57,10 +57,17 @@ module add --name=org.postgresql \
 # El log de acceso de cada pedido (FiltroCorrelacion) va en INFO
 /subsystem=logging/logger=uy.edu.fing.tse.carga:add(level=INFO)
 
-# --- La raiz del servidor lleva a la aplicacion ---
-# Sin esto, http://localhost:8080/ muestra la pagina de bienvenida de WildFly y
-# parece que no hubiera nada desplegado.
-/subsystem=undertow/configuration=filter/expression-filter=raiz-a-carga:add(expression="path('/') -> redirect('/carga/')")
+# --- La raiz del servidor ---
+# Dos filtros con condiciones EXCLUYENTES, para no depender del orden en que WildFly los aplica.
+# 1) Vuelta del ingreso con gub.uy. ID Uruguay solo redirige a URIs registradas exactas y la nuestra
+#    es http://localhost:8080 (sin ruta y sin barra final: con barra la rechaza), asi que el codigo
+#    llega a la raiz: se reenvia al callback
+#    conservando los parametros (%q = "?code=...&state=...").
+/subsystem=undertow/configuration=filter/expression-filter=raiz-callback-gubuy:add(expression="path('/') and (exists('%{q,code}') or exists('%{q,error}')) -> redirect('/carga/api/auth/gubuy/callback%q')")
+/subsystem=undertow/server=default-server/host=default-host/filter-ref=raiz-callback-gubuy:add()
+# 2) Cualquier otra visita a la raiz lleva a la aplicacion. Sin esto, http://localhost:8080/ muestra
+#    la pagina de bienvenida de WildFly y parece que no hubiera nada desplegado.
+/subsystem=undertow/configuration=filter/expression-filter=raiz-a-carga:add(expression="path('/') and not (exists('%{q,code}') or exists('%{q,error}')) -> redirect('/carga/')")
 /subsystem=undertow/server=default-server/host=default-host/filter-ref=raiz-a-carga:add()
 
 stop-embedded-server

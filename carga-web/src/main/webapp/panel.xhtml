@@ -4,6 +4,10 @@
       xmlns:h="jakarta.faces.html"
       xmlns:f="jakarta.faces.core"
       xmlns:p="http://primefaces.org/ui">
+<!-- Vista sin estado: JSF no guarda nada del panel en el servidor, asi que no puede expirar.
+     Con estado, el auto-refresco de una pestana abierta antes de reiniciar el central fallaba
+     cada 5 s con ViewExpiredException y el panel dejaba de actualizarse sin avisar. -->
+<f:view transient="true">
 <h:head>
     <title>carga.uy - Panel de operacion</title>
     <!-- Leaflet: si no hay internet, el mapa igual ubica los vehiculos, sin el fondo cartografico. -->
@@ -25,7 +29,7 @@
     </div>
 
     <h:form id="f">
-        <p:poll interval="5" listener="#{panelVista.refrescar}" update="tarjetas nodos"/>
+        <p:poll interval="5" update="tarjetas nodos"/>
 
         <h:panelGroup id="tarjetas" layout="block" styleClass="tarjetas">
             <div class="tarjeta">
@@ -180,4 +184,5 @@
 //]]>
 </script>
 </h:body>
+</f:view>
 </html>
