@@ -8,6 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class SaludBeanTest {
 
     private static SaludBean salud(boolean baseOk, String pdiEstado) {
+        return salud(baseOk, pdiEstado, SaludBean.UP);
+    }
+
+    private static SaludBean salud(boolean baseOk, String pdiEstado, String balanzasEstado) {
         return new SaludBean() {
             @Override
             boolean baseDeDatosResponde() {
@@ -17,6 +21,11 @@ class SaludBeanTest {
             @Override
             String estadoPdi() {
                 return pdiEstado;
+            }
+
+            @Override
+            String estadoBalanzas() {
+                return balanzasEstado;
             }
         };
     }
@@ -33,6 +42,13 @@ class SaludBeanTest {
         EstadoSaludDTO estado = salud(true, SaludBean.DEGRADADO).verificar();
         assertEquals("UP", estado.getEstado());
         assertEquals("DEGRADADO", estado.getComponentes().get("pdi"));
+    }
+
+    @Test
+    void conElNodoBalanzasCaidoSigueUpEnModoDegradado() {
+        EstadoSaludDTO estado = salud(true, SaludBean.UP, SaludBean.DEGRADADO).verificar();
+        assertEquals("UP", estado.getEstado());
+        assertEquals("DEGRADADO", estado.getComponentes().get("balanzas"));
     }
 
     @Test

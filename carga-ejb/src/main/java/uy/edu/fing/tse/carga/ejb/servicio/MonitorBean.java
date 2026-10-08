@@ -5,11 +5,11 @@ import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import uy.edu.fing.tse.carga.api.contract.service.MonitorLocal;
-import uy.edu.fing.tse.carga.api.contract.service.PesajeLocal;
 import uy.edu.fing.tse.carga.api.dto.nodo.EstadoNodoDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.MetricasDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.RecorridoDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoPesajeDTO;
+import uy.edu.fing.tse.carga.ejb.integracion.CircuitBreaker;
 import uy.edu.fing.tse.carga.ejb.modelo.PosicionTracking;
 
 import java.time.Duration;
@@ -37,7 +37,7 @@ public class MonitorBean implements MonitorLocal {
     private EntityManager em;
 
     @EJB
-    private PesajeLocal pesaje;
+    PesajeBean balanzas;
 
     @Override
     public MetricasDTO metricas() {
@@ -99,13 +99,20 @@ public class MonitorBean implements MonitorLocal {
     private EstadoNodoDTO estadoBalanzas() {
         EstadoNodoDTO nodo = new EstadoNodoDTO("Balanzas peajes", "BALANZAS",
                 System.getenv().getOrDefault("NODO_BALANZAS_URL", "http://balanzas:8080/balanzas/api/pesadas"));
-        ResultadoPesajeDTO r = pesaje.consultarPesadas("", null);
+        ResultadoPesajeDTO r = balanzas.consultarPesadas("", null);
         nodo.setEnLinea(r.isNodoDisponible());
         nodo.setLatenciaMs(r.getLatenciaMs());
-        nodo.setDetalle(r.isNodoDisponible()
-                ? "Responde a la consulta de pesadas."
-                : r.getMensaje());
+        nodo.setDetalle((r.isNodoDisponible() ? "Responde a la consulta de pesadas." : r.getMensaje())
+                + " Circuito " + nombre(balanzas.estadoCircuito()) + ".");
         return nodo;
+    }
+
+    private static String nombre(CircuitBreaker.Estado estado) {
+        return switch (estado) {
+            case CERRADO -> "cerrado";
+            case ABIERTO -> "abierto";
+            case SEMI_ABIERTO -> "semiabierto (probando si el nodo volvio)";
+        };
     }
 
     /** No se puede consultar: el nodo Tracking empuja. Se deduce de cuando llego la ultima posicion. */

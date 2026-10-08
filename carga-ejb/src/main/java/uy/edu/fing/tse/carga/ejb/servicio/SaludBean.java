@@ -20,6 +20,8 @@ import java.util.logging.Logger;
  * - Base de datos: sin ella no hay nada que hacer, DOWN.
  * - PDI: con el circuito abierto el central sigue atendiendo en modo degradado (el ingreso con
  *   gub.uy queda pendiente de verificacion), asi que el componente queda DEGRADADO y el central UP.
+ * - Balanzas: igual que la PDI. Sin el nodo no se obtienen pesajes nuevos, pero todo lo demas anda
+ *   y la sincronizacion los trae cuando el nodo vuelve.
  */
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
@@ -37,11 +39,15 @@ public class SaludBean implements SaludLocal {
     @EJB
     PdiBean pdi;
 
+    @EJB
+    PesajeBean balanzas;
+
     @Override
     public EstadoSaludDTO verificar() {
         Map<String, String> componentes = new LinkedHashMap<>();
         componentes.put("baseDeDatos", baseDeDatosResponde() ? UP : DOWN);
         componentes.put("pdi", estadoPdi());
+        componentes.put("balanzas", estadoBalanzas());
         String estado = DOWN.equals(componentes.get("baseDeDatos")) ? DOWN : UP;
         return new EstadoSaludDTO(estado, componentes, Instant.now().toString());
     }
@@ -59,5 +65,9 @@ public class SaludBean implements SaludLocal {
 
     String estadoPdi() {
         return pdi.estadoCircuito() == CircuitBreaker.Estado.CERRADO ? UP : DEGRADADO;
+    }
+
+    String estadoBalanzas() {
+        return balanzas.estadoCircuito() == CircuitBreaker.Estado.CERRADO ? UP : DEGRADADO;
     }
 }

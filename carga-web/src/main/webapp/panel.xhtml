@@ -67,32 +67,54 @@
 
         <div class="bloque">
             <h2>Obtener pesajes del nodo Balanzas</h2>
+            <p class="sub">Caso de uso critico 4: trae las pesadas del nodo, las vincula con la guia vigente y las
+                guarda sin duplicar. Ademas corre solo cada 15 minutos para los vehiculos con guia.</p>
             <p:outputLabel for="mat" value="Matricula" style="margin-right:6px"/>
             <p:inputText id="mat" value="#{panelVista.matricula}" size="10"/>
             <p:outputLabel for="fec" value="Fecha" style="margin:0 6px 0 14px"/>
             <p:inputText id="fec" value="#{panelVista.fecha}" size="12"/>
-            <p:commandButton value="Consultar" action="#{panelVista.consultarPesajes}"
+            <p:commandButton value="Sincronizar" action="#{panelVista.sincronizar}"
                              update="resultado" style="margin-left:12px"/>
 
             <h:panelGroup id="resultado" layout="block" style="margin-top:12px">
+                <h:panelGroup rendered="#{not empty panelVista.error}">
+                    <span class="pill mal">Dato invalido</span>
+                    <span style="margin-left:10px; font-size:13px; color:#445">#{panelVista.error}</span>
+                </h:panelGroup>
+
                 <h:panelGroup rendered="#{not empty panelVista.resultado}">
                     <span class="pill #{panelVista.resultado.nodoDisponible ? 'ok' : 'mal'}">
                         #{panelVista.resultado.nodoDisponible ? 'Nodo disponible' : 'Nodo no disponible'}
                     </span>
                     <span style="margin-left:10px; font-size:13px; color:#445">#{panelVista.resultado.mensaje}</span>
 
-                    <p:dataTable value="#{panelVista.resultado.pesadas}" var="pe" style="margin-top:10px"
-                                 emptyMessage="Sin pesadas para esa matricula y fecha."
-                                 rendered="#{panelVista.resultado.nodoDisponible}">
+                    <h:panelGroup layout="block" styleClass="tarjetas" style="margin:12px 0 0"
+                                  rendered="#{panelVista.resultado.nodoDisponible}">
+                        <div class="tarjeta"><div class="n">#{panelVista.resultado.recibidas}</div>
+                            <div class="r">recibidas del nodo</div></div>
+                        <div class="tarjeta"><div class="n">#{panelVista.resultado.nuevas}</div>
+                            <div class="r">nuevas guardadas</div></div>
+                        <div class="tarjeta"><div class="n">#{panelVista.resultado.duplicadas}</div>
+                            <div class="r">ya estaban (no se duplican)</div></div>
+                        <div class="tarjeta"><div class="n">#{panelVista.resultado.vinculadasAGuia}</div>
+                            <div class="r">nuevas vinculadas a una guia</div></div>
+                    </h:panelGroup>
+
+                    <p:dataTable value="#{panelVista.registradas}" var="pe" style="margin-top:6px"
+                                 emptyMessage="No hay pesadas guardadas para esa matricula y fecha.">
                         <p:column headerText="Pesada"><h:outputText value="#{pe.idPesada}"/></p:column>
                         <p:column headerText="Peaje"><h:outputText value="#{pe.peaje}"/></p:column>
                         <p:column headerText="Peso (kg)"><h:outputText value="#{pe.pesoKg}"/></p:column>
                         <p:column headerText="Instante"><h:outputText value="#{pe.instante}"/></p:column>
+                        <p:column headerText="Guia">
+                            <h:outputText value="#{pe.guiaId}" rendered="#{not empty pe.guiaId}"/>
+                            <h:panelGroup rendered="#{empty pe.guiaId}"><span class="pill critico">sin guia</span></h:panelGroup>
+                        </p:column>
                     </p:dataTable>
                 </h:panelGroup>
             </h:panelGroup>
-            <div class="nota">Para ver el comportamiento degradado:
-                <code>docker compose stop balanzas</code> y volver a consultar.</div>
+            <div class="nota">Sincronizar dos veces no agrega nada: la segunda vez todas quedan como "ya estaban".
+                Para ver el comportamiento degradado: <code>docker compose stop balanzas</code> y volver a sincronizar.</div>
         </div>
     </h:form>
 

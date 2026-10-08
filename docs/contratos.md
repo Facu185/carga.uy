@@ -11,6 +11,7 @@ grupo antes de mergear: hay código de otra persona que depende.
 | `IngestaTrackingLocal` | P4 | Recibe una posición y la encola; no bloquea |
 | `PesajeLocal` | P4 | `obtenerPesadas` devuelve las pesadas; `consultarPesadas` además informa si el nodo respondió y cuánto tardó |
 | `MonitorLocal` | P4 | Métricas de ingesta, estado de los nodos y mapa de la flota (solo lectura) |
+| `SincronizacionPesajesLocal` | P4 | Trae las pesadas del nodo, las vincula con la guía vigente y las guarda sin duplicar; avisa cada pesada **nueva** por la cola `pesadas` |
 | `PdiLocal` | P1 | Devuelve los datos de la persona, o `null` si la PDI no responde |
 | `ServicioDnic` (SOAP) | P1 | Contrato SOAP hacia la PDI |
 | `AuditoriaLocal` | P1 | Registra en la pista de solo agregado, en la misma transacción que la acción. Usuario y rol salen de la sesión. Las acciones de fiscalización exigen fundamento |
@@ -49,6 +50,8 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `GET /carga/api/monitor/metricas` | panel de operación |
 | `GET /carga/api/monitor/nodos` | panel de operación, monitoreo externo |
 | `GET /carga/api/monitor/mapa?puntos=` | panel de operación (mapa de la flota) |
+| `GET /carga/api/pesajes?matricula=&fecha=` | panel de operación, P5 (pesadas ya guardadas) |
+| `POST /carga/api/pesajes/sincronizar?matricula=&fecha=` | panel de operación (dispara el caso de uso a mano) |
 | `GET /balanzas/api/pesadas?matricula=&fecha=` | **componente central** (`PesajeBean`) |
 | `POST /carga/api/auth/login` · `POST /auth/cambiar-password` · `POST /auth/renovar` · `GET /auth/yo` | backoffice, app móvil |
 | `GET /carga/api/auth/gubuy/iniciar?destino=web\|movil` · `GET /auth/gubuy/callback` | frontoffice, app móvil (redirecciones) |
@@ -67,6 +70,7 @@ Las rutas nuevas de cada frente cuelgan de `/carga/api/<tema>`. No reutilizar pr
 | Cola | Productor | Consumidor | Cuerpo |
 |---|---|---|---|
 | `java:/jms/queue/posiciones` | `IngestaTrackingBean` | `PosicionMDB` | `PosicionDTO` en JSON (texto) |
+| `java:/jms/queue/pesadas` | `SincronizacionPesajesBean` | **P5** — todavía sin consumidor | `PesadaRegistradaDTO` en JSON; `guiaId` null = pesado sin guía vigente |
 
 Se usa `TextMessage` con JSON y no `ObjectMessage` a propósito: `ObjectMessage` obliga a configurar
 listas de clases permitidas en Artemis y ata productor y consumidor a la misma versión de la clase.
@@ -98,6 +102,17 @@ Convenciones:
   a partir de ellas (`GENERATED ALWAYS AS ... STORED`). Así la aplicación no necesita saber PostGIS
   para escribir, y las consultas espaciales igual tienen índice GiST.
 
+## Pesajes P4
+
+Una pesada se vincula con la guía **del mismo vehículo cuyo período `[inicio, fin)` contiene el
+instante del pesaje**. Es una lectura de la tabla compartida `guia` (P4 no la modifica): si P2 cambia
+cómo se guarda el período o el vehículo de una guía, hay que avisar, porque rompe esta vinculación.
+
+Una pesada sin guía vigente se guarda igual, con `guia_id` null: es la evidencia de "viaje sin guía".
+
+La cola `pesadas` recibe un mensaje por cada pesada **nueva**, nunca por una que ya estaba. El
+consumidor de P5 igual tiene que tolerar repetidos (deduplicar por `idPesada`), como cualquier cola.
+
 ## 6. Variables de entorno
 
 | Variable | Usada por | Default |
@@ -108,6 +123,8 @@ Convenciones:
 | `CENTRAL_INGESTA_URL` | nodo Tracking | `http://central:8080/carga/api/tracking/posiciones` |
 | `TRACKING_INTERVALO_MS` | nodo Tracking | `5000` |
 | `BALANZAS_DEMORA_MS`, `BALANZAS_FALLA` | nodo Balanzas | `0`, `false` |
+| `BALANZAS_TIMEOUT_MS`, `BALANZAS_REINTENTOS`, `BALANZAS_CIRCUITO_UMBRAL`, `BALANZAS_CIRCUITO_ESPERA_SEG` | `PesajeBean` | `3000`, `1`, `3`, `30` |
+| `PESAJES_AGENDA_ACTIVA` | `AgendaPesajesBean` (sincronización cada 15 min) | `true` |
 | `PDI_TIMEOUT_MS`, `PDI_REINTENTOS`, `PDI_CIRCUITO_UMBRAL`, `PDI_CIRCUITO_ESPERA_SEG` | `PdiBean` | `3000`, `1`, `3`, `30` |
 | `JWT_SECRET` (≥ 32 caracteres), `JWT_DURACION_MINUTOS` | central | valor de desarrollo, `30` |
 | `ADMIN_INICIAL_USUARIO`, `ADMIN_INICIAL_PASSWORD` | central (solo si no hay cuentas internas) | `admin` / valor de desarrollo |
