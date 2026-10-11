@@ -4,6 +4,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.ejb.EJB;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Named;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
 import uy.edu.fing.tse.carga.api.contract.service.MonitorLocal;
 import uy.edu.fing.tse.carga.api.contract.service.SincronizacionPesajesLocal;
 import uy.edu.fing.tse.carga.api.dto.nodo.EstadoNodoDTO;
@@ -40,6 +42,7 @@ public class PanelVista {
     private ResultadoSincronizacionDTO resultado;
     private List<PesadaRegistradaDTO> registradas = List.of();
     private String error;
+    private String mapaJson = "[]";
 
     @PostConstruct
     public void iniciar() {
@@ -50,6 +53,13 @@ public class PanelVista {
     public void refrescar() {
         metricas = monitor.metricas();
         nodos = monitor.estadoNodos();
+        // El mapa recibe sus datos aca y no de /api/monitor/mapa: esa API exige rol (ADR-0007) y
+        // la pagina JSF no tiene el token del backoffice
+        try (Jsonb jsonb = JsonbBuilder.create()) {
+            mapaJson = jsonb.toJson(monitor.mapaFlota(40));
+        } catch (Exception e) {
+            mapaJson = "[]";
+        }
     }
 
     /**
@@ -73,6 +83,7 @@ public class PanelVista {
     public ResultadoSincronizacionDTO getResultado() { return resultado; }
     public List<PesadaRegistradaDTO> getRegistradas() { return registradas; }
     public String getError() { return error; }
+    public String getMapaJson() { return mapaJson; }
 
     public String getMatricula() { return matricula; }
     public void setMatricula(String matricula) { this.matricula = matricula; }

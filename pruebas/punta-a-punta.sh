@@ -99,6 +99,22 @@ esperar_codigo "una autoridad SI consulta la auditoria" 200 "$API/auditoria" -H 
 contiene "el alta quedo en la auditoria" "$(curl -s "$API/auditoria?entidadId=$AUTORIDAD" "${ADMIN[@]}")" \
   'USUARIO_INTERNO_CREADO'
 
+echo "== Seguridad de los nodos perifericos y de P4"
+NODO_TRACKING_TOKEN=${NODO_TRACKING_TOKEN:-tracking-solo-desarrollo}
+POSICION="{\"idEvento\":\"e2e-$(date +%s)\",\"matricula\":\"E2E0001\",\"latitud\":-34.9,\"longitud\":-56.16,\"instante\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}"
+esperar_codigo "sin token de nodo no se aceptan posiciones" 401 -X POST "$API/tracking/posiciones" \
+  -H 'Content-Type: application/json' -d "$POSICION"
+esperar_codigo "un token de nodo inventado se rechaza" 401 -X POST "$API/tracking/posiciones" \
+  -H 'Content-Type: application/json' -H 'X-Nodo-Token: inventado' -d "$POSICION"
+esperar_codigo "con el token del nodo la posicion se acepta" 202 -X POST "$API/tracking/posiciones" \
+  -H 'Content-Type: application/json' -H "X-Nodo-Token: $NODO_TRACKING_TOKEN" -d "$POSICION"
+esperar_codigo "sin sesion no se consulta el monitor de nodos" 401 "$API/monitor/nodos"
+esperar_codigo "una autoridad NO consulta el monitor de nodos (403)" 403 "$API/monitor/nodos" \
+  -H "Authorization: Bearer $TOKEN_AUTORIDAD"
+esperar_codigo "el administrador consulta el monitor de nodos" 200 "$API/monitor/nodos" "${ADMIN[@]}"
+contiene "el central llega a Balanzas con su token" "$(curl -s "$API/monitor/nodos" "${ADMIN[@]}")" \
+  'Responde a la consulta de pesadas'
+
 echo "== Ingreso con gub.uy (simulador) y verificacion con DNIC (PDI)"
 ingresar_con_gubuy "$CEDULA"
 contiene "el central redirige a gub.uy con PKCE" "$URL_GUBUY" 'code_challenge='

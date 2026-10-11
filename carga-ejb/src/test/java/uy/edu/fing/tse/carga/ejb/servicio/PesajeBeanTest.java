@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PesajeBeanTest {
 
     /** Que hace el nodo simulado en cada llamada. */
-    private enum Nodo { RESPONDE, CAIDO, RECHAZA }
+    private enum Nodo { RESPONDE, CAIDO, RECHAZA, NO_AUTORIZA }
 
     private Nodo nodo;
     private int llamadas;
@@ -40,6 +40,7 @@ class PesajeBeanTest {
                     case RESPONDE -> List.of(pesada("STZ1234-1"));
                     case CAIDO -> throw new TimeoutException("el nodo no contesto");
                     case RECHAZA -> throw new PedidoRechazadoException(400);
+                    case NO_AUTORIZA -> throw new PedidoRechazadoException(401);
                 };
             }
         };
@@ -74,6 +75,16 @@ class PesajeBeanTest {
             assertFalse(pesaje.consultarPesadas("STZ1234", "2026-10-07").isNodoDisponible());
         }
         assertEquals(5, llamadas); // una por consulta, sin reintentos
+        assertEquals(CircuitBreaker.Estado.CERRADO, pesaje.estadoCircuito());
+    }
+
+    @Test
+    void siElNodoNoAceptaLasCredencialesLoDiceSinReintentarNiAbrirElCircuito() {
+        nodo = Nodo.NO_AUTORIZA;
+        ResultadoPesajeDTO r = pesaje.consultarPesadas("STZ1234", "2026-10-07");
+        assertFalse(r.isNodoDisponible());
+        assertTrue(r.getMensaje().contains("NODO_BALANZAS_TOKEN"));
+        assertEquals(1, llamadas);
         assertEquals(CircuitBreaker.Estado.CERRADO, pesaje.estadoCircuito());
     }
 

@@ -42,6 +42,9 @@ services:
       DB_USER: ${DB_USER:-carga}
       DB_PASSWORD: ${DB_PASSWORD:-carga}
       NODO_BALANZAS_URL: http://balanzas:8080/balanzas/api/pesadas
+      # Tokens compartidos con los nodos perifericos (ADR-0007). Los default son de desarrollo.
+      NODO_BALANZAS_TOKEN: ${NODO_BALANZAS_TOKEN:-balanzas-solo-desarrollo}
+      NODO_TRACKING_TOKEN: ${NODO_TRACKING_TOKEN:-tracking-solo-desarrollo}
       SIMULADOR_PDI_URL: http://localhost:8080/simulador-pdi/ServicioDnicImpl?wsdl
       PDI_TIMEOUT_MS: ${PDI_TIMEOUT_MS:-3000}
       PDI_REINTENTOS: ${PDI_REINTENTOS:-1}
@@ -87,6 +90,7 @@ services:
       # Para probar el comportamiento del central ante un nodo lento o caido:
       BALANZAS_DEMORA_MS: "0"
       BALANZAS_FALLA: "false"
+      NODO_TOKEN: ${NODO_BALANZAS_TOKEN:-balanzas-solo-desarrollo}
     ports:
       - "8081:8080"
 
@@ -97,6 +101,7 @@ services:
     environment:
       CENTRAL_INGESTA_URL: http://central:8080/carga/api/tracking/posiciones
       TRACKING_INTERVALO_MS: ${TRACKING_INTERVALO_MS:-5000}
+      NODO_TOKEN: ${NODO_TRACKING_TOKEN:-tracking-solo-desarrollo}
     depends_on:
       - central
 

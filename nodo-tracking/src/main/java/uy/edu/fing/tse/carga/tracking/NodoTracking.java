@@ -35,6 +35,9 @@ public final class NodoTracking {
     private static final double LAT_ORIGEN = -34.9011, LON_ORIGEN = -56.1645;
     private static final double LAT_DESTINO = -32.8161, LON_DESTINO = -56.5158;
 
+    /** Con este token el nodo se identifica ante el central (header X-Nodo-Token, ADR-0007). */
+    private static final String TOKEN = System.getenv().getOrDefault("NODO_TOKEN", "").trim();
+
     private static final HttpClient CLIENTE = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(3)).build();
     private static final Random AZAR = new Random();
@@ -44,6 +47,9 @@ public final class NodoTracking {
 
     public static void main(String[] args) throws InterruptedException {
         System.out.println("[tracking] enviando a " + URL + " cada " + INTERVALO_MS + " ms");
+        if (TOKEN.isEmpty()) {
+            System.out.println("[tracking] ATENCION: NODO_TOKEN vacio, el central va a rechazar las posiciones");
+        }
         double avance = 0;
         while (true) {
             avance = (avance + 0.02) % 1.0;
@@ -72,12 +78,18 @@ public final class NodoTracking {
 
         HttpRequest peticion = HttpRequest.newBuilder(URI.create(URL))
                 .header("Content-Type", "application/json")
+                .header("X-Nodo-Token", TOKEN)
                 .timeout(Duration.ofSeconds(5))
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
         try {
             HttpResponse<String> respuesta = CLIENTE.send(peticion, HttpResponse.BodyHandlers.ofString());
-            System.out.printf("[tracking] %s -> HTTP %d%n", matricula.trim(), respuesta.statusCode());
+            if (respuesta.statusCode() == 401) {
+                System.out.printf("[tracking] %s -> el central rechazo el token del nodo (revisar NODO_TOKEN)%n",
+                        matricula.trim());
+            } else {
+                System.out.printf("[tracking] %s -> HTTP %d%n", matricula.trim(), respuesta.statusCode());
+            }
         } catch (Exception e) {
             System.out.printf("[tracking] %s -> sin respuesta del central (%s)%n",
                     matricula.trim(), e.getMessage());

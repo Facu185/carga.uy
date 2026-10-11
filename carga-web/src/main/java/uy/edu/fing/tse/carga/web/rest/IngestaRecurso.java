@@ -27,6 +27,7 @@ public class IngestaRecurso {
 
     @POST
     @Path("/posiciones")
+    @NodoAutenticado
     public Response recibir(PosicionDTO posicion) {
         if (posicion == null || posicion.getIdEvento() == null || posicion.getMatricula() == null) {
             return Response.status(Response.Status.BAD_REQUEST)

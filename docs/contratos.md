@@ -113,6 +113,21 @@ Una pesada sin guía vigente se guarda igual, con `guia_id` null: es la evidenci
 La cola `pesadas` recibe un mensaje por cada pesada **nueva**, nunca por una que ya estaba. El
 consumidor de P5 igual tiene que tolerar repetidos (deduplicar por `idPesada`), como cualquier cola.
 
+## Seguridad de P4
+
+| Qué | Cómo se protege | Si falla |
+|---|---|---|
+| `POST /carga/api/tracking/posiciones` (nodo Tracking → central) | header `X-Nodo-Token` = `NODO_TRACKING_TOKEN` | 401 |
+| `GET /balanzas/api/pesadas` (central → nodo Balanzas) | header `X-Nodo-Token` = `NODO_BALANZAS_TOKEN` | 401; el central lo informa como "no aceptó las credenciales" |
+| `/carga/api/monitor/*` y `/carga/api/pesajes/*` | sesión con rol `ADMINISTRADOR` o `FUNCIONARIO` | 401 sin sesión, 403 sin el rol |
+
+El token de los nodos **no va en `Authorization`**: ese header lo procesa `MecanismoJwt` en todos los
+pedidos y un token de nodo no es un JWT. Los dos lados fallan cerrado: sin token configurado no se
+acepta a nadie. Detalle y alternativas en el ADR-0007.
+
+**Limitación conocida:** el panel de operación (`panel.xhtml`) usa los servicios directamente y no
+tiene inicio de sesión: queda abierto hasta que pase al backoffice autenticado (ADR-0004).
+
 ## 6. Variables de entorno
 
 | Variable | Usada por | Default |
@@ -125,6 +140,8 @@ consumidor de P5 igual tiene que tolerar repetidos (deduplicar por `idPesada`), 
 | `BALANZAS_DEMORA_MS`, `BALANZAS_FALLA` | nodo Balanzas | `0`, `false` |
 | `BALANZAS_TIMEOUT_MS`, `BALANZAS_REINTENTOS`, `BALANZAS_CIRCUITO_UMBRAL`, `BALANZAS_CIRCUITO_ESPERA_SEG` | `PesajeBean` | `3000`, `1`, `3`, `30` |
 | `PESAJES_AGENDA_ACTIVA` | `AgendaPesajesBean` (sincronización cada 15 min) | `true` |
+| `NODO_TRACKING_TOKEN` | central (valida) y nodo Tracking (lo manda como `NODO_TOKEN`) | `tracking-solo-desarrollo` |
+| `NODO_BALANZAS_TOKEN` | central (lo manda) y nodo Balanzas (valida como `NODO_TOKEN`) | `balanzas-solo-desarrollo` |
 | `PDI_TIMEOUT_MS`, `PDI_REINTENTOS`, `PDI_CIRCUITO_UMBRAL`, `PDI_CIRCUITO_ESPERA_SEG` | `PdiBean` | `3000`, `1`, `3`, `30` |
 | `JWT_SECRET` (≥ 32 caracteres), `JWT_DURACION_MINUTOS` | central | valor de desarrollo, `30` |
 | `ADMIN_INICIAL_USUARIO`, `ADMIN_INICIAL_PASSWORD` | central (solo si no hay cuentas internas) | `admin` / valor de desarrollo |

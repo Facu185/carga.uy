@@ -14,3 +14,4 @@ Plantilla: [plantilla.md](plantilla.md).
 | [0004](0004-frontend-react-sobre-api-rest.md) | Interfaces web en React sobre la API REST | Propuesta |
 | [0005](0005-autorizacion-y-concurrencia-de-guias.md) | Autorización y concurrencia al crear guías | Aceptada |
 | [0006](0006-obtencion-de-pesajes.md) | Obtención de pesajes: circuito compartido, deduplicación en la base y aviso por cola | Aceptada |
+| [0007](0007-seguridad-de-nodos-y-endpoints-p4.md) | Autenticación de los nodos periféricos y roles en los endpoints de P4 | Aceptada |

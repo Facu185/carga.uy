@@ -49,6 +49,8 @@ public class PesajeBean implements PesajeLocal {
     private static final Logger LOG = Logger.getLogger(PesajeBean.class.getName());
     private static final Duration PAUSA_BASE = Duration.ofMillis(200);
 
+    /** Con este header el central se identifica ante el nodo (ADR-0007). */
+    static final String HEADER_TOKEN = "X-Nodo-Token";
     static final String METRICA_CONSULTAS = "carga_balanzas_consultas_total";
     static final String METRICA_DURACION = "carga_balanzas_duracion_ms";
 
@@ -56,6 +58,7 @@ public class PesajeBean implements PesajeLocal {
     MetricasLocal metricas;
 
     private String url;
+    private String token;
     private Duration timeout;
     private int reintentos;
     CircuitBreaker circuito;
@@ -67,6 +70,10 @@ public class PesajeBean implements PesajeLocal {
                 entero("BALANZAS_REINTENTOS", 1),
                 new CircuitBreaker("Balanzas", entero("BALANZAS_CIRCUITO_UMBRAL", 3),
                         Duration.ofSeconds(entero("BALANZAS_CIRCUITO_ESPERA_SEG", 30)), Clock.systemUTC()));
+        token = System.getenv().getOrDefault("NODO_BALANZAS_TOKEN", "").trim();
+        if (token.isEmpty()) {
+            LOG.warning("NODO_BALANZAS_TOKEN no esta configurado: el nodo Balanzas va a rechazar las consultas");
+        }
         metricas.registrarMedidor("carga_balanzas_circuito_abierto",
                 () -> circuito.estado() == CircuitBreaker.Estado.CERRADO ? 0 : 1);
     }
@@ -107,8 +114,11 @@ public class PesajeBean implements PesajeLocal {
                 // semiabierto la prueba quedaria colgada). El pedido no se reintenta.
                 circuito.registrarExito();
                 metricas.contar(METRICA_CONSULTAS, "resultado", "rechazada");
-                return ResultadoPesajeDTO.noDisponible(
-                        "El nodo Balanzas rechazo la consulta (HTTP " + e.estado + ").", milisDesde(inicio));
+                String motivo = e.estado == 401 || e.estado == 403
+                        ? "El nodo Balanzas no acepto las credenciales del central (HTTP " + e.estado
+                        + "): revisar NODO_BALANZAS_TOKEN."
+                        : "El nodo Balanzas rechazo la consulta (HTTP " + e.estado + ").";
+                return ResultadoPesajeDTO.noDisponible(motivo, milisDesde(inicio));
             } catch (Exception e) {
                 LOG.warning("Falla consultando el nodo Balanzas (intento " + (intento + 1) + "): " + e);
             }
@@ -143,6 +153,9 @@ public class PesajeBean implements PesajeLocal {
                         .request(MediaType.APPLICATION_JSON)
                         .header(Traza.HEADER, tramo.traceparent());
                 Correlacion.actual().ifPresent(id -> pedido.header(Correlacion.HEADER, id));
+                if (token != null && !token.isEmpty()) {
+                    pedido.header(HEADER_TOKEN, token);
+                }
                 try (Response respuesta = pedido.get()) {
                     int estado = respuesta.getStatus();
                     tramo.atributo("http.status_code", estado);

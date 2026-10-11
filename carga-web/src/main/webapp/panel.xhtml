@@ -29,7 +29,9 @@
     </div>
 
     <h:form id="f">
-        <p:poll interval="5" update="tarjetas nodos"/>
+        <p:poll interval="5" update="tarjetas nodos datosMapa" oncomplete="pintarMapaDesdePagina()"/>
+        <!-- Datos del mapa: viajan con el mismo auto-refresco, no por la API REST (que exige rol) -->
+        <h:outputText id="datosMapa" value="#{panelVista.mapaJson}" style="display:none"/>
 
         <h:panelGroup id="tarjetas" layout="block" styleClass="tarjetas">
             <div class="tarjeta">
@@ -171,15 +173,19 @@
         }
     }
 
-    function actualizar() {
-        fetch('api/monitor/mapa')
-            .then(function (r) { return r.json(); })
-            .then(pintar)
-            .catch(function (e) { console.warn('No se pudo leer el mapa', e); });
-    }
-
-    actualizar();
-    setInterval(actualizar, 5000);
+    // Los datos llegan dentro de la pagina (f:datosMapa) y se renuevan con el auto-refresco de JSF
+    window.pintarMapaDesdePagina = function () {
+        var datos = document.getElementById('f:datosMapa');
+        if (!datos) {
+            return;
+        }
+        try {
+            pintar(JSON.parse(datos.textContent || '[]'));
+        } catch (e) {
+            console.warn('No se pudieron leer los datos del mapa', e);
+        }
+    };
+    window.pintarMapaDesdePagina();
 })();
 //]]>
 </script>
