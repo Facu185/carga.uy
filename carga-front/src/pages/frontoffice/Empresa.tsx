@@ -1,4 +1,4 @@
-import { Building2, LogOut, Truck, Users } from 'lucide-react'
+import { Building2, LogOut, Users } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { api } from '../../api/cliente'

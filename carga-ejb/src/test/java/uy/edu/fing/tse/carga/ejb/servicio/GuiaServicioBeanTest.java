@@ -147,6 +147,7 @@ class GuiaServicioBeanTest {
                     : jpql.contains("from Chofer c where") ? List.of(chofer) : jpql.contains("from Guia g") ? guias : List.of();
             return (TypedQuery<?>) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{TypedQuery.class}, (p, m, a) -> switch (m.getName()) {
                 case "setParameter" -> { parametros.put((String) a[0], a[1]); yield p; }
+                case "setMaxResults" -> p;
                 case "getResultStream" -> resultados.stream();
                 case "getResultList" -> resultados;
                 case "getSingleResult" -> conflictosVehiculo + conflictosChofer;
