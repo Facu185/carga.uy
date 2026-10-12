@@ -11,7 +11,7 @@ import java.util.Map;
 @Path("/choferes") @Produces(MediaType.APPLICATION_JSON) @Consumes(MediaType.APPLICATION_JSON)
 public class ChoferRecurso {
     @EJB private ChoferServicioLocal servicio;
-    @GET public Response listar(@QueryParam("empresaId") Long empresaId) { return Response.ok(servicio.listar(empresaId)).build(); }
+    @GET public Response listar(@QueryParam("empresaId") Long empresaId) { try { return Response.ok(servicio.listar(empresaId)).build(); } catch (NegocioException e) { return error(e); } }
     @POST public Response agregar(ChoferDTO dto) { try { return Response.status(Response.Status.CREATED).entity(servicio.agregar(dto)).build(); } catch (NegocioException e) { return error(e); } }
     @PUT @Path("/{id}") public Response modificar(@PathParam("id") Long id, ChoferDTO dto) { try { return Response.ok(servicio.modificar(id, dto)).build(); } catch (NegocioException e) { return error(e); } }
     @DELETE @Path("/{id}") public Response baja(@PathParam("id") Long id) { try { servicio.darDeBaja(id); return Response.noContent().build(); } catch (NegocioException e) { return error(e); } }

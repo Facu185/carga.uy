@@ -7,7 +7,7 @@ import { EncabezadoSitio } from '../../componentes/EncabezadoSitio'
 import { Etiqueta } from '../../componentes/Etiqueta'
 import { PieSitio } from '../../componentes/PieSitio'
 import { formatearCedula, formatearFecha, nombreRol } from '../../formato'
-import { ROLES, type Perfil } from '../../tipos'
+import { ROLES, type Perfil, type VinculoEmpresa } from '../../tipos'
 import { SolicitudAcceso } from './SolicitudAcceso'
 import { useTituloPagina } from '../../titulo'
 
@@ -22,6 +22,7 @@ export function MiCuenta() {
   useTituloPagina('Mi cuenta')
   const { sesion, logout } = useAuth()
   const [perfil, setPerfil] = useState<Perfil | null>(null)
+  const [vinculos, setVinculos] = useState<VinculoEmpresa[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -34,10 +35,20 @@ export function MiCuenta() {
     }
   }, [])
 
+  useEffect(() => {
+    let vigente = true
+    api<VinculoEmpresa[]>('/solicitudes-empresa/vinculos/mios')
+      .then((respuesta) => { if (vigente) setVinculos(respuesta) })
+      // La ficha no es crítica para Mi cuenta: si falla, el resto de la pantalla sigue disponible.
+      .catch(() => undefined)
+    return () => { vigente = false }
+  }, [])
+
   const verificado = perfil?.verificacionDnic === 'VERIFICADO'
   const roles = sesion?.roles ?? (sesion ? [sesion.rol] : [])
   const esCiudadano = roles.includes(ROLES.CIUDADANO)
   const esChofer = roles.includes(ROLES.CHOFER)
+  const esResponsable = vinculos.some((vinculo) => vinculo.tipo === 'RESPONSABLE' && vinculo.estado === 'ACTIVO')
 
   return (
     <div className="pagina">
@@ -79,6 +90,16 @@ export function MiCuenta() {
                   </>
                 )}
               </section>
+              {esResponsable && (
+                <section className="ficha" aria-labelledby="titulo-administrar-empresa">
+                  <h2 id="titulo-administrar-empresa" className="titulo-con-icono">
+                    <Truck size={22} aria-hidden="true" />
+                    Administración de empresa
+                  </h2>
+                  <p className="ficha-texto">Gestioná los choferes habilitados de la empresa de la que sos responsable.</p>
+                  <Link className="boton-enlace" to="/mi-empresa">Administrar choferes</Link>
+                </section>
+              )}
               {esCiudadano && <SolicitudAcceso />}
             </div>
           )}

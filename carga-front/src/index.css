@@ -97,6 +97,11 @@ button:disabled { opacity: 0.6; cursor: default; }
 .ficha-datos dd { margin: 0.15rem 0 0; font-size: 1.1rem; font-weight: 700; overflow-wrap: break-word; }
 .ficha-nota { margin: 1.25rem 0 0; padding-top: 1rem; border-top: 1px solid var(--borde); color: var(--grava); font-size: 0.9rem; }
 .ficha-texto { margin: 0 0 1rem; max-width: 60ch; }
+.empresa-contenido { max-width: 1080px; }
+.empresa-nav { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--borde); margin-bottom: 2rem; overflow-x: auto; }
+.empresa-nav a { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.65rem 0.85rem; color: var(--grava); text-decoration: none; border-bottom: 3px solid transparent; white-space: nowrap; }
+.empresa-nav a:hover { color: var(--asfalto); }
+.empresa-nav a.active { color: var(--asfalto); font-weight: 700; border-bottom-color: var(--senal); }
 
 /* Mi cuenta: lo que la persona viene a hacer a la izquierda; sus datos, al costado */
 .cuenta-grilla { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 1.5rem; align-items: start; }

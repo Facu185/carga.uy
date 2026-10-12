@@ -10,13 +10,13 @@ import { CambiarPassword } from './pages/backoffice/CambiarPassword'
 import { PanelBackoffice } from './pages/backoffice/PanelBackoffice'
 import { Usuarios } from './pages/backoffice/Usuarios'
 import { Funcionarios } from './pages/backoffice/Funcionarios'
-import { Choferes } from './pages/backoffice/Choferes'
 import { Auditoria } from './pages/backoffice/Auditoria'
 import { Ingresar } from './pages/frontoffice/Ingresar'
 import { IngresoCallback } from './pages/frontoffice/IngresoCallback'
 import { MiCuenta } from './pages/frontoffice/MiCuenta'
 import { NuevaGuia } from './pages/frontoffice/NuevaGuia'
 import { MisGuias } from './pages/frontoffice/MisGuias'
+import { Empresa } from './pages/frontoffice/Empresa'
 import { ROLES } from './tipos'
 
 export default function App() {
@@ -52,6 +52,14 @@ export default function App() {
               </RutaProtegida>
             }
           />
+          <Route
+            path="/mi-empresa"
+            element={
+              <RutaProtegida roles={[ROLES.CIUDADANO, ROLES.CHOFER]} login="/ingresar">
+                <Empresa />
+              </RutaProtegida>
+            }
+          />
           <Route path="/backoffice/login" element={<Login />} />
           <Route
             path="/backoffice/cambiar-password"
@@ -79,14 +87,6 @@ export default function App() {
               }
             />
             <Route path="auditoria" element={<Auditoria />} />
-            <Route
-              path="choferes"
-              element={
-                <RutaProtegida roles={[ROLES.ADMINISTRADOR]}>
-                  <Choferes />
-                </RutaProtegida>
-              }
-            />
             <Route
               path="funcionarios"
               element={

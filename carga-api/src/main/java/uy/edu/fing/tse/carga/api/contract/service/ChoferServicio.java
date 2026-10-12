@@ -10,5 +10,5 @@ public interface ChoferServicio {
     ChoferDTO modificar(Long id, ChoferDTO chofer) throws NegocioException;
     void darDeBaja(Long id) throws NegocioException;
     void darDeAlta(Long id) throws NegocioException;
-    List<ChoferDTO> listar(Long empresaId);
+    List<ChoferDTO> listar(Long empresaId) throws NegocioException;
 }
