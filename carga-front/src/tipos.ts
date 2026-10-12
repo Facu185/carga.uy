@@ -71,6 +71,18 @@ export interface Empresa {
   activa: boolean
 }
 
+/** Vínculo auditable de la persona con una empresa. RESPONSABLE activo habilita su gestión. */
+export interface VinculoEmpresa {
+  id: number
+  empresaId: number
+  nombreEmpresa: string
+  tipo: 'RESPONSABLE' | 'OPERADOR'
+  estado: 'PENDIENTE' | 'ACTIVO' | 'RECHAZADO' | 'REVOCADO'
+  solicitadoEn: string
+  cedulaSolicitante?: string
+  nombreSolicitante?: string
+}
+
 export interface Perfil {
   cedula: string
   nombre: string | null

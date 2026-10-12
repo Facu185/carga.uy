@@ -35,7 +35,11 @@ public class ChoferVista implements Serializable {
     }
 
     public void refrescar() {
-        choferes = servicio.listar(null);
+        try {
+            choferes = servicio.listar(null);
+        } catch (NegocioException e) {
+            mensaje(FacesMessage.SEVERITY_ERROR, e.getMessage());
+        }
         empresas = empresaServicio.listar().stream().filter(EmpresaDTO::isActiva).toList();
     }
 

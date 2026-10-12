@@ -1,11 +1,14 @@
 package uy.edu.fing.tse.carga.ejb.servicio;
 
 import jakarta.ejb.Stateless;
+import jakarta.annotation.security.DeclareRoles;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import uy.edu.fing.tse.carga.api.contract.service.VehiculoServicioLocal;
 import uy.edu.fing.tse.carga.api.dto.guia.VehiculoDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.security.Roles;
 import uy.edu.fing.tse.carga.ejb.modelo.Empresa;
 import uy.edu.fing.tse.carga.ejb.modelo.Vehiculo;
 
@@ -15,6 +18,8 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @Stateless
+@DeclareRoles({Roles.ADMINISTRADOR, Roles.AUTORIDAD, Roles.FUNCIONARIO, Roles.CHOFER, Roles.CIUDADANO})
+@RolesAllowed({Roles.ADMINISTRADOR, Roles.CIUDADANO, Roles.CHOFER})
 public class VehiculoServicioBean implements VehiculoServicioLocal {
     @PersistenceContext(unitName = "cargaPU")
     private EntityManager em;

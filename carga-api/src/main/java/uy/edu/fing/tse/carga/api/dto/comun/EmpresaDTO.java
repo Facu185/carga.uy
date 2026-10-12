@@ -12,6 +12,7 @@ public class EmpresaDTO implements Serializable {
     private Long id;
     private String nombre;
     private String razonSocial;
+    private String direccion;
     private long numeroEmpresa;
     private LocalDate fechaAlta;
     private boolean activa = true;
@@ -34,6 +35,9 @@ public class EmpresaDTO implements Serializable {
 
     public String getRazonSocial() { return razonSocial; }
     public void setRazonSocial(String razonSocial) { this.razonSocial = razonSocial; }
+
+    public String getDireccion() { return direccion; }
+    public void setDireccion(String direccion) { this.direccion = direccion; }
 
     public long getNumeroEmpresa() { return numeroEmpresa; }
     public void setNumeroEmpresa(long numeroEmpresa) { this.numeroEmpresa = numeroEmpresa; }

@@ -21,6 +21,17 @@
             <groupId>uy.edu.fing.tse</groupId>
             <artifactId>carga-api</artifactId>
         </dependency>
+        <!-- Traza de carga-api usa MDC; el WAR debe incluirlo para el runtime de pruebas y despliegue. -->
+        <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

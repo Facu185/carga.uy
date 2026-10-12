@@ -20,6 +20,15 @@ public enum AccionAuditada {
     SOLICITUD_FUNCIONARIO_CREADA(false),
     SOLICITUD_FUNCIONARIO_APROBADA(false),
     SOLICITUD_FUNCIONARIO_RECHAZADA(true),
+    // Empresas y autorizaciones empresariales
+    SOLICITUD_EMPRESA_CREADA(false),
+    SOLICITUD_EMPRESA_APROBADA(false),
+    SOLICITUD_EMPRESA_RECHAZADA(true),
+    VINCULO_EMPRESA_SOLICITADO(false),
+    VINCULO_EMPRESA_APROBADO(false),
+    VINCULO_EMPRESA_TRANSFERIDO(true),
+    VINCULO_EMPRESA_RECHAZADO(true),
+    EMPRESA_DADA_DE_BAJA(true),
     // Seguridad de acceso
     INGRESO_EXITOSO(false),
     INGRESO_FALLIDO(false),

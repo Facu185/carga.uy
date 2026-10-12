@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
@@ -39,11 +38,6 @@ public class Usuario {
 
     @Column(length = 200)
     private String nombre;
-
-    /** Solo para el responsable de una empresa (lo usa P2). */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "empresa_id")
-    private Empresa empresa;
 
     @Column(name = "creado_en", nullable = false)
     private Instant creadoEn;
@@ -124,7 +118,6 @@ public class Usuario {
     public String getCedula() { return cedula; }
     public String getCorreo() { return correo; }
     public String getNombre() { return nombre; }
-    public Empresa getEmpresa() { return empresa; }
     public Instant getCreadoEn() { return creadoEn; }
     public LocalDate getFechaNacimiento() { return fechaNacimiento; }
     public Instant getVerificadoDnicEn() { return verificadoDnicEn; }
