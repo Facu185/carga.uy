@@ -49,11 +49,11 @@ public class GuiaServicioBean implements GuiaServicioLocal {
         if (comando.getVehiculoId() == null || comando.getChoferId() == null || comando.getRubroId() == null)
             throw new NegocioException("Vehiculo, chofer y rubro son obligatorios.");
 
-        Empresa empresa = empresaDelResponsable();
         // Bloqueos antes de consultar conflictos: una sola asignacion concurrente puede avanzar.
         Vehiculo vehiculo = em.find(Vehiculo.class, comando.getVehiculoId(), LockModeType.PESSIMISTIC_WRITE);
         Chofer chofer = em.find(Chofer.class, comando.getChoferId(), LockModeType.PESSIMISTIC_WRITE);
         if (vehiculo == null || chofer == null) throw new NegocioException("El vehiculo o el chofer no existe.");
+        Empresa empresa = empresaParaOperacion(vehiculo.getEmpresa().getId());
         if (!empresa.isActiva() || !empresa.getId().equals(vehiculo.getEmpresa().getId()) || !empresa.getId().equals(chofer.getEmpresa().getId()))
             throw new NegocioException("El vehiculo y el chofer deben pertenecer a la empresa responsable.");
         // El intervalo es [inicio, fin): para verificar su ultimo instante se resta
@@ -95,16 +95,18 @@ public class GuiaServicioBean implements GuiaServicioLocal {
 
     @Override
     public List<VehiculoDTO> vehiculosDeLaEmpresaAutenticada() throws NegocioException {
-        Empresa empresa = empresaDelResponsable();
-        return em.createQuery("select v from Vehiculo v where v.empresa.id = :empresaId and v.habilitado = true order by v.matricula", Vehiculo.class)
-                .setParameter("empresaId", empresa.getId()).getResultList().stream().map(this::vehiculoDTO).toList();
+        return em.createQuery("select v from Vehiculo v where v.habilitado = true and exists " +
+                        "(select x.id from VinculoEmpresaUsuario x where x.empresa = v.empresa and x.usuario.cedula = :cedula and x.estado = :estado) order by v.matricula", Vehiculo.class)
+                .setParameter("cedula", principalAutenticado()).setParameter("estado", EstadoVinculoEmpresa.ACTIVO)
+                .getResultList().stream().map(this::vehiculoDTO).toList();
     }
 
     @Override
     public List<ChoferDTO> choferesDeLaEmpresaAutenticada() throws NegocioException {
-        Empresa empresa = empresaDelResponsable();
-        return em.createQuery("select c from Chofer c where c.empresa.id = :empresaId and c.activo = true order by c.nombre", Chofer.class)
-                .setParameter("empresaId", empresa.getId()).getResultList().stream().map(this::choferDTO).toList();
+        return em.createQuery("select c from Chofer c where c.activo = true and exists " +
+                        "(select x.id from VinculoEmpresaUsuario x where x.empresa = c.empresa and x.usuario.cedula = :cedula and x.estado = :estado) order by c.nombre", Chofer.class)
+                .setParameter("cedula", principalAutenticado()).setParameter("estado", EstadoVinculoEmpresa.ACTIVO)
+                .getResultList().stream().map(this::choferDTO).toList();
     }
 
     @Override
@@ -127,13 +129,16 @@ public class GuiaServicioBean implements GuiaServicioLocal {
     private TipoCargaDTO tipoCargaDTO(TipoCarga t) { TipoCargaDTO dto = new TipoCargaDTO(); dto.setId(t.getId()); dto.setNombre(t.getNombre()); return dto; }
     private static String texto(Object valor) { return valor == null ? null : valor.toString(); }
 
-    private Empresa empresaDelResponsable() throws NegocioException {
+    /** La autorización se evalúa por empresa; no se deduce de un rol global ni de Usuario.empresa. */
+    private Empresa empresaParaOperacion(Long empresaId) throws NegocioException {
         String cedula = principalAutenticado();
-        Usuario usuario = em.createQuery("select u from Usuario u join fetch u.empresa where u.cedula = :cedula", Usuario.class)
-                .setParameter("cedula", cedula).getResultStream().findFirst().orElse(null);
-        if (usuario == null || usuario.getEmpresa() == null)
+        Empresa empresa = em.createQuery("select x.empresa from VinculoEmpresaUsuario x where x.usuario.cedula = :cedula " +
+                        "and x.empresa.id = :empresaId and x.estado = :estado", Empresa.class)
+                .setParameter("cedula", cedula).setParameter("empresaId", empresaId).setParameter("estado", EstadoVinculoEmpresa.ACTIVO)
+                .setMaxResults(1).getResultStream().findFirst().orElse(null);
+        if (empresa == null)
             throw new NegocioException("El usuario autenticado no esta vinculado a una empresa.");
-        return usuario.getEmpresa();
+        return empresa;
     }
 
     private boolean hayConflicto(Long vehiculoId, Long choferId, Instant inicio, Instant fin) {

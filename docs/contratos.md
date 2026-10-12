@@ -19,7 +19,7 @@ grupo antes de mergear: hay código de otra persona que depende.
 | `IngresoGubUyLocal` | P1 | Ingreso de ciudadanos y funcionarios con gub.uy (OIDC + PKCE) |
 | `MetricasLocal` | P1 | Contadores, histogramas de duración y medidores, exportados en formato Prometheus |
 | `SaludLocal` | P1 | Estado del central y de sus dependencias (base de datos, PDI) |
-| `CuentasInternasLocal`, `FuncionariosLocal`, `SolicitudesFuncionarioLocal`, `PerfilLocal` | P1 | Gestión de accesos del backoffice y perfil de quien ingresó con gub.uy |
+| `CuentasInternasLocal`, `FuncionariosLocal`, `SolicitudesFuncionarioLocal`, `SolicitudesEmpresaLocal`, `PerfilLocal` | P1 | Gestión de accesos del backoffice, solicitudes de empresa/vínculo y perfil de quien ingresó con gub.uy |
 
 Para proteger un servicio propio alcanza con `@RolesAllowed(Roles.X)` (constantes en
 `uy.edu.fing.tse.carga.api.security.Roles`). La identidad la establece la capa web a partir del token
@@ -56,6 +56,7 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `POST /carga/api/auth/login` · `POST /auth/cambiar-password` · `POST /auth/renovar` · `GET /auth/yo` | backoffice, app móvil |
 | `GET /carga/api/auth/gubuy/iniciar?destino=web\|movil` · `GET /auth/gubuy/callback` | frontoffice, app móvil (redirecciones) |
 | `/carga/api/usuarios-internos` · `/funcionarios` · `/solicitudes-funcionario` · `/auditoria` | backoffice |
+| `/carga/api/solicitudes-empresa` | frontoffice (solicitante) y backoffice (verificación por funcionario) |
 | `GET /carga/api/mi-perfil` | frontoffice, app móvil |
 | `GET /carga/api/salud` · `GET /carga/api/salud/listo` | health checks (Docker, nube) |
 | `GET /carga/api/metricas` | Prometheus (texto) |
@@ -82,14 +83,14 @@ que ya procesó. Un mensaje puede llegar más de una vez y eso tiene que ser ino
 
 ## Guías P2
 
-`POST /api/guias` recibe `inicio` y `fin` ISO-8601 con zona horaria, además de los datos de carga. El periodo es semiabierto `[inicio, fin)`: dos viajes consecutivos cuyo fin/inicio coinciden son válidos. La creación toma bloqueos pesimistas de vehículo y chofer y rechaza solapamientos. El responsable se resuelve exclusivamente desde el principal autenticado (`usuario.cedula -> usuario.empresa_id`).
+`POST /api/guias` recibe `inicio` y `fin` ISO-8601 con zona horaria, además de los datos de carga. El periodo es semiabierto `[inicio, fin)`: dos viajes consecutivos cuyo fin/inicio coinciden son válidos. La creación toma bloqueos pesimistas de vehículo y chofer y rechaza solapamientos. La autorización empresarial se resuelve exclusivamente desde el principal autenticado mediante un `vinculo_empresa_usuario` activo; nunca desde un rol global ni de un `empresa_id` en `usuario`.
 
 `GET /api/guias/mis-guias` requiere el rol `CHOFER` y resuelve el chofer por la cédula del principal; nunca acepta un identificador de chofer del cliente.
 
 Tablas compartidas (las toca más de un frente): `empresa`, `vehiculo`, `chofer`, `guia`, `usuario`,
 `rol`, `auditoria`. Cambiarlas requiere aviso.
 
-Tablas de un solo frente: `posicion_tracking` y `pesada` (P4), `caso_fiscalizacion` y `descargo`
+Tablas de un solo frente: `solicitud_alta_empresa` y `vinculo_empresa_usuario` (P1), `posicion_tracking` y `pesada` (P4), `caso_fiscalizacion` y `descargo`
 (P5), `evento_viaje` (P3), `usuario_rol` (P1).
 
 Convenciones:

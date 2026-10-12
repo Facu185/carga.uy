@@ -24,6 +24,9 @@ public class Empresa {
     @Column(name = "razon_social", length = 200)
     private String razonSocial;
 
+    @Column(length = 300)
+    private String direccion;
+
     @Column(name = "numero_empresa", nullable = false, unique = true)
     private long numeroEmpresa;
 
@@ -37,6 +40,7 @@ public class Empresa {
         Empresa e = new Empresa();
         e.nombre = dto.getNombre();
         e.razonSocial = dto.getRazonSocial();
+        e.direccion = dto.getDireccion();
         e.numeroEmpresa = dto.getNumeroEmpresa();
         e.fechaAlta = dto.getFechaAlta();
         e.activa = dto.isActiva();
@@ -47,6 +51,7 @@ public class Empresa {
         EmpresaDTO dto = new EmpresaDTO(nombre, razonSocial, numeroEmpresa, fechaAlta);
         dto.setId(id);
         dto.setActiva(activa);
+        dto.setDireccion(direccion);
         return dto;
     }
 
@@ -55,6 +60,8 @@ public class Empresa {
     public void setNombre(String nombre) { this.nombre = nombre; }
     public String getRazonSocial() { return razonSocial; }
     public void setRazonSocial(String razonSocial) { this.razonSocial = razonSocial; }
+    public String getDireccion() { return direccion; }
+    public void setDireccion(String direccion) { this.direccion = direccion; }
     public long getNumeroEmpresa() { return numeroEmpresa; }
     public void setNumeroEmpresa(long numeroEmpresa) { this.numeroEmpresa = numeroEmpresa; }
     public LocalDate getFechaAlta() { return fechaAlta; }

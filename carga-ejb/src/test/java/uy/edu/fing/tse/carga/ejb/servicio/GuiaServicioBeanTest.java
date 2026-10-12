@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class GuiaServicioBeanTest {
     @Test void rechazaResponsableSinEmpresa() {
         Escenario e = new Escenario();
-        e.usuario = new Usuario("responsable", "Responsable", null);
+        e.empresaVinculada = null;
         NegocioException ex = assertThrows(NegocioException.class, () -> e.bean().crear(e.comando()));
         assertEquals("El usuario autenticado no esta vinculado a una empresa.", ex.getMessage());
     }
@@ -104,7 +104,7 @@ class GuiaServicioBeanTest {
         final Empresa otraEmpresa = conIdSeguro(empresa(2L), 2L);
         final Vehiculo vehiculo = vehiculo();
         final Chofer chofer = chofer();
-        Usuario usuario = usuarioConEmpresa();
+        Empresa empresaVinculada = empresa;
         SessionContext sesion = Falsos.sesion("responsable");
         long conflictosVehiculo;
         long conflictosChofer;
@@ -143,7 +143,7 @@ class GuiaServicioBeanTest {
         private TypedQuery<?> consulta(String jpql) {
             ultimaConsulta = jpql;
             if (jpql.startsWith("select count(g)")) indiceConsultaConflicto = ++secuencia;
-            List<?> resultados = jpql.contains("from Usuario") ? (usuario == null ? List.of() : List.of(usuario))
+            List<?> resultados = jpql.contains("from VinculoEmpresaUsuario") ? (empresaVinculada == null ? List.of() : List.of(empresaVinculada))
                     : jpql.contains("from Chofer c where") ? List.of(chofer) : jpql.contains("from Guia g") ? guias : List.of();
             return (TypedQuery<?>) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{TypedQuery.class}, (p, m, a) -> switch (m.getName()) {
                 case "setParameter" -> { parametros.put((String) a[0], a[1]); yield p; }
@@ -154,7 +154,6 @@ class GuiaServicioBeanTest {
             });
         }
         private Empresa empresa(long id) { Empresa e = new Empresa(); e.setNumeroEmpresa(id); return e; }
-        private Usuario usuarioConEmpresa() { Usuario u = new Usuario("responsable", "Responsable", null); try { campo(u, "empresa").set(u, empresa); } catch (Exception x) { throw new AssertionError(x); } return u; }
         private Vehiculo vehiculo() { Vehiculo v = conIdSeguro(new Vehiculo(), 20L); v.setEmpresa(empresa); v.setCapacidadCargaKg(100); v.setCapacidadVolumenM3(BigDecimal.TEN); v.setPermisoDesde(LocalDate.parse("2026-10-01")); v.setPermisoHasta(LocalDate.parse("2026-10-10")); v.setItvVencimiento(LocalDate.parse("2026-10-10")); return v; }
         private Chofer chofer() { Chofer c = conIdSeguro(new Chofer(), 10L); c.setEmpresa(empresa); c.setCedula("otro"); return c; }
         private static <T> T conIdSeguro(T e, Long id) { try { return conId(e, id); } catch (Exception x) { throw new AssertionError(x); } }
