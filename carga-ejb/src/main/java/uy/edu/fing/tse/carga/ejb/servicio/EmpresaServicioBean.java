@@ -90,12 +90,14 @@ public class EmpresaServicioBean implements EmpresaServicioLocal, EmpresaServici
     }
 
     @Override
+    @RolesAllowed({Roles.CIUDADANO, Roles.CHOFER, Roles.FUNCIONARIO, Roles.AUTORIDAD, Roles.ADMINISTRADOR})
     public List<EmpresaDTO> listar() {
         return em.createQuery("select e from Empresa e order by e.id", Empresa.class)
                 .getResultList().stream().map(Empresa::aDTO).toList();
     }
 
     @Override
+    @RolesAllowed({Roles.CIUDADANO, Roles.CHOFER, Roles.FUNCIONARIO, Roles.AUTORIDAD, Roles.ADMINISTRADOR})
     public List<EmpresaDTO> buscarPorNombre(String nombre) {
         return em.createQuery(
                         "select e from Empresa e where lower(e.nombre) like lower(concat('%', :n, '%')) order by e.id",

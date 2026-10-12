@@ -78,6 +78,9 @@ export interface VinculoEmpresa {
   nombreEmpresa: string
   tipo: 'RESPONSABLE' | 'OPERADOR'
   estado: 'PENDIENTE' | 'ACTIVO' | 'RECHAZADO' | 'REVOCADO'
+  solicitadoEn: string
+  cedulaSolicitante?: string
+  nombreSolicitante?: string
 }
 
 export interface Perfil {

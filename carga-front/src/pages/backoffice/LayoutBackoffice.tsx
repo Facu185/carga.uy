@@ -1,4 +1,4 @@
-import { House, IdCard, KeyRound, LogOut, ScrollText, Users } from 'lucide-react'
+import { Building2, House, IdCard, KeyRound, LogOut, ScrollText, Users } from 'lucide-react'
 import { Link, Navigate, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../../auth/contexto'
 import { PieSitio } from '../../componentes/PieSitio'
@@ -10,6 +10,7 @@ import { ROLES } from '../../tipos'
 export function LayoutBackoffice() {
   const { sesion, logout } = useAuth()
   const esAdmin = sesion?.rol === ROLES.ADMINISTRADOR
+  const puedeRevisarEmpresas = sesion?.rol === ROLES.ADMINISTRADOR || sesion?.rol === ROLES.FUNCIONARIO
 
   // Con contraseña temporal el central rechaza todo lo demás: primero hay que cambiarla
   if (sesion?.debeCambiarPassword) {
@@ -34,6 +35,12 @@ export function LayoutBackoffice() {
                 <NavLink to="/backoffice/funcionarios">
                   <IdCard size={18} aria-hidden="true" />
                   Funcionarios
+                </NavLink>
+              )}
+              {puedeRevisarEmpresas && (
+                <NavLink to="/backoffice/solicitudes-empresa">
+                  <Building2 size={18} aria-hidden="true" />
+                  Solicitudes de empresas
                 </NavLink>
               )}
               {esAdmin && (

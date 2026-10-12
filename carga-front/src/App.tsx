@@ -17,6 +17,7 @@ import { MiCuenta } from './pages/frontoffice/MiCuenta'
 import { NuevaGuia } from './pages/frontoffice/NuevaGuia'
 import { MisGuias } from './pages/frontoffice/MisGuias'
 import { Empresa } from './pages/frontoffice/Empresa'
+import { SolicitudesEmpresa } from './pages/backoffice/SolicitudesEmpresa'
 import { ROLES } from './tipos'
 
 export default function App() {
@@ -64,7 +65,7 @@ export default function App() {
           <Route
             path="/backoffice/cambiar-password"
             element={
-              <RutaProtegida roles={[ROLES.ADMINISTRADOR, ROLES.AUTORIDAD]}>
+              <RutaProtegida roles={[ROLES.ADMINISTRADOR, ROLES.AUTORIDAD, ROLES.FUNCIONARIO]}>
                 <CambiarPassword />
               </RutaProtegida>
             }
@@ -72,7 +73,7 @@ export default function App() {
           <Route
             path="/backoffice"
             element={
-              <RutaProtegida roles={[ROLES.ADMINISTRADOR, ROLES.AUTORIDAD]}>
+              <RutaProtegida roles={[ROLES.ADMINISTRADOR, ROLES.AUTORIDAD, ROLES.FUNCIONARIO]}>
                 <LayoutBackoffice />
               </RutaProtegida>
             }
@@ -87,6 +88,14 @@ export default function App() {
               }
             />
             <Route path="auditoria" element={<Auditoria />} />
+            <Route
+              path="solicitudes-empresa"
+              element={
+                <RutaProtegida roles={[ROLES.ADMINISTRADOR, ROLES.FUNCIONARIO]}>
+                  <SolicitudesEmpresa />
+                </RutaProtegida>
+              }
+            />
             <Route
               path="funcionarios"
               element={

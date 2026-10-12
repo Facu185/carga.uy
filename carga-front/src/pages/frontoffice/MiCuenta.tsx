@@ -9,6 +9,7 @@ import { PieSitio } from '../../componentes/PieSitio'
 import { formatearCedula, formatearFecha, nombreRol } from '../../formato'
 import { ROLES, type Perfil, type VinculoEmpresa } from '../../tipos'
 import { SolicitudAcceso } from './SolicitudAcceso'
+import { SolicitudResponsable } from './SolicitudResponsable'
 import { useTituloPagina } from '../../titulo'
 
 function textoEdad(perfil: Perfil): string {
@@ -48,6 +49,7 @@ export function MiCuenta() {
   const roles = sesion?.roles ?? (sesion ? [sesion.rol] : [])
   const esCiudadano = roles.includes(ROLES.CIUDADANO)
   const esChofer = roles.includes(ROLES.CHOFER)
+  const puedeSolicitarResponsabilidad = esCiudadano || esChofer
   const esResponsable = vinculos.some((vinculo) => vinculo.tipo === 'RESPONSABLE' && vinculo.estado === 'ACTIVO')
 
   return (
@@ -100,6 +102,7 @@ export function MiCuenta() {
                   <Link className="boton-enlace" to="/mi-empresa">Administrar choferes</Link>
                 </section>
               )}
+              {puedeSolicitarResponsabilidad && <SolicitudResponsable />}
               {esCiudadano && <SolicitudAcceso />}
             </div>
           )}

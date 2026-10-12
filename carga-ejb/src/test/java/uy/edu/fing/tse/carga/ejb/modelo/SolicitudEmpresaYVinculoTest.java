@@ -38,4 +38,14 @@ class SolicitudEmpresaYVinculoTest {
         assertEquals(EstadoVinculoEmpresa.REVOCADO, vinculo.getEstado());
         assertThrows(IllegalStateException.class, () -> vinculo.aprobar("funcionario"));
     }
+
+    @Test
+    void elDtoDeVinculoConservaLaIdentidadDelSolicitanteParaSuRevision() {
+        var dto = new uy.edu.fing.tse.carga.api.dto.empresa.VinculoEmpresaDTO(
+                1L, 2L, "Transporte del Sur", "RESPONSABLE", "PENDIENTE", "2026-10-12T12:00:00Z",
+                null, null, null, null, null, "12345672", "Ana Perez");
+
+        assertEquals("12345672", dto.getCedulaSolicitante());
+        assertEquals("Ana Perez", dto.getNombreSolicitante());
+    }
 }

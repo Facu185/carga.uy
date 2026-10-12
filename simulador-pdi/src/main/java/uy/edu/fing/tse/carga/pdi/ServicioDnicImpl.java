@@ -31,7 +31,8 @@ public class ServicioDnicImpl implements ServicioDnic {
             "11111111", new PersonaDTO("11111111", "Ana Perez", "1985-04-12"),
             "22222222", new PersonaDTO("22222222", "Luis Gomez", "1979-09-03"),
             "33333333", new PersonaDTO("33333333", "Marta Silva", "1990-01-27"),
-            "44444444", new PersonaDTO("44444444", "Jorge Rodriguez", "1968-11-08")
+            "44444444", new PersonaDTO("44444444", "Jorge Rodriguez", "1968-11-08"),
+            "63224239", new PersonaDTO("63224239", "Roibeth Garcia", "1990-01-01")
     );
 
     static {
