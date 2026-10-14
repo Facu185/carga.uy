@@ -45,6 +45,11 @@ services:
       # Tokens compartidos con los nodos perifericos (ADR-0007). Los default son de desarrollo.
       NODO_BALANZAS_TOKEN: ${NODO_BALANZAS_TOKEN:-balanzas-solo-desarrollo}
       NODO_TRACKING_TOKEN: ${NODO_TRACKING_TOKEN:-tracking-solo-desarrollo}
+      # Saturacion de la ingesta de posiciones (ADR-0008). Los default son los del volumen estimado.
+      TRACKING_COLA_UMBRAL_ALTO: ${TRACKING_COLA_UMBRAL_ALTO:-18000}
+      TRACKING_COLA_UMBRAL_BAJO: ${TRACKING_COLA_UMBRAL_BAJO:-9000}
+      TRACKING_REINTENTAR_SEG: ${TRACKING_REINTENTAR_SEG:-30}
+      TRACKING_LOTE_MAX: ${TRACKING_LOTE_MAX:-500}
       SIMULADOR_PDI_URL: http://localhost:8080/simulador-pdi/ServicioDnicImpl?wsdl
       PDI_TIMEOUT_MS: ${PDI_TIMEOUT_MS:-3000}
       PDI_REINTENTOS: ${PDI_REINTENTOS:-1}

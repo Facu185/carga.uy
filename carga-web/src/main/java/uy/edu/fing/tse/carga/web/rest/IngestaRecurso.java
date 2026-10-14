@@ -9,14 +9,12 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import uy.edu.fing.tse.carga.api.contract.service.IngestaTrackingLocal;
 import uy.edu.fing.tse.carga.api.dto.comun.PosicionDTO;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
 
+import java.util.List;
 import java.util.Map;
 
-/**
- * Punto de entrada del nodo Tracking.
- * Responde 202 (aceptado, todavia no procesado) apenas encola: el nodo no espera
- * a que la posicion se persista.
- */
+
 @Path("/tracking")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -28,12 +26,15 @@ public class IngestaRecurso {
     @POST
     @Path("/posiciones")
     @NodoAutenticado
-    public Response recibir(PosicionDTO posicion) {
-        if (posicion == null || posicion.getIdEvento() == null || posicion.getMatricula() == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", "idEvento y matricula son obligatorios")).build();
-        }
+    public Response recibir(PosicionDTO posicion) throws NegocioException {
         ingesta.encolarPosicion(posicion);
         return Response.accepted(Map.of("idEvento", posicion.getIdEvento())).build();
+    }
+
+    @POST
+    @Path("/posiciones/lote")
+    @NodoAutenticado
+    public Response recibirLote(List<PosicionDTO> posiciones) throws NegocioException {
+        return Response.accepted(ingesta.encolarLote(posiciones)).build();
     }
 }

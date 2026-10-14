@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import uy.edu.fing.tse.carga.api.dto.comun.PosicionDTO;
 
 import java.time.OffsetDateTime;
 
@@ -41,6 +42,17 @@ public class PosicionTracking {
 
     @Column(name = "recibido_en", nullable = false)
     private OffsetDateTime recibidoEn = OffsetDateTime.now();
+
+    public static PosicionTracking desde(PosicionDTO dto, OffsetDateTime recibidoEn) {
+        PosicionTracking p = new PosicionTracking();
+        p.setIdEvento(dto.getIdEvento().trim());
+        p.setMatricula(dto.getMatricula().trim());
+        p.setLatitud(dto.getLatitud());
+        p.setLongitud(dto.getLongitud());
+        p.setInstante(OffsetDateTime.parse(dto.getInstante().trim()));
+        p.setRecibidoEn(recibidoEn);
+        return p;
+    }
 
     public Long getId() { return id; }
     public String getIdEvento() { return idEvento; }

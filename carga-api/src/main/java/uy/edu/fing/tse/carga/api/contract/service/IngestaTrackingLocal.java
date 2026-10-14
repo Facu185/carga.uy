@@ -2,13 +2,14 @@ package uy.edu.fing.tse.carga.api.contract.service;
 
 import jakarta.ejb.Local;
 import uy.edu.fing.tse.carga.api.dto.comun.PosicionDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoLoteDTO;
+import uy.edu.fing.tse.carga.api.exception.NegocioException;
 
-/**
- * Ingesta de posiciones del nodo Tracking.
- * La recepcion se desacopla del procesamiento: encola y retorna (RNF 4.1 de la letra).
- */
+import java.util.List;
+
 @Local
 public interface IngestaTrackingLocal {
 
-    void encolarPosicion(PosicionDTO posicion);
+    void encolarPosicion(PosicionDTO posicion) throws NegocioException;
+    ResultadoLoteDTO encolarLote(List<PosicionDTO> posiciones) throws NegocioException;
 }

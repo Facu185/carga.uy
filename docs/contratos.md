@@ -46,7 +46,8 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `GET /carga/api/empresas[?nombre=]` | frontoffice, backoffice |
 | `POST /carga/api/empresas` | backoffice |
 | `GET /carga/api/pdi/personas/{cedula}` | pruebas del frente P1 (atajo al cliente SOAP) |
-| `POST /carga/api/tracking/posiciones` | **nodo Tracking** — responde `202` |
+| `POST /carga/api/tracking/posiciones` | **nodo Tracking** — responde `202`; `503` + `Retry-After` si la cola está saturada (ADR-0008) |
+| `POST /carga/api/tracking/posiciones/lote` | **nodo Tracking** — hasta 500 posiciones; `202` con aceptadas y rechazadas; `503` + `Retry-After` si está saturada |
 | `GET /carga/api/monitor/metricas` | panel de operación |
 | `GET /carga/api/monitor/nodos` | panel de operación, monitoreo externo |
 | `GET /carga/api/monitor/mapa?puntos=` | panel de operación (mapa de la flota) |
@@ -119,6 +120,7 @@ consumidor de P5 igual tiene que tolerar repetidos (deduplicar por `idPesada`), 
 | Qué | Cómo se protege | Si falla |
 |---|---|---|
 | `POST /carga/api/tracking/posiciones` (nodo Tracking → central) | header `X-Nodo-Token` = `NODO_TRACKING_TOKEN` | 401 |
+| `POST /carga/api/tracking/posiciones/lote` (nodo Tracking → central) | header `X-Nodo-Token` = `NODO_TRACKING_TOKEN` | 401 |
 | `GET /balanzas/api/pesadas` (central → nodo Balanzas) | header `X-Nodo-Token` = `NODO_BALANZAS_TOKEN` | 401; el central lo informa como "no aceptó las credenciales" |
 | `/carga/api/monitor/*` y `/carga/api/pesajes/*` | sesión con rol `ADMINISTRADOR` o `FUNCIONARIO` | 401 sin sesión, 403 sin el rol |
 
@@ -139,6 +141,7 @@ tiene inicio de sesión: queda abierto hasta que pase al backoffice autenticado 
 | `CENTRAL_INGESTA_URL` | nodo Tracking | `http://central:8080/carga/api/tracking/posiciones` |
 | `TRACKING_INTERVALO_MS` | nodo Tracking | `5000` |
 | `BALANZAS_DEMORA_MS`, `BALANZAS_FALLA` | nodo Balanzas | `0`, `false` |
+| `TRACKING_COLA_UMBRAL_ALTO`, `TRACKING_COLA_UMBRAL_BAJO`, `TRACKING_REINTENTAR_SEG`, `TRACKING_LOTE_MAX` | central (ingesta de posiciones, ADR-0008) | `18000`, `9000`, `30`, `500` |
 | `BALANZAS_TIMEOUT_MS`, `BALANZAS_REINTENTOS`, `BALANZAS_CIRCUITO_UMBRAL`, `BALANZAS_CIRCUITO_ESPERA_SEG` | `PesajeBean` | `3000`, `1`, `3`, `30` |
 | `PESAJES_AGENDA_ACTIVA` | `AgendaPesajesBean` (sincronización cada 15 min) | `true` |
 | `NODO_TRACKING_TOKEN` | central (valida) y nodo Tracking (lo manda como `NODO_TOKEN`) | `tracking-solo-desarrollo` |
