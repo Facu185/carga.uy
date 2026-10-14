@@ -46,6 +46,20 @@ export interface NuevoUsuarioInterno {
   rol: Rol
 }
 
+/** Nodo periférico registrado, con su estado verificado en el momento (P4). */
+export interface NodoPeriferico {
+  id: number
+  nombre: string
+  tipo: 'BALANZAS' | 'TRACKING'
+  /** Solo los nodos Balanzas: el nodo Tracking llama al central. */
+  url: string | null
+  activo: boolean
+  actualizadoEn: string | null
+  /** null si está desactivado: no se verifica. */
+  enLinea: boolean | null
+  detalle: string | null
+}
+
 export interface Funcionario {
   id: number
   cedula: string

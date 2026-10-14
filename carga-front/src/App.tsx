@@ -10,6 +10,7 @@ import { CambiarPassword } from './pages/backoffice/CambiarPassword'
 import { PanelBackoffice } from './pages/backoffice/PanelBackoffice'
 import { Usuarios } from './pages/backoffice/Usuarios'
 import { Funcionarios } from './pages/backoffice/Funcionarios'
+import { Nodos } from './pages/backoffice/Nodos'
 import { Auditoria } from './pages/backoffice/Auditoria'
 import { Ingresar } from './pages/frontoffice/Ingresar'
 import { IngresoCallback } from './pages/frontoffice/IngresoCallback'
@@ -101,6 +102,14 @@ export default function App() {
               element={
                 <RutaProtegida roles={[ROLES.ADMINISTRADOR]}>
                   <Funcionarios />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="nodos"
+              element={
+                <RutaProtegida roles={[ROLES.ADMINISTRADOR]}>
+                  <Nodos />
                 </RutaProtegida>
               }
             />

@@ -128,6 +128,22 @@ El token de los nodos **no va en `Authorization`**: ese header lo procesa `Mecan
 pedidos y un token de nodo no es un JWT. Los dos lados fallan cerrado: sin token configurado no se
 acepta a nadie. Detalle y alternativas en el ADR-0007.
 
+### Administración de nodos (ADR-0009)
+
+| Endpoint | Qué hace |
+|---|---|
+| `GET /carga/api/nodos` | Nodos registrados, con el estado de los activos verificado en el momento |
+| `POST /carga/api/nodos` | Alta de un nodo Balanzas (`{nombre, url}`). Nace desactivado |
+| `PUT /carga/api/nodos/{id}` | Cambia nombre y, si es Balanzas, la URL. Rige en la consulta siguiente |
+| `PUT /carga/api/nodos/{id}/activo` | `{activo, fundamento}`. Desactivar exige fundamento |
+
+Solo `ADMINISTRADOR` (lo controla `NodosPerifericosBean`). Cada cambio queda en la auditoría con las
+acciones `NODO_PERIFERICO_CREADO`, `_MODIFICADO`, `_ACTIVADO` y `_DESACTIVADO`.
+
+La tabla `nodo_periferico` es la fuente de verdad: el central consulta la URL del nodo Balanzas
+**activo**, y la base no permite dos nodos activos del mismo tipo. `NODO_BALANZAS_URL` solo se usa si
+no hay ningún nodo Balanzas registrado.
+
 **Limitación conocida:** el panel de operación (`panel.xhtml`) usa los servicios directamente y no
 tiene inicio de sesión: queda abierto hasta que pase al backoffice autenticado (ADR-0004).
 

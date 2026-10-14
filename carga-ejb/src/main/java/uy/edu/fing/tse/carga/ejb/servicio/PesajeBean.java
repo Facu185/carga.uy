@@ -21,10 +21,14 @@ import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoPesajeDTO;
 import uy.edu.fing.tse.carga.api.observabilidad.Correlacion;
 import uy.edu.fing.tse.carga.api.observabilidad.Traza;
 import uy.edu.fing.tse.carga.ejb.integracion.CircuitBreaker;
+import uy.edu.fing.tse.carga.ejb.modelo.NodoPeriferico;
+import uy.edu.fing.tse.carga.ejb.modelo.TipoNodo;
+import uy.edu.fing.tse.carga.ejb.persistencia.NodoPerifericoDAO;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -56,6 +60,10 @@ public class PesajeBean implements PesajeLocal {
 
     @EJB
     MetricasLocal metricas;
+
+    /** Nodos registrados (ADR-0009). null en las pruebas: se usa la URL configurada. */
+    @EJB
+    NodoPerifericoDAO nodos;
 
     private String url;
     private String token;
@@ -92,6 +100,13 @@ public class PesajeBean implements PesajeLocal {
 
     @Override
     public ResultadoPesajeDTO consultarPesadas(String matricula, String fecha) {
+        Optional<String> destino = urlDestino();
+        if (destino.isEmpty()) {
+            // Desactivado a proposito: no es una falla del nodo, no toca el circuito
+            metricas.contar(METRICA_CONSULTAS, "resultado", "desactivado");
+            return ResultadoPesajeDTO.noDisponible(
+                    "El nodo Balanzas esta desactivado por un administrador: no se lo consulta.", 0);
+        }
         if (!circuito.permiteLlamada()) {
             metricas.contar(METRICA_CONSULTAS, "resultado", "circuito_abierto");
             return ResultadoPesajeDTO.noDisponible(
@@ -103,7 +118,7 @@ public class PesajeBean implements PesajeLocal {
                 pausar(PAUSA_BASE.multipliedBy(intento));
             }
             try {
-                List<PesadaDTO> pesadas = invocar(matricula, fecha);
+                List<PesadaDTO> pesadas = invocar(destino.get(), matricula, fecha);
                 circuito.registrarExito();
                 long ms = milisDesde(inicio);
                 metricas.contar(METRICA_CONSULTAS, "resultado", "ok");
@@ -139,7 +154,23 @@ public class PesajeBean implements PesajeLocal {
      * Propaga el ID de correlacion y el contexto de la traza, asi la consulta se sigue en Jaeger
      * igual que la de la PDI.
      */
-    List<PesadaDTO> invocar(String matricula, String fecha) throws Exception {
+    /**
+     * A donde consultar. La base manda: la URL del nodo Balanzas activo. Si hay nodos Balanzas
+     * registrados pero ninguno activo, no se consulta (vacio). La variable NODO_BALANZAS_URL solo se
+     * usa si no hay ninguno registrado. Package-private para las pruebas.
+     */
+    Optional<String> urlDestino() {
+        if (nodos == null) {
+            return Optional.of(url);
+        }
+        Optional<NodoPeriferico> activo = nodos.buscarActivo(TipoNodo.BALANZAS);
+        if (activo.isPresent()) {
+            return Optional.of(activo.get().getUrl());
+        }
+        return nodos.hayDeTipo(TipoNodo.BALANZAS) ? Optional.empty() : Optional.of(url);
+    }
+
+    List<PesadaDTO> invocar(String url, String matricula, String fecha) throws Exception {
         try (Traza.Tramo tramo = Traza.iniciar("Balanzas GET /pesadas", Traza.Tipo.CLIENTE)
                 .atributo("http.method", "GET").atributo("peer.service", "balanzas")) {
             Client cliente = ClientBuilder.newBuilder()

@@ -58,7 +58,7 @@
                 <p:column headerText="Nodo"><h:outputText value="#{n.nombre}"/></p:column>
                 <p:column headerText="Tipo"><h:outputText value="#{n.tipo}"/></p:column>
                 <p:column headerText="Estado">
-                    <span class="pill #{n.enLinea ? 'ok' : 'mal'}">#{n.etiqueta}</span>
+                    <span class="pill #{not n.activo ? 'espera' : (n.enLinea ? 'ok' : 'mal')}">#{n.etiqueta}</span>
                 </p:column>
                 <p:column headerText="Latencia">
                     <h:outputText value="#{n.latenciaMs} ms" rendered="#{n.tipo eq 'BALANZAS'}"/>

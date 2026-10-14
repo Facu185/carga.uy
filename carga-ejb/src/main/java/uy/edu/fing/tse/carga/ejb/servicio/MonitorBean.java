@@ -10,6 +10,9 @@ import uy.edu.fing.tse.carga.api.dto.nodo.MetricasDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.RecorridoDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoPesajeDTO;
 import uy.edu.fing.tse.carga.ejb.integracion.CircuitBreaker;
+import uy.edu.fing.tse.carga.ejb.modelo.NodoPeriferico;
+import uy.edu.fing.tse.carga.ejb.modelo.TipoNodo;
+import uy.edu.fing.tse.carga.ejb.persistencia.NodoPerifericoDAO;
 import uy.edu.fing.tse.carga.ejb.modelo.PosicionTracking;
 
 import java.time.Duration;
@@ -32,12 +35,17 @@ public class MonitorBean implements MonitorLocal {
     private static final DateTimeFormatter RELOJ = DateTimeFormatter.ofPattern("dd/MM HH:mm:ss");
     /** Sin posiciones en esta ventana, damos el nodo Tracking por caido. */
     private static final int SILENCIO_TOLERADO_SEGUNDOS = 30;
+    private static final String URL_BALANZAS_POR_DEFECTO =
+            System.getenv().getOrDefault("NODO_BALANZAS_URL", "http://balanzas:8080/balanzas/api/pesadas");
 
     @PersistenceContext(unitName = "cargaPU")
     private EntityManager em;
 
     @EJB
     PesajeBean balanzas;
+
+    @EJB
+    NodoPerifericoDAO nodos;
 
     @Override
     public MetricasDTO metricas() {
@@ -57,7 +65,25 @@ public class MonitorBean implements MonitorLocal {
 
     @Override
     public List<EstadoNodoDTO> estadoNodos() {
-        return List.of(estadoBalanzas(), estadoTracking());
+        List<NodoPeriferico> registrados = nodos.listar();
+        if (registrados.isEmpty()) {
+            return List.of(estadoBalanzas(null, "Balanzas peajes", URL_BALANZAS_POR_DEFECTO),
+                    estadoTracking(null, "Tracking flota"));
+        }
+        return registrados.stream().map(this::estado).toList();
+    }
+
+    private EstadoNodoDTO estado(NodoPeriferico n) {
+        if (!n.isActivo()) {
+            EstadoNodoDTO nodo = new EstadoNodoDTO(n.getNombre(), n.getTipo().name(), n.getUrl());
+            nodo.setId(n.getId());
+            nodo.setActivo(false);
+            nodo.setDetalle("Desactivado por un administrador.");
+            return nodo;
+        }
+        return n.getTipo() == TipoNodo.BALANZAS
+                ? estadoBalanzas(n.getId(), n.getNombre(), n.getUrl())
+                : estadoTracking(n.getId(), n.getNombre());
     }
 
     @Override
@@ -96,9 +122,9 @@ public class MonitorBean implements MonitorLocal {
     }
 
     /** Se verifica con una consulta real al nodo, usando el mismo camino que el caso de uso. */
-    private EstadoNodoDTO estadoBalanzas() {
-        EstadoNodoDTO nodo = new EstadoNodoDTO("Balanzas peajes", "BALANZAS",
-                System.getenv().getOrDefault("NODO_BALANZAS_URL", "http://balanzas:8080/balanzas/api/pesadas"));
+    private EstadoNodoDTO estadoBalanzas(Long id, String nombre, String url) {
+        EstadoNodoDTO nodo = new EstadoNodoDTO(nombre, "BALANZAS", url);
+        nodo.setId(id);
         ResultadoPesajeDTO r = balanzas.consultarPesadas("", null);
         nodo.setEnLinea(r.isNodoDisponible());
         nodo.setLatenciaMs(r.getLatenciaMs());
@@ -116,8 +142,9 @@ public class MonitorBean implements MonitorLocal {
     }
 
     /** No se puede consultar: el nodo Tracking empuja. Se deduce de cuando llego la ultima posicion. */
-    private EstadoNodoDTO estadoTracking() {
-        EstadoNodoDTO nodo = new EstadoNodoDTO("Tracking flota", "TRACKING", "ingesta en /carga/api/tracking/posiciones");
+    private EstadoNodoDTO estadoTracking(Long id, String nombre) {
+        EstadoNodoDTO nodo = new EstadoNodoDTO(nombre, "TRACKING", "ingesta en /carga/api/tracking/posiciones");
+        nodo.setId(id);
         OffsetDateTime ultima = em.createQuery(
                 "select max(p.recibidoEn) from PosicionTracking p", OffsetDateTime.class).getSingleResult();
         if (ultima == null) {

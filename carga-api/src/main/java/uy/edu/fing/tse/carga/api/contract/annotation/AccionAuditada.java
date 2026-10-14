@@ -29,6 +29,11 @@ public enum AccionAuditada {
     VINCULO_EMPRESA_TRANSFERIDO(true),
     VINCULO_EMPRESA_RECHAZADO(true),
     EMPRESA_DADA_DE_BAJA(true),
+    // Nodos perifericos (P4)
+    NODO_PERIFERICO_CREADO(false),
+    NODO_PERIFERICO_MODIFICADO(false),
+    NODO_PERIFERICO_ACTIVADO(false),
+    NODO_PERIFERICO_DESACTIVADO(true),
     // Seguridad de acceso
     INGRESO_EXITOSO(false),
     INGRESO_FALLIDO(false),

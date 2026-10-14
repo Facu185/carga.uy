@@ -114,6 +114,9 @@ esperar_codigo "una autoridad NO consulta el monitor de nodos (403)" 403 "$API/m
 esperar_codigo "el administrador consulta el monitor de nodos" 200 "$API/monitor/nodos" "${ADMIN[@]}"
 contiene "el central llega a Balanzas con su token" "$(curl -s "$API/monitor/nodos" "${ADMIN[@]}")" \
   'Responde a la consulta de pesadas'
+esperar_codigo "sin sesion no se administran nodos" 401 "$API/nodos"
+esperar_codigo "una autoridad NO administra nodos (403)" 403 "$API/nodos" -H "Authorization: Bearer $TOKEN_AUTORIDAD"
+contiene "el administrador ve el nodo Balanzas registrado" "$(curl -s "$API/nodos" "${ADMIN[@]}")" '"tipo":"BALANZAS"'
 
 echo "== Ingreso con gub.uy (simulador) y verificacion con DNIC (PDI)"
 ingresar_con_gubuy "$CEDULA"

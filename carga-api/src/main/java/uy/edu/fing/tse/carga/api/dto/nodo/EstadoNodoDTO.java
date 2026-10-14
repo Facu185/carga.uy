@@ -7,9 +7,11 @@ public class EstadoNodoDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    private Long id;
     private String nombre;
     private String tipo;
     private String url;
+    private boolean activo = true;
     private boolean enLinea;
     private String detalle;
     private long latenciaMs;
@@ -25,8 +27,17 @@ public class EstadoNodoDTO implements Serializable {
 
     /** Texto para la interfaz; evita repetir el if en cada pantalla. */
     public String getEtiqueta() {
+        if (!activo) {
+            return "Desactivado";
+        }
         return enLinea ? "En linea" : "Sin respuesta";
     }
+
+    public Long getId() { return id; }
+    public void setId(Long v) { this.id = v; }
+
+    public boolean isActivo() { return activo; }
+    public void setActivo(boolean v) { this.activo = v; }
 
     public String getNombre() { return nombre; }
     public void setNombre(String v) { this.nombre = v; }

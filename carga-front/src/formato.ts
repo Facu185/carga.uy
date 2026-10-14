@@ -57,6 +57,10 @@ const ACCIONES: Record<string, string> = {
   USUARIO_INTERNO_DESBLOQUEADO: 'Desbloqueó un usuario interno',
   PASSWORD_RESETEADA: 'Generó una contraseña temporal',
   PASSWORD_CAMBIADA: 'Cambió su contraseña',
+  NODO_PERIFERICO_CREADO: 'Dio de alta un nodo periférico',
+  NODO_PERIFERICO_MODIFICADO: 'Modificó un nodo periférico',
+  NODO_PERIFERICO_ACTIVADO: 'Activó un nodo periférico',
+  NODO_PERIFERICO_DESACTIVADO: 'Desactivó un nodo periférico',
 }
 
 /** Entidades que aparecen en la auditoría: código que guarda el central → nombre para mostrar. */
@@ -64,6 +68,7 @@ export const ENTIDADES: Record<string, string> = {
   CasoFiscalizacion: 'Caso de fiscalización',
   CuentaInterna: 'Usuario interno',
   Funcionario: 'Funcionario',
+  NodoPeriferico: 'Nodo periférico',
   SolicitudFuncionario: 'Solicitud de acceso',
   Usuario: 'Persona (gub.uy)',
 }
@@ -90,6 +95,7 @@ const CLAVES_DETALLE: Record<string, string> = {
   dependencia: 'Dependencia',
   activo: 'Activo',
   nombre: 'Nombre',
+  url: 'URL',
 }
 
 /** Detalles sin formato clave=valor que el central usa siempre igual. */

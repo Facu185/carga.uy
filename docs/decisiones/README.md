@@ -16,3 +16,4 @@ Plantilla: [plantilla.md](plantilla.md).
 | [0006](0006-obtencion-de-pesajes.md) | Obtención de pesajes: circuito compartido, deduplicación en la base y aviso por cola | Aceptada |
 | [0007](0007-seguridad-de-nodos-y-endpoints-p4.md) | Autenticación de los nodos periféricos y roles en los endpoints de P4 | Aceptada |
 | [0008](0008-volumen-y-saturacion-de-tracking.md) | Volumen objetivo de Tracking y política de saturación | Aceptada |
+| [0009](0009-administracion-de-nodos-perifericos.md) | Administración de nodos periféricos: la base manda | Aceptada |

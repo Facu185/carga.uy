@@ -25,6 +25,7 @@ class PesajeBeanTest {
 
     private Nodo nodo;
     private int llamadas;
+    private String ultimaUrl;
     private PesajeBean pesaje;
     private Metricas metricas;
     private RelojManual reloj;
@@ -34,8 +35,9 @@ class PesajeBeanTest {
         nodo = Nodo.RESPONDE;
         pesaje = new PesajeBean() {
             @Override
-            List<PesadaDTO> invocar(String matricula, String fecha) throws Exception {
+            List<PesadaDTO> invocar(String url, String matricula, String fecha) throws Exception {
                 llamadas++;
+                ultimaUrl = url;
                 return switch (nodo) {
                     case RESPONDE -> List.of(pesada("STZ1234-1"));
                     case CAIDO -> throw new TimeoutException("el nodo no contesto");
@@ -122,6 +124,33 @@ class PesajeBeanTest {
     void obtenerPesadasDevuelveListaVaciaConElNodoCaido() {
         nodo = Nodo.CAIDO;
         assertTrue(pesaje.obtenerPesadas("STZ1234", "2026-10-07").isEmpty());
+    }
+
+    @Test
+    void consultaLaUrlDelNodoActivoQueEstaEnLaBase() throws Exception {
+        NodosPerifericosBeanTest.NodosEnMemoria nodos = new NodosPerifericosBeanTest.NodosEnMemoria();
+        uy.edu.fing.tse.carga.ejb.modelo.NodoPeriferico n =
+                uy.edu.fing.tse.carga.ejb.modelo.NodoPeriferico.nuevoBalanzas("Balanzas", "https://balanzas.mtop.uy/api");
+        n.setActivo(true);
+        nodos.guardar(n);
+        pesaje.nodos = nodos;
+
+        assertTrue(pesaje.consultarPesadas("STZ1234", "2026-10-07").isNodoDisponible());
+        assertEquals("https://balanzas.mtop.uy/api", ultimaUrl);
+    }
+
+    @Test
+    void conElNodoDesactivadoNoLoConsultaNiAbreElCircuito() throws Exception {
+        NodosPerifericosBeanTest.NodosEnMemoria nodos = new NodosPerifericosBeanTest.NodosEnMemoria();
+        nodos.guardar(uy.edu.fing.tse.carga.ejb.modelo.NodoPeriferico.nuevoBalanzas("Balanzas", "https://b/api"));
+        pesaje.nodos = nodos;
+
+        ResultadoPesajeDTO r = pesaje.consultarPesadas("STZ1234", "2026-10-07");
+
+        assertFalse(r.isNodoDisponible());
+        assertTrue(r.getMensaje().contains("desactivado"));
+        assertEquals(0, llamadas);
+        assertEquals(CircuitBreaker.Estado.CERRADO, pesaje.estadoCircuito());
     }
 
     static PesadaDTO pesada(String id) {
