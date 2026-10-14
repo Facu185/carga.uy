@@ -38,6 +38,26 @@ module add --name=org.postgresql \
 # La cola JMS de posiciones la crea la anotacion @JMSDestinationDefinition del MDB
 # (ver PosicionMDB), por eso no se declara aca.
 
+# --- Mensajeria de posiciones (frente P4) ---
+# Si PosicionMDB no puede guardar una posicion (por ejemplo, la base no responde) deshace la
+# transaccion y Artemis la vuelve a entregar: hasta 5 intentos, esperando 1 s, 2 s, 4 s... (tope 30 s).
+# Despues va a la DLQ que ya trae WildFly, en vez de reintentarse para siempre.
+# Tamaño y paginado: los mismos valores del address-setting "#" de standalone-full, para no cambiar
+# el comportamiento actual. La politica de saturacion definitiva se decide aparte (paso 2 de P4).
+/subsystem=messaging-activemq/server=default/address-setting=jms.queue.cola_posiciones:add( \
+  dead-letter-address=jms.queue.DLQ, \
+  expiry-address=jms.queue.ExpiryQueue, \
+  max-delivery-attempts=5, \
+  redelivery-delay=1000, \
+  redelivery-multiplier=2.0, \
+  max-redelivery-delay=30000, \
+  max-size-bytes=10485760, \
+  page-size-bytes=2097152, \
+  address-full-policy=PAGE)
+# Habilita la administracion JMX de Artemis: de ahi saca MonitorColaPosiciones cuantas posiciones
+# esperan en la cola (metrica carga_tracking_cola_pendientes).
+/subsystem=messaging-activemq/server=default:write-attribute(name=jmx-management-enabled, value=true)
+
 # --- Direccion publicada en los WSDL ---
 # Sin esto WildFly publica la IP interna del contenedor y el WSDL no sirve para
 # clientes externos (SoapUI, la PDI, el despliegue en la nube).
