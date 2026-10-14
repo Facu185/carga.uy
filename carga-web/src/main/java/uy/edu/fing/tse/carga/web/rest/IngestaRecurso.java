@@ -11,7 +11,9 @@ import uy.edu.fing.tse.carga.api.contract.service.IngestaTrackingLocal;
 import uy.edu.fing.tse.carga.api.dto.comun.PosicionDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 
+import java.util.List;
 import java.util.Map;
+
 
 @Path("/tracking")
 @Produces(MediaType.APPLICATION_JSON)
@@ -27,5 +29,12 @@ public class IngestaRecurso {
     public Response recibir(PosicionDTO posicion) throws NegocioException {
         ingesta.encolarPosicion(posicion);
         return Response.accepted(Map.of("idEvento", posicion.getIdEvento())).build();
+    }
+
+    @POST
+    @Path("/posiciones/lote")
+    @NodoAutenticado
+    public Response recibirLote(List<PosicionDTO> posiciones) throws NegocioException {
+        return Response.accepted(ingesta.encolarLote(posiciones)).build();
     }
 }
