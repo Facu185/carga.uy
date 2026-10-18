@@ -117,6 +117,15 @@ contiene "el central llega a Balanzas con su token" "$(curl -s "$API/monitor/nod
 esperar_codigo "sin sesion no se administran nodos" 401 "$API/nodos"
 esperar_codigo "una autoridad NO administra nodos (403)" 403 "$API/nodos" -H "Authorization: Bearer $TOKEN_AUTORIDAD"
 contiene "el administrador ve el nodo Balanzas registrado" "$(curl -s "$API/nodos" "${ADMIN[@]}")" '"tipo":"BALANZAS"'
+RANGO="matricula=E2E0001&desde=$(date -u -d '-1 hour' +%Y-%m-%dT%H:%M:%SZ)&hasta=$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ)"
+esperar_codigo "sin sesion no se consulta el recorrido de un vehiculo" 401 "$API/recorridos?$RANGO"
+# la posicion se guarda de forma asincronica (cola + MDB): se espera un poco a que aparezca
+for _ in $(seq 1 10); do
+  RECORRIDO=$(curl -s "$API/recorridos?$RANGO" "${ADMIN[@]}")
+  case "$RECORRIDO" in *'"cantidad":1'*) break ;; esac
+  sleep 1
+done
+contiene "el recorrido incluye la posicion enviada por el nodo" "$RECORRIDO" '"cantidad":1'
 
 echo "== Ingreso con gub.uy (simulador) y verificacion con DNIC (PDI)"
 ingresar_con_gubuy "$CEDULA"

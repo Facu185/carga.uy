@@ -12,6 +12,8 @@ grupo antes de mergear: hay código de otra persona que depende.
 | `PesajeLocal` | P4 | `obtenerPesadas` devuelve las pesadas; `consultarPesadas` además informa si el nodo respondió y cuánto tardó |
 | `MonitorLocal` | P4 | Métricas de ingesta, estado de los nodos y mapa de la flota (solo lectura) |
 | `SincronizacionPesajesLocal` | P4 | Trae las pesadas del nodo, las vincula con la guía vigente y las guarda sin duplicar; avisa cada pesada **nueva** por la cola `pesadas` |
+| `RecorridoLocal` | P4 | **Para P5:** recorrido de un vehículo por fechas o por guía, con la distancia (PostGIS). Sin rol |
+| `AvisoFinDeViajeLocal` | P4 | **Para P3:** llamarlo al registrar el fin de un viaje; dispara la obtención de pesajes |
 | `PdiLocal` | P1 | Devuelve los datos de la persona, o `null` si la PDI no responde |
 | `ServicioDnic` (SOAP) | P1 | Contrato SOAP hacia la PDI |
 | `AuditoriaLocal` | P1 | Registra en la pista de solo agregado, en la misma transacción que la acción. Usuario y rol salen de la sesión. Las acciones de fiscalización exigen fundamento |
@@ -53,6 +55,8 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `GET /carga/api/monitor/mapa?puntos=` | panel de operación (mapa de la flota) |
 | `GET /carga/api/pesajes?matricula=&fecha=` | panel de operación, P5 (pesadas ya guardadas) |
 | `POST /carga/api/pesajes/sincronizar?matricula=&fecha=` | panel de operación (dispara el caso de uso a mano) |
+| `GET /carga/api/recorridos?matricula=&desde=&hasta=` | pantallas de fiscalización (rol administrador o funcionario) |
+| `GET /carga/api/recorridos/guia/{id}` | ídem, el recorrido del período de la guía |
 | `GET /balanzas/api/pesadas?matricula=&fecha=` | **componente central** (`PesajeBean`) |
 | `POST /carga/api/auth/login` · `POST /auth/cambiar-password` · `POST /auth/renovar` · `GET /auth/yo` | backoffice, app móvil |
 | `GET /carga/api/auth/gubuy/iniciar?destino=web\|movil` · `GET /auth/gubuy/callback` | frontoffice, app móvil (redirecciones) |
@@ -73,6 +77,7 @@ Las rutas nuevas de cada frente cuelgan de `/carga/api/<tema>`. No reutilizar pr
 |---|---|---|---|
 | `java:/jms/queue/posiciones` | `IngestaTrackingBean` | `PosicionMDB` | `PosicionDTO` en JSON (texto) |
 | `java:/jms/queue/pesadas` | `SincronizacionPesajesBean` | **P5** — todavía sin consumidor | `PesadaRegistradaDTO` en JSON; `guiaId` null = pesado sin guía vigente |
+| `java:/jms/queue/viajes-finalizados` | `AvisoFinDeViajeBean` (lo llama P3) | `FinDeViajeMDB` | `ViajeFinalizadoDTO` en JSON |
 
 Se usa `TextMessage` con JSON y no `ObjectMessage` a propósito: `ObjectMessage` obliga a configurar
 listas de clases permitidas en Artemis y ata productor y consumidor a la misma versión de la clase.
@@ -146,6 +151,27 @@ no hay ningún nodo Balanzas registrado.
 
 **Limitación conocida:** el panel de operación (`panel.xhtml`) usa los servicios directamente y no
 tiene inicio de sesión: queda abierto hasta que pase al backoffice autenticado (ADR-0004).
+
+## Recorridos y fin de viaje (P4 con P5 y P3, ADR-0010)
+
+**Recorrido (para P5).** `RecorridoLocal.recorridoDeGuia(guiaId)` devuelve las posiciones del vehículo de
+la guía durante su período `[inicio, fin)`, ordenadas por la hora del dispositivo, y la distancia
+recorrida en metros. También se puede pedir por matrícula y período (ISO-8601 con zona, hasta 7 días).
+Devuelve hasta 10.000 puntos; si había más, `truncado` es `true`. La distancia se calcula siempre sobre
+el período completo. P5 lo llama directamente, desde adentro del servidor: el servicio no exige rol. La
+API REST, en cambio, sí.
+
+**Fin de viaje (para P3).** Al registrar el fin de un viaje, P3 llama a:
+
+```java
+@EJB AvisoFinDeViajeLocal avisoFinDeViaje;
+avisoFinDeViaje.avisar(new ViajeFinalizadoDTO(guiaId, matricula, inicioIso, finIso));
+```
+
+El aviso se encola dentro de la transacción de P3, así que si esa transacción se deshace, no sale. La
+consulta al nodo Balanzas ocurre después, en `FinDeViajeMDB`, para cada día de Uruguay que toca el
+viaje. P3 no espera al nodo ni falla si el nodo está caído: en ese caso la agenda de pesajes lo
+reintenta dentro de las 24 horas.
 
 ## 6. Variables de entorno
 
