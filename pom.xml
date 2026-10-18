@@ -18,6 +18,7 @@
         <module>simulador-pdi</module>
         <module>nodo-balanzas</module>
         <module>nodo-tracking</module>
+        <module>carga-generador</module>
     </modules>
 
     <properties>

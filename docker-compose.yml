@@ -110,6 +110,22 @@ services:
     depends_on:
       - central
 
+  # Generador de carga para la prueba de performance (P4, ADR-0008). NO arranca con "docker compose up":
+  #   docker compose --profile carga run --build --rm generador
+  # Los parametros (GEN_ESCENARIO, GEN_VEHICULOS, ...) se pasan con -e; ver el README.
+  # El CSV con los resultados queda en la carpeta resultados-carga/ del proyecto.
+  generador:
+    build:
+      context: .
+      dockerfile: docker/generador/Dockerfile
+    profiles: ["carga"]
+    environment:
+      CENTRAL_INGESTA_URL: http://central:8080/carga/api/tracking/posiciones
+      CENTRAL_METRICAS_URL: http://central:8080/carga/api/metricas
+      NODO_TOKEN: ${NODO_TRACKING_TOKEN:-tracking-solo-desarrollo}
+    volumes:
+      - ./resultados-carga:/resultados
+
   # Frontend React servido por nginx. /carga/* se reenvia al central: un solo origen, sin CORS (ADR 0004).
   frontend:
     build:
