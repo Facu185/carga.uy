@@ -236,6 +236,35 @@ docker compose start tracking
 docker compose exec db psql -U carga -d carga -c "DELETE FROM posicion_tracking WHERE matricula LIKE 'GEN%';"
 ```
 
+### Monitoreo y modo performance (P4)
+
+Prometheus guarda las métricas del central cada 5 segundos y Grafana las grafica en un tablero ya
+armado: ingesta, cola, tiempos por endpoint, memoria, recolector de basura, CPU, pool de conexiones y
+circuito de Balanzas. Están en el perfil `monitoreo`, así que no arrancan con `docker compose up`.
+
+```bash
+docker compose --profile monitoreo up -d
+```
+
+- Grafana: http://localhost:3001 (sin login; abre directo el tablero "carga.uy - Performance (P4)").
+- Prometheus: http://localhost:9090 (en *Status → Targets* el central tiene que figurar *UP*).
+
+Para las pruebas de performance se suma `docker-compose.performance.yml`, que limita el central a
+2 CPU y 2 GB (los resultados no dependen de la máquina) y activa `pg_stat_statements` en Postgres:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.performance.yml --profile monitoreo up -d
+docker compose exec db psql -U carga -d carga -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
+```
+
+Las 10 consultas SQL que más tiempo consumieron:
+
+```bash
+docker compose exec db psql -U carga -d carga -c "SELECT round(total_exec_time) AS ms_total, calls, round(mean_exec_time::numeric, 2) AS ms_promedio, left(query, 80) AS consulta FROM pg_stat_statements ORDER BY total_exec_time DESC LIMIT 10;"
+```
+
+El consumo de CPU y memoria de cada contenedor se ve con `docker stats`.
+
 ## 8. Cómo sigue cada uno
 
 - **División del trabajo:** [docs/frentes.md](docs/frentes.md)

@@ -175,5 +175,36 @@ services:
     ports:
       - "16686:16686"
 
+  # Monitoreo para la prueba de performance (P4). NO arranca con "docker compose up":
+  #   docker compose --profile monitoreo up -d
+  # Prometheus guarda las metricas del central cada 5 s (http://localhost:9090) y Grafana las grafica
+  # con un tablero ya armado (http://localhost:3001, sin login).
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    profiles: [ "monitoreo" ]
+    command: [ "--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=7d" ]
+    volumes:
+      - ./docker/monitoreo/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-datos:/prometheus
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    profiles: [ "monitoreo" ]
+    depends_on:
+      - prometheus
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/carga-uy-performance.json
+    volumes:
+      - ./docker/monitoreo/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/monitoreo/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3000"
+
 volumes:
   pgdata:
+  prometheus-datos:

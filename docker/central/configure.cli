@@ -58,6 +58,10 @@ module add --name=org.postgresql \
 # esperan en la cola (metrica carga_tracking_cola_pendientes).
 /subsystem=messaging-activemq/server=default:write-attribute(name=jmx-management-enabled, value=true)
 
+# --- Estadisticas del pool de conexiones (frente P4) ---
+# MonitorRecursos las lee por JMX y las publica en /carga/api/metricas para la prueba de performance.
+/subsystem=datasources/data-source=CargaDS:write-attribute(name=statistics-enabled, value=true)
+
 # --- Direccion publicada en los WSDL ---
 # Sin esto WildFly publica la IP interna del contenedor y el WSDL no sirve para
 # clientes externos (SoapUI, la PDI, el despliegue en la nube).

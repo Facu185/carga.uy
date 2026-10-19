@@ -1,0 +1,10 @@
+# Prometheus para la prueba de performance (P4). Lee las metricas del central cada 5 segundos.
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: central
+    metrics_path: /carga/api/metricas
+    static_configs:
+      - targets: ["central:8080"]
