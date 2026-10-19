@@ -15,6 +15,7 @@ COPY carga-ear/pom.xml     carga-ear/
 COPY simulador-pdi/pom.xml simulador-pdi/
 COPY nodo-balanzas/pom.xml nodo-balanzas/
 COPY nodo-tracking/pom.xml nodo-tracking/
+COPY carga-generador/pom.xml carga-generador/
 COPY . .
 RUN mvn -B -ntp -pl nodo-tracking -am clean package -DskipTests
 

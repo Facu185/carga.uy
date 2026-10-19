@@ -96,6 +96,7 @@ carga.uy
 ├── simulador-pdi      Simulador SOAP de la PDI (servicio de DNIC).
 ├── nodo-balanzas      Nodo periférico: pesadas de los peajes (REST, request-response).
 ├── nodo-tracking      Nodo periférico: emite posiciones GPS (proceso autónomo).
+├── carga-generador    Generador de carga de posiciones para la prueba de performance (P4).
 ├── docker/            Dockerfile de cada contenedor + configuración de WildFly.
 └── docs/              Contratos entre frentes, división del trabajo, decisiones.
 ```
@@ -184,6 +185,85 @@ mvn verify -Pintegracion -pl carga-ejb -am
 docker compose up -d --build
 ./pruebas/punta-a-punta.sh
 ```
+### Generador de carga
+
+Simula miles de dispositivos GPS contra la ingesta de posiciones, para la prueba de performance
+(volumen y escenarios en el [ADR-0008](docs/decisiones/0008-volumen-y-saturacion-de-tracking.md)).
+No arranca con `docker compose up`: está en el perfil `carga`.
+
+Antes de correrlo, bajá el nodo Tracking de demostración (si no, sus posiciones se mezclan con las del
+generador y la verificación "sin pérdida" no cierra):
+
+```bash
+docker compose stop tracking
+```
+
+Con los valores por defecto (escenario `constante`: 3.000 vehículos cada 30 s = 100 posiciones/s,
+durante 10 minutos):
+
+```bash
+docker compose --profile carga run --build --rm generador
+```
+
+Otros escenarios, cambiando parámetros con `-e`:
+
+```bash
+docker compose --profile carga run --build --rm -e GEN_ESCENARIO=pico generador
+docker compose --profile carga run --build --rm -e GEN_ESCENARIO=rampa -e GEN_DURACION_SEG=1200 generador
+```
+
+| Variable | Default | Qué es |
+|---|---|---|
+| `GEN_ESCENARIO` | `constante` | `constante`, `pico` (a un tercio de la prueba una parte de la flota pierde cobertura y la recupera casi junta) o `rampa` (suma vehículos hasta el final, para buscar el punto de quiebre) |
+| `GEN_VEHICULOS`, `GEN_INTERVALO_SEG`, `GEN_DURACION_SEG` | `3000`, `30`, `600` | Flota inicial, cada cuánto reporta cada vehículo y cuánto dura la generación |
+| `GEN_PROB_DUPLICADO` | `0.02` | Probabilidad de reenviar una posición ya aceptada (prueba la idempotencia) |
+| `GEN_PROB_SIN_COBERTURA`, `GEN_SIN_COBERTURA_MAX_SEG` | `0.01`, `600` | Probabilidad, en cada reporte, de entrar a una zona sin señal, y su duración máxima |
+| `GEN_PICO_FRACCION`, `GEN_PICO_CORTE_SEG`, `GEN_PICO_VENTANA_SEG` | `0.5`, `300`, `60` | Escenario pico: qué parte de la flota pierde cobertura, por cuánto, y en cuántos segundos la recuperan |
+| `GEN_RAMPA_PASO`, `GEN_RAMPA_CADA_SEG` | `500`, `120` | Escenario rampa: cuántos vehículos se suman y cada cuánto |
+| `GEN_CONCURRENCIA`, `GEN_LOTE_MAX` | `200`, `500` | Pedidos en vuelo como máximo y tamaño máximo de un lote |
+| `GEN_REPORTE_SEG`, `GEN_DRENAJE_SEG` | `10`, `180` | Cada cuánto informa y cuánto espera al final a que se vacíen los buffers |
+
+Cada 10 segundos muestra pedidos y posiciones por segundo, respuestas (202, 400, 503, errores), la
+latencia de la ingesta (p50, p95, p99) y lo que quedó en los buffers. Al final compara las posiciones
+únicas aceptadas con lo que el central guardó como nuevo e informa **SIN PERDIDA** o cuántas faltan.
+El detalle queda en `resultados-carga/` (CSV, no se versiona).
+
+Después de la prueba, volvé a levantar el nodo y, si querés, borrá las posiciones generadas
+(sus matrículas empiezan con `GEN`, así que tampoco aparecen en los recorridos de vehículos reales):
+
+```bash
+docker compose start tracking
+docker compose exec db psql -U carga -d carga -c "DELETE FROM posicion_tracking WHERE matricula LIKE 'GEN%';"
+```
+
+### Monitoreo y modo performance (P4)
+
+Prometheus guarda las métricas del central cada 5 segundos y Grafana las grafica en un tablero ya
+armado: ingesta, cola, tiempos por endpoint, memoria, recolector de basura, CPU, pool de conexiones y
+circuito de Balanzas. Están en el perfil `monitoreo`, así que no arrancan con `docker compose up`.
+
+```bash
+docker compose --profile monitoreo up -d
+```
+
+- Grafana: http://localhost:3001 (sin login; abre directo el tablero "carga.uy - Performance (P4)").
+- Prometheus: http://localhost:9090 (en *Status → Targets* el central tiene que figurar *UP*).
+
+Para las pruebas de performance se suma `docker-compose.performance.yml`, que limita el central a
+2 CPU y 2 GB (los resultados no dependen de la máquina) y activa `pg_stat_statements` en Postgres:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.performance.yml --profile monitoreo up -d
+docker compose exec db psql -U carga -d carga -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
+```
+
+Las 10 consultas SQL que más tiempo consumieron:
+
+```bash
+docker compose exec db psql -U carga -d carga -c "SELECT round(total_exec_time) AS ms_total, calls, round(mean_exec_time::numeric, 2) AS ms_promedio, left(query, 80) AS consulta FROM pg_stat_statements ORDER BY total_exec_time DESC LIMIT 10;"
+```
+
+El consumo de CPU y memoria de cada contenedor se ve con `docker stats`.
 
 ## 8. Cómo sigue cada uno
 
