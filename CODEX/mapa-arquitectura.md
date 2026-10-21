@@ -1,0 +1,40 @@
+# Mapa de arquitectura y límites
+
+Mapa de navegación contrastado con POM, archivos fuente y configuración al 2026-10-21. No certifica ejecución. El proyecto tiene capas/módulos Jakarta EE; no se lo declara hexagonal por usar interfaces ni se propone una migración general.
+
+## Módulos reales
+
+| Módulo | Responsabilidad y evidencia | Límite a preservar |
+| --- | --- | --- |
+| [carga-api](../carga-api/src/main/java/uy/edu/fing/tse/carga/api/) | `contract/service`, DTO, excepciones, roles y utilidades de observabilidad compartidas; [POM](../carga-api/pom.xml). | Contratos públicos; no introducir dependencias a EJB/web. No es un dominio puro: usa APIs Jakarta/observabilidad. |
+| [carga-ejb](../carga-ejb/src/main/java/uy/edu/fing/tse/carga/ejb/) | `modelo` JPA, `servicio` EJB, `persistencia` DAO, `jms`, `integracion`, `seguridad`, arranque y métricas. | Negocio, autorización y transacciones; consumir interfaces entre frentes. Algunos servicios usan `EntityManager` directamente: no imponer DAO nuevos sin necesidad. |
+| [carga-web](../carga-web/src/main/java/uy/edu/fing/tse/carga/web/) | Recursos REST, mappers, mecanismo JWT, filtro de correlación, backing beans JSF y SOAP. | Adaptar transporte/presentación; depende de API, no EJB concreto. Algunos recursos P4 son además EJB protegidos por rol (ADR-0007). |
+| [carga-ear](../carga-ear/pom.xml) | Empaqueta API en `lib`, EJB y WAR; contexto `/carga`. | Empaquetado, no reglas de negocio. |
+| [carga-front](../carga-front/src/) | React/TS: `pages`, `componentes`, `auth`, cliente HTTP y tipos; nginx en despliegue. | Consume REST; mostrar/ocultar rutas no autoriza recursos del servidor. Fuera del EAR y de Maven. |
+| [simulador-pdi](../simulador-pdi/src/) | Servicio SOAP `ServicioDnicImpl`, usa contratos API. | Sustituto externo local, no fuente para redefinir la PDI real. |
+| [nodo-balanzas](../nodo-balanzas/src/) | WAR REST `PesadasRecurso`, filtro de token; depende de API. | Integración HTTP independiente; no depende de implementaciones del central. |
+| [nodo-tracking](../nodo-tracking/src/) | Proceso `NodoTracking`, solo JDK según su POM. | Publica por HTTP, no accede al broker central directamente. |
+| [carga-generador](../carga-generador/src/) | Cliente/generador de carga y estadísticas. | Herramienta de performance, no servicio productivo ni evidencia de capacidad por sí sola. |
+
+Dirección de dependencia relevante: `web → api ← ejb`; el EAR los integra. Los nodos/simuladores no importan `carga-ejb`. Verificar los POM afectados antes de añadir dependencias.
+
+## Recorridos de lectura por funcionalidad
+
+Las rutas Java siguientes son relativas a los directorios de paquetes enlazados en la tabla.
+
+| Flujo | Archivos para seguir la ejecución | Decisiones |
+| --- | --- | --- |
+| Identidad | web `seguridad/MecanismoJwt`, recursos de autenticación/gub.uy → EJB `AutenticacionBean`, `IngresoGubUyBean`, `PdiBean` y paquete `seguridad` | Contrato de roles, caso crítico 1; no validar JWT solo en el navegador |
+| Crear guía | web `rest/GuiaRecurso` → API `GuiaServicioLocal` → EJB `GuiaServicioBean` → `Guia`, `Vehiculo`, `Chofer`, `VinculoEmpresaUsuario` | ADR-0005 para bloqueo/intervalos; autorización empresarial actual según contrato y código, ver discrepancia |
+| Tracking | web `rest/IngestaRecurso`/`FiltroTokenNodo` → EJB `IngestaTrackingBean` → cola posiciones → `PosicionMDB` → `PosicionDAO` | ADR-0002, 0007, 0008: recepción asíncrona, token, deduplicación y saturación |
+| Pesajes | `AgendaPesajesBean` o web `rest/PesajeRecurso` → `SincronizacionPesajesBean` → `PesajeBean`/`CircuitBreaker` → HTTP Balanzas → `PesadaDAO` y cola pesadas | ADR-0006, 0007, 0009: consulta degradada, persistencia y aviso transaccional, URL desde nodos registrados |
+| Fin de viaje | API `AvisoFinDeViajeLocal` → `AvisoFinDeViajeBean` → cola viajes-finalizados → `FinDeViajeMDB` → sincronización | ADR-0010; no confundir adaptador P4 existente con emisor P3 ya integrado |
+| Recorridos | web `rest/RecorridoRecurso` → `RecorridoBean` → `RecorridoDAO`/PostGIS; API local para P5 | ADR-0010: topes, distancia y roles distintos para API externa/proceso interno |
+| Auditoría del producto | `AuditoriaBean` → `RegistroAuditoriaDAO`/`RegistroAuditoria`; lectura por recurso y SPA | Solo agregado; independiente del agente auditor de código |
+
+## Persistencia, servidor y pruebas
+
+- [Migraciones](../carga-ejb/src/main/resources/db/migration/): V1–V9 presentes en esta revisión; consulta el último número real antes de crear otra. [Migraciones.java](../carga-ejb/src/main/java/uy/edu/fing/tse/carga/ejb/arranque/Migraciones.java) aplica Flyway al arrancar. [persistence.xml](../carga-ejb/src/main/resources/META-INF/persistence.xml) declara JTA y `hbm2ddl.auto=none`. ADR-0001 prohíbe editar migraciones ya aplicadas.
+- [configure.cli](../docker/central/configure.cli): datasource, JMS/Artemis y servidor; [Compose](../docker-compose.yml) enlaza contenedores y configuración. HTTPS es requisito de entornos desplegados; las URLs HTTP locales no demuestran despliegue seguro en nube.
+- [Pruebas EJB](../carga-ejb/src/test/java/uy/edu/fing/tse/carga/ejb/): reglas, servicios, seguridad, JMS, resiliencia y migraciones. `GuiaServicioBeanTest` no sustituye una transacción/lock del contenedor; ADR-0005 reconoce esa limitación.
+- [Pruebas web](../carga-web/src/test/), [simulador](../simulador-pdi/src/test/) y [generador](../carga-generador/src/test/) complementan; la prueba de migraciones usa Testcontainers y etiqueta `integracion`. [CI](../.github/workflows/ci.yml) define build Java, frontend e integración/E2E. No se inspeccionaron resultados remotos ni se ejecutaron estas pruebas.

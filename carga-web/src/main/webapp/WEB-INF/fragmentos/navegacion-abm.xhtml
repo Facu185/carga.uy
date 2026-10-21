@@ -1,0 +1,10 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets">
+    <nav aria-label="Administración P2">
+        <h:link outcome="index" value="Inicio"/>
+        <h:link outcome="empresas" value="Empresas"/>
+        <h:link outcome="vehiculos" value="Vehículos" rendered="#{request.isUserInRole('ADMINISTRADOR') or request.isUserInRole('CIUDADANO') or request.isUserInRole('CHOFER')}"/>
+        <h:link outcome="choferes" value="Choferes" rendered="#{request.isUserInRole('ADMINISTRADOR') or request.isUserInRole('CIUDADANO') or request.isUserInRole('CHOFER')}"/>
+        <h:link outcome="cambiar-clave-jsf" value="Cambiar contraseña" rendered="#{request.isUserInRole('ADMINISTRADOR') or request.isUserInRole('AUTORIDAD')}"/>
+    </nav>
+    <form method="post" action="#{request.contextPath}/jsf/salir"><button type="submit">Cerrar sesión JSF</button></form>
+</ui:composition>

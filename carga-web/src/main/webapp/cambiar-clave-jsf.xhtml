@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets">
+<h:head><title>carga.uy - Cambiar contraseña</title></h:head>
+<h:body>
+<main class="contenedor">
+    <h1>Cambiar contraseña</h1>
+    <p>Si ingresaste con una contraseña temporal, debes cambiarla antes de acceder al ABM.</p>
+    <p>La nueva contraseña debe tener al menos 12 caracteres y ser distinta de la actual. Las cuentas LDAP se gestionan en su directorio.</p>
+    <ui:fragment rendered="#{param.error eq 'clave'}"><p role="alert">No se pudo cambiar la contraseña. Verifica la clave actual y los requisitos de la nueva; si tu cuenta es LDAP, cámbiala en el directorio.</p></ui:fragment>
+    <form method="post" action="#{request.contextPath}/jsf/cambiar-clave">
+        <p><label for="actual">Contraseña actual</label> <input id="actual" name="actual" type="password" autocomplete="current-password" required="required"/></p>
+        <p><label for="nueva">Nueva contraseña</label> <input id="nueva" name="nueva" type="password" autocomplete="new-password" minlength="12" required="required"/></p>
+        <button type="submit">Cambiar contraseña</button>
+    </form>
+    <form method="post" action="#{request.contextPath}/jsf/salir"><button type="submit">Cerrar sesión JSF</button></form>
+</main>
+</h:body>
+</html>

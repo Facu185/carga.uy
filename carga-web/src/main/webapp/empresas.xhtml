@@ -3,19 +3,22 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="jakarta.faces.html"
       xmlns:f="jakarta.faces.core"
-      xmlns:p="http://primefaces.org/ui">
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:pt="jakarta.faces.passthrough">
 <h:head>
     <title>carga.uy - Empresas</title>
     <link rel="stylesheet" href="recursos/estilos.css"/>
 </h:head>
 <h:body>
 <div class="contenedor">
+    <ui:include src="/WEB-INF/fragmentos/navegacion-abm.xhtml"/>
     <p class="migas"><h:link outcome="index" value="carga.uy"/> &#8250; Empresas</p>
 
     <h:form id="formulario">
         <p:growl id="avisos" showDetail="true"/>
 
-        <p:panel header="Nueva empresa">
+        <p:panel header="Nueva empresa" rendered="#{request.isUserInRole('ADMINISTRADOR') or request.isUserInRole('FUNCIONARIO')}">
             <h:panelGrid columns="2" cellpadding="4">
                 <p:outputLabel for="nombre" value="Nombre"/>
                 <p:inputText id="nombre" value="#{empresaVista.nueva.nombre}"/>
@@ -27,23 +30,23 @@
                 <p:inputNumber id="numero" value="#{empresaVista.nueva.numeroEmpresa}" decimalPlaces="0"/>
             </h:panelGrid>
             <p:commandButton value="Agregar" action="#{empresaVista.agregar}"
-                             update="formulario"/>
+                             process="@this nombre razon numero" update="formulario"/>
         </p:panel>
 
         <p:dataTable id="tabla" value="#{empresaVista.empresas}" var="e" emptyMessage="Sin empresas.">
             <p:column headerText="Id"><h:outputText value="#{e.id}"/></p:column>
-            <p:column headerText="Nombre"><h:outputText value="#{e.nombre}"/></p:column>
-            <p:column headerText="Razon social"><h:outputText value="#{e.razonSocial}"/></p:column>
-            <p:column headerText="Numero"><h:outputText value="#{e.numeroEmpresa}"/></p:column>
+            <p:column headerText="Nombre"><p:inputText id="editarNombre" value="#{e.nombre}" readonly="#{not (request.isUserInRole('ADMINISTRADOR') or request.isUserInRole('FUNCIONARIO'))}" pt:aria-label="Nombre de empresa"/></p:column>
+            <p:column headerText="Razon social"><p:inputText id="editarRazon" value="#{e.razonSocial}" readonly="#{not (request.isUserInRole('ADMINISTRADOR') or request.isUserInRole('FUNCIONARIO'))}" pt:aria-label="Razón social de empresa"/></p:column>
+            <p:column headerText="Numero"><p:inputNumber id="editarNumero" value="#{e.numeroEmpresa}" decimalPlaces="0" readonly="#{not (request.isUserInRole('ADMINISTRADOR') or request.isUserInRole('FUNCIONARIO'))}" title="Número de empresa"/></p:column>
             <p:column headerText="Alta">
                 <h:outputText value="#{e.fechaAlta}">
                     <f:convertDateTime type="localDate" pattern="dd/MM/yyyy"/>
                 </h:outputText>
             </p:column>
             <p:column headerText="Estado"><h:outputText value="#{e.activa ? 'Activa' : 'Inactiva'}"/></p:column>
-            <p:column headerText="Acciones">
-                <p:commandButton value="Guardar" action="#{empresaVista.modificar(e)}" update="formulario"/>
-                <p:commandButton value="Baja" action="#{empresaVista.darDeBaja(e)}" update="formulario" disabled="#{not e.activa}"/>
+            <p:column headerText="Acciones" rendered="#{request.isUserInRole('ADMINISTRADOR') or request.isUserInRole('FUNCIONARIO')}">
+                <p:commandButton value="Guardar" action="#{empresaVista.modificar(e)}" process="@this editarNombre editarRazon editarNumero" update="formulario"/>
+                <p:commandButton value="Baja" action="#{empresaVista.darDeBaja(e)}" process="@this" update="formulario" disabled="#{not e.activa}"/>
             </p:column>
         </p:dataTable>
     </h:form>

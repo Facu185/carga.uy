@@ -27,6 +27,12 @@ Para proteger un servicio propio alcanza con `@RolesAllowed(Roles.X)` (constante
 `uy.edu.fing.tse.carga.api.security.Roles`). La identidad la establece la capa web a partir del token
 (`Authorization: Bearer ...`); ningún servicio recibe el usuario por parámetro.
 
+Excepción de transporte **limitada al ABM JSF P2**: sus páginas pueden recibir el mismo
+JWT en la cookie HttpOnly `cargauy_jsf`, validada por P1 en cada petición. La cookie
+no autentica REST/SOAP/P4 ni reemplaza Bearer en los contratos existentes. El login JSF
+reutiliza las cuentas internas; no agrega un destino OIDC para funcionarios/ciudadanos.
+Detalle y límites: [ADR-0011](decisiones/0011-autenticacion-del-abm-jsf.md).
+
 Regla: **las interfaces viven en `carga-api`, las implementaciones en `carga-ejb`.** Quien consume
 depende de la interfaz, nunca de la clase.
 
