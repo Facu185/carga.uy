@@ -12,8 +12,16 @@
     <ui:include src="/WEB-INF/fragmentos/navegacion-abm.xhtml"/>
     <h:form id="formulario">
         <p:growl id="avisos" showDetail="true"/>
+        <p:outputLabel for="empresaConsulta" value="Empresa a consultar"/>
+        <p:selectOneMenu id="empresaConsulta" value="#{vehiculoVista.empresaConsultaId}">
+            <f:selectItem itemLabel="#{request.isUserInRole('ADMINISTRADOR') ? 'Todas las empresas' : 'Seleccione una empresa'}"
+                          itemValue="#{null}" itemDisabled="#{not request.isUserInRole('ADMINISTRADOR')}"/>
+            <f:selectItems value="#{vehiculoVista.empresas}" var="empresa" itemValue="#{empresa.id}" itemLabel="#{empresa.nombre}"/>
+            <p:ajax listener="#{vehiculoVista.refrescar}" process="@this" update="formulario"/>
+        </p:selectOneMenu>
+        <h:outputText value="No tienes empresas activas para gestionar como responsable." rendered="#{empty vehiculoVista.empresas}"/>
 
-        <p:panel header="Nuevo vehiculo">
+        <p:panel header="Nuevo vehiculo" rendered="#{not empty vehiculoVista.empresas}">
             <h:panelGrid columns="2" cellpadding="4">
                 <p:outputLabel for="empresa" value="Empresa"/>
                 <p:selectOneMenu id="empresa" value="#{vehiculoVista.nuevo.empresaId}">

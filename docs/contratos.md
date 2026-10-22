@@ -99,6 +99,25 @@ que ya procesó. Un mensaje puede llegar más de una vez y eso tiene que ser ino
 
 `GET /api/guias/mis-guias` requiere el rol `CHOFER` y resuelve el chofer por la cédula del principal; nunca acepta un identificador de chofer del cliente.
 
+`GET /carga/api/guias/empresa?empresaId=1&pagina=0&tamano=20` consulta las guías de
+una empresa para su responsable aprobado. Requiere rol `CIUDADANO` o `CHOFER` y
+vínculo `RESPONSABLE/ACTIVO` del principal con la empresa solicitada, comprobado
+en el EJB. El ID recibido selecciona la empresa, NO acredita autorización.
+No filtra por estado de guía ni por actividad actual del chofer/vehículo: incluye
+asignadas y finalizadas, y guías históricas sin asignaciones (`choferId`,
+`vehiculoId`, `nombreChofer` o `matricula` pueden ser nulos). Orden: `inicio DESC, id DESC`.
+
+Devuelve `PaginaGuiasEmpresaDTO`: `{registros, pagina, tamano, total}`; cada registro
+es `GuiaEmpresaDTO`: `{guia: GuiaDTO, nombreChofer, matricula}`. Se conservan los
+contratos de creación y de consulta del chofer sin cambios. `pagina` empieza en 0
+(predeterminado 0), `tamano` admite 1–100 (predeterminado 20); el desplazamiento
+debe caber en un entero de 32 bits. Empresa ausente/no positiva o paginación
+inválida: `400`; sin vínculo autorizado: `403`, con `{"error":"mensaje"}`.
+El total corresponde a esa empresa, no a todas las empresas del usuario.
+El nombre y la matrícula reflejan los registros relacionados actuales; no son
+instantáneas históricas. La consulta no modifica estados ni deduce finalización
+por la fecha prevista del viaje.
+
 Tablas compartidas (las toca más de un frente): `empresa`, `vehiculo`, `chofer`, `guia`, `usuario`,
 `rol`, `auditoria`. Cambiarlas requiere aviso.
 

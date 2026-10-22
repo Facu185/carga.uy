@@ -4,13 +4,16 @@ import jakarta.ejb.EJB;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import uy.edu.fing.tse.carga.api.contract.service.GuiaServicioLocal;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.exception.ConsultaGuiasInvalidaException;
 import uy.edu.fing.tse.carga.api.dto.guia.CrearGuiaCommand;
 
 import java.util.Map;
@@ -33,6 +36,16 @@ public class GuiaRecurso {
     public Response misGuias() {
         try { return Response.ok(servicio.guiasDelChoferAutenticado()).build(); }
         catch (NegocioException e) { return Response.status(Response.Status.FORBIDDEN).entity(Map.of("error", e.getMessage())).build(); }
+    }
+
+    @GET
+    @Path("/empresa")
+    public Response guiasEmpresa(@QueryParam("empresaId") Long empresaId,
+                                @QueryParam("pagina") @DefaultValue("0") int pagina,
+                                @QueryParam("tamano") @DefaultValue("20") int tamano) {
+        try { return Response.ok(servicio.guiasDeLaEmpresaResponsable(empresaId, pagina, tamano)).build(); }
+        catch (ConsultaGuiasInvalidaException e) { return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", e.getMessage())).build(); }
+        catch (NegocioException e) { return prohibido(e); }
     }
 
     @GET

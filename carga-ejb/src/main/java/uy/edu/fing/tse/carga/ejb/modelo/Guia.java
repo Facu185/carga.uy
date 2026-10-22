@@ -77,7 +77,9 @@ public class Guia {
 
     public GuiaDTO aDTO() {
         GuiaDTO dto = new GuiaDTO();
-        dto.setId(id); dto.setEmpresaId(empresa.getId()); dto.setVehiculoId(vehiculo.getId()); dto.setChoferId(chofer.getId());
+        dto.setId(id); dto.setEmpresaId(empresa.getId());
+        // El esquema historico admite guias CREADA sin vehiculo o chofer asignado.
+        dto.setVehiculoId(vehiculo == null ? null : vehiculo.getId()); dto.setChoferId(chofer == null ? null : chofer.getId());
         dto.setRubroId(rubro == null ? null : rubro.getId()); dto.setTipoCargaId(tipoCarga == null ? null : tipoCarga.getId());
         dto.setPesoKg(pesoKg); dto.setVolumenM3(volumenM3); dto.setInicio(inicio.toString()); dto.setFin(fin.toString()); dto.setOrigen(origen); dto.setOrigenLat(origenLat); dto.setOrigenLon(origenLon);
         dto.setDestino(destino); dto.setDestinoLat(destinoLat); dto.setDestinoLon(destinoLon); dto.setEstado(estado);

@@ -23,7 +23,10 @@ export function MiCuenta() {
   useTituloPagina('Mi cuenta')
   const { sesion, logout } = useAuth()
   const [perfil, setPerfil] = useState<Perfil | null>(null)
-  const [vinculos, setVinculos] = useState<VinculoEmpresa[]>([])
+  const [vinculos, setVinculos] = useState<VinculoEmpresa[] | null>(null)
+  const [cargandoVinculos, setCargandoVinculos] = useState(true)
+  const [errorVinculos, setErrorVinculos] = useState<string | null>(null)
+  const [versionVinculos, setVersionVinculos] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -38,11 +41,20 @@ export function MiCuenta() {
 
   useEffect(() => {
     let vigente = true
+    setCargandoVinculos(true)
+    setErrorVinculos(null)
     api<VinculoEmpresa[]>('/solicitudes-empresa/vinculos/mios')
       .then((respuesta) => { if (vigente) setVinculos(respuesta) })
-      // La ficha no es crítica para Mi cuenta: si falla, el resto de la pantalla sigue disponible.
-      .catch(() => undefined)
+      .catch((causa: unknown) => { if (vigente) setErrorVinculos(causa instanceof Error ? causa.message : 'No se pudo consultar tu vínculo con la empresa.') })
+      .finally(() => { if (vigente) setCargandoVinculos(false) })
     return () => { vigente = false }
+  }, [versionVinculos])
+
+  // Al volver de otra pestaña se refleja una aprobación sin renovar el JWT.
+  useEffect(() => {
+    const actualizar = () => setVersionVinculos((version) => version + 1)
+    window.addEventListener('focus', actualizar)
+    return () => window.removeEventListener('focus', actualizar)
   }, [])
 
   const verificado = perfil?.verificacionDnic === 'VERIFICADO'
@@ -50,7 +62,7 @@ export function MiCuenta() {
   const esCiudadano = roles.includes(ROLES.CIUDADANO)
   const esChofer = roles.includes(ROLES.CHOFER)
   const puedeSolicitarResponsabilidad = esCiudadano || esChofer
-  const esResponsable = vinculos.some((vinculo) => vinculo.tipo === 'RESPONSABLE' && vinculo.estado === 'ACTIVO')
+  const esResponsable = vinculos?.some((vinculo) => vinculo.tipo === 'RESPONSABLE' && vinculo.estado === 'ACTIVO') ?? false
 
   return (
     <div className="pagina">
@@ -102,7 +114,24 @@ export function MiCuenta() {
                   <Link className="boton-enlace" to="/mi-empresa">Administrar choferes</Link>
                 </section>
               )}
-              {puedeSolicitarResponsabilidad && <SolicitudResponsable />}
+              {esResponsable && (
+                <section className="ficha" aria-labelledby="titulo-guias-viajes">
+                  <h2 id="titulo-guias-viajes" className="titulo-con-icono">
+                    <Truck size={22} aria-hidden="true" />
+                    Guías de viajes
+                  </h2>
+                  <p className="ficha-texto">Consultá todas las guías de tu empresa, incluidas las finalizadas, junto con el chofer y el vehículo asignados.</p>
+                  <Link className="boton-enlace" to="/mi-empresa/guias">Ver guías de viajes</Link>
+                </section>
+              )}
+              {puedeSolicitarResponsabilidad && cargandoVinculos && !vinculos && <p role="status">Consultando el vínculo con tu empresa…</p>}
+              {puedeSolicitarResponsabilidad && errorVinculos && (
+                <div>
+                  <p className="mensaje-error" role="alert">{errorVinculos}</p>
+                  <button type="button" className="boton-secundario" disabled={cargandoVinculos} onClick={() => setVersionVinculos((version) => version + 1)}>Reintentar consulta de empresa</button>
+                </div>
+              )}
+              {puedeSolicitarResponsabilidad && vinculos && !errorVinculos && !esResponsable && <SolicitudResponsable />}
               {esCiudadano && <SolicitudAcceso />}
             </div>
           )}
