@@ -19,6 +19,7 @@ import uy.edu.fing.tse.carga.ejb.modelo.Usuario;
 import uy.edu.fing.tse.carga.ejb.modelo.ValidadorCedula;
 import uy.edu.fing.tse.carga.ejb.persistencia.FuncionarioDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.UsuarioDAO;
+import uy.edu.fing.tse.carga.ejb.seguridad.CompatibilidadFuncionarioEmpresa;
 
 import java.util.List;
 
@@ -40,6 +41,9 @@ public class FuncionariosBean implements FuncionariosLocal {
 
     @Inject
     UsuarioDAO usuarios;
+
+    @Inject
+    CompatibilidadFuncionarioEmpresa compatibilidad;
 
     @EJB
     AuditoriaLocal auditoria;
@@ -64,6 +68,7 @@ public class FuncionariosBean implements FuncionariosLocal {
         // Si ya ingreso alguna vez con gub.uy se usa su registro; si no, se crea y gub.uy lo completa al ingresar
         Usuario persona = usuarios.buscarPorCedula(cedula)
                 .orElseGet(() -> usuarios.guardar(new Usuario(cedula, datos.getNombre().trim(), null)));
+        compatibilidad.verificarPuedeSerFuncionario(persona);
         Funcionario guardado = dao.guardar(new Funcionario(persona, dependencia(datos.getDependencia())));
         persona.asignarRol(usuarios.rol(Rol.FUNCIONARIO));
         auditoria.registrar(AccionAuditada.FUNCIONARIO_HABILITADO, ENTIDAD, cedula, null,
@@ -74,6 +79,11 @@ public class FuncionariosBean implements FuncionariosLocal {
     @Override
     public FuncionarioDTO cambiarEstado(Long id, boolean activo) throws NegocioException {
         Funcionario f = buscar(id);
+        if (activo) {
+            compatibilidad.verificarPuedeSerFuncionario(f.getUsuario());
+        } else {
+            compatibilidad.bloquearUsuario(f.getUsuario());
+        }
         f.setActivo(activo);
         if (activo) {
             f.getUsuario().asignarRol(usuarios.rol(Rol.FUNCIONARIO));

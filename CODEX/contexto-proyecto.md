@@ -33,12 +33,31 @@ Estos son contrastes documentales/estáticos, NO una auditoría funcional ni aut
 
 ## Pendientes no resueltos por esta guía
 
+**Actualización incompatibilidad (2026-10-22):**
+[ADR-0015](../docs/decisiones/0015-incompatibilidad-funcionario-responsable.md)
+acepta por confirmación del usuario la exclusión entre funcionario activo y
+RESPONSABLE/ACTIVO. Hay guardia interna compartida P1/P2 para habilitación manual/
+por solicitud, asignación de responsabilidad y bloqueo del ejercicio heredado,
+sin revocar vínculos, quitar CIUDADANO ni modificar derechos propios del CHOFER.
+Se bloquea Usuario antes de habilitar/asignar en ambos sentidos. No cierra D0-04
+ni acredita coordinación externa o concurrencia real: ver
+[validaciones pendientes](../pruebas/incompatibilidad-funcionario-responsable.md).
+
 **Actualización F12 (2026-10-22):** `/funcionario/empresas` integra localmente
 listado/búsqueda, detalle, edición administrativa y baja C12, con entrada por rol
 desde Mi cuenta y sesión P1 intacta. Reutiliza bandeja P1 de responsables, NO alta
 empresarial. Aceptación compartida P1/P3, alta P1 y validación real pendientes en
-[escenarios F12](../pruebas/p2-funcionario-empresas.md). C13/C14 siguen sin aprobar;
-sus botones están deshabilitados y no se consumen rutas propuestas.
+[escenarios F12](../pruebas/p2-funcionario-empresas.md). El detalle ahora enlaza
+a F13/C13; Viajes continúa deshabilitado, sin consumir C14.
+
+**Actualización F13 (2026-10-22):** [ADR-0016](../docs/decisiones/0016-consulta-vehicular-funcionario.md)
+registra C13 confirmado por el usuario. `ConsultaVehiculosLocal`/EJB/REST separado
+del ABM ofrece lectura por empresa a FUNCIONARIO/ADMINISTRADOR sin vínculo,
+incluye empresas inactivas y bajas, matrícula parcial literal y paginación. La SPA
+`/funcionario/empresas/:id/vehiculos` muestra vigencias calculadas con fecha servidor
+America/Montevideo; no altera permisos ABM ni asignaciones CU2. Pruebas y
+[aceptación F13](../pruebas/p2-consulta-vehicular.md) pendientes de ejecución y
+aceptación integrada P1/P3. C14 sigue sin aprobar.
 
 **Actualización F10 (2026-10-22):** [ADR-0014](../docs/decisiones/0014-perfil-propio-empresa.md)
 acepta el perfil propio acotado en SPA y C10. Existe contrato local específico,

@@ -12,6 +12,9 @@ cinco tests HTTP F11 nuevos y escenarios pendientes. Sin ejecución funcional.
 **Fase 2 / F10:** implementación local de perfil preparada según
 [ADR-0014](decisiones/0014-perfil-propio-empresa.md), con
 [aceptación pendiente](../pruebas/p2-perfil-empresa.md).
+**Fase 4 / F13:** C13 confirmado por el usuario según
+[ADR-0016](decisiones/0016-consulta-vehicular-funcionario.md); consulta y pantalla
+de solo lectura locales, con [aceptación pendiente](../pruebas/p2-consulta-vehicular.md).
 
 ## 1. Alcance y criterio de cierre
 
@@ -124,19 +127,21 @@ empresas que tiene autorizadas; no depende de una identidad administrativa disti
 
 **Origen:** letra p. 6. **Interfaz y datos:** P2. **Coordinación:** P1 para permisos y P3 para navegación compartida.
 
-**Situación:** los datos ya existen, pero `VehiculoServicioBean` permite
-administrador/ciudadano/chofer, no funcionario. Añadir funcionario a la anotación
-de toda la clase también habilitaría operaciones de escritura: no es una solución
-de mínimo privilegio para este requisito de consulta.
+**Situación:** C13 aprobado por el usuario en ADR-0016 e implementado localmente
+con `ConsultaVehiculosLocal`/EJB/REST separado del ABM. Pantalla de solo lectura
+desde F12, con matrícula parcial literal, paginación y fecha servidor
+America/Montevideo. `VehiculoServicioBean` y sus permisos no se amplían.
+Pruebas y validación integrada pendientes; no se acredita ejecución.
 
-- [ ] Definir/publicar una operación de lectura autorizada para funcionario por
+- [x] Definir/publicar una operación de lectura autorizada para funcionario por
   empresa, reutilizando datos/DTO existentes cuando sean adecuados.
-- [ ] Mostrar matrícula, estado, permiso y sus fechas, ITV y su vencimiento.
-- [ ] Explicitar la fecha de referencia y cómo se presenta la vigencia, distinguiendo
+- [x] Mostrar matrícula, estado, permiso y sus fechas, ITV y su vencimiento.
+- [x] Explicitar la fecha de referencia y cómo se presenta la vigencia, distinguiendo
   baja lógica, permiso vencido e ITV ausente/vencida; no tratarlos como un único estado.
-- [ ] Integrar la consulta en el recorrido autenticado del funcionario.
-- [ ] Escribir pruebas que permitan lectura y demuestren que alta, modificación,
-  baja y reactivación NO quedan autorizadas al funcionario por este cambio.
+- [x] Integrar la consulta en el recorrido autenticado del funcionario.
+- [x] Escribir pruebas positivas de lectura y conservar regresiones que comprueban que alta, modificación,
+  baja y reactivación NO quedan autorizadas al funcionario por este cambio;
+  su ejecución en contenedor sigue pendiente.
 - [ ] Validar respuestas REST, filtros y comportamiento con datos ausentes o vencidos.
 
 **Cierre:** el funcionario puede fiscalizar los datos requeridos sin obtener
@@ -254,7 +259,7 @@ se agregan como faltantes obligatorios.
 
 1. Resolver por bloque autorización, interfaz y contratos de P2-05; acordar reparto F15.
 2. Validar F11 ya implementado y registrar su dependencia P3 aún abierta.
-3. Validar F10/F12 implementados localmente y acordar C13 antes de construir F13.
+3. Validar F10/F12/F13 implementados localmente; acordar C14 y sus fuentes antes de F14.
 4. Preparar consultas e interfaz F14 desde P2 con contratos P3/P4 acordados.
 5. Integrar estado real, concurrencia inicio/baja y política offline con P3/móvil.
 6. Acreditar CU2/ABM/JSF y los recorridos nuevos en integración; registrar evidencia final.

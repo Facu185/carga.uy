@@ -25,9 +25,10 @@ grupo antes de mergear: hay código de otra persona que depende.
 | `SaludLocal` | P1 | Estado del central y de sus dependencias (base de datos, PDI) |
 | `CuentasInternasLocal`, `FuncionariosLocal`, `SolicitudesFuncionarioLocal`, `SolicitudesEmpresaLocal`, `PerfilLocal` | P1 | Gestión de accesos del backoffice, solicitudes de empresa/vínculo y perfil de quien ingresó con gub.uy |
 
-Para proteger un servicio propio alcanza con `@RolesAllowed(Roles.X)` (constantes en
-`uy.edu.fing.tse.carga.api.security.Roles`). La identidad la establece la capa web a partir del token
-(`Authorization: Bearer ...`); ningún servicio recibe el usuario por parámetro.
+Los roles de un servicio se declaran con `@RolesAllowed(Roles.X)` (constantes en
+`uy.edu.fing.tse.carga.api.security.Roles`); esto no reemplaza controles de objeto,
+pertenencia o incompatibilidad. La identidad la establece la capa web a partir del
+token (`Authorization: Bearer ...`); ningún servicio recibe el usuario por parámetro.
 
 Excepción de transporte **limitada al ABM JSF P2**: sus páginas pueden recibir el mismo
 JWT en la cookie HttpOnly `cargauy_jsf`, validada por P1 en cada petición. La cookie
@@ -37,6 +38,40 @@ Detalle y límites: [ADR-0011](decisiones/0011-autenticacion-del-abm-jsf.md).
 
 Regla: **las interfaces viven en `carga-api`, las implementaciones en `carga-ejb`.** Quien consume
 depende de la interfaz, nunca de la clase.
+
+### Incompatibilidad funcionario/responsable — ADR-0015
+
+Acuerdo confirmado por el usuario para este cambio P1/P2, sin atribuir aceptación
+externa de los frentes: [ADR-0015](decisiones/0015-incompatibilidad-funcionario-responsable.md).
+CIUDADANO sigue siendo rol base de todo ingreso gub.uy. FUNCIONARIO y CIUDADANO
+pueden coexistir; lo incompatible es funcionario **activo** y responsabilidad
+empresarial **RESPONSABLE/ACTIVO**, comprobados por identidad en datos persistidos.
+
+- `SolicitudesEmpresaLocal`: un funcionario activo no puede solicitar vínculo ni
+  alta empresarial, recibir responsabilidad por aprobación/transferencia ni ser
+  el responsable generado al aprobar un alta. Se valida al destinatario antes de
+  mutar o revocar al responsable anterior. Conflicto: 400, solicitud sin resolver.
+- `FuncionariosLocal` y `SolicitudesFuncionarioLocal`: un responsable activo no
+  puede habilitarse/reactivarse por alta manual, cambio de estado o aprobación de
+  solicitud. Conflicto: 400, sin cambio de rol, estado, dependencia ni resolución.
+  Las solicitudes de acceso no habilitadas pueden seguir pendientes.
+- Ambas direcciones toman un lock PESSIMISTIC_WRITE de la misma fila Usuario
+  antes de comprobar el estado opuesto, dentro de la transacción EJB. No se usa
+  el listado truncado de vínculos ni se exige empresa activa para detectar conflicto.
+- Ante combinaciones heredadas se deniega con 403 el ejercicio como responsable:
+  perfil propio, ABM de vehículos/choferes, creación/catálogos empresariales y
+  listado empresarial de guías. No se revocan vínculos ni se elimina historial.
+  Consulta de estado/historial de solicitudes/vínculos y funciones oficiales
+  conservan sus permisos. Resolver mediante baja funcionario o transferencia
+  administrativa explícita, no con revocación automática por esta política.
+- No cambia D0-04: crear guías/catálogos sigue admitiendo ACTIVO sin tipo para
+  identidades sin la combinación incompatible. No impone incompatibilidad CHOFER,
+  ni cambia las guías propias del chofer, sus eventos o sus asignaciones.
+
+Rutas, DTO, firmas, roles declarativos y `{"error":"mensaje"}` se conservan.
+Es una restricción de negocio acordada, no una migración de datos ni del login.
+Implementación local con pruebas preparadas; seguridad/locks/rollback reales
+**pendientes** en [matriz de integración](../pruebas/incompatibilidad-funcionario-responsable.md).
 
 ## 2. DTO
 
@@ -140,13 +175,49 @@ La nueva área reutiliza la bandeja P1 de **vínculos de responsables** bajo
 `/funcionario/solicitudes-responsables`, no un circuito de alta empresarial.
 Alta y aceptación compartida P1/P3 siguen pendientes. Administrador/JSF conservan
 sus recorridos y permisos anteriores; las rutas SPA no autorizan al servidor.
-Vehículos/Viajes son indicadores deshabilitados, no consumidores C13/C14.
+Vehículos enlaza a la consulta C13 de solo lectura de fase 4; Viajes sigue
+deshabilitado y no consume C14.
 Validación real pendiente en [escenarios F12](../pruebas/p2-funcionario-empresas.md).
 
 La elección de SPA F12–F14 está acotada por [ADR-0013](decisiones/0013-area-funcionario-spa-p2.md).
 El perfil F10/C10 queda aprobado por el usuario y publicado a continuación.
-Las consultas F13/F14 siguen como **borradores no aprobados** en el
-[registro de fase 0](acuerdos-cierre-p2-fase-0.md); no consumir sus rutas propuestas.
+C13/F13 fue confirmado posteriormente por el usuario en
+[ADR-0016](decisiones/0016-consulta-vehicular-funcionario.md). C14/F14 sigue como
+**borrador no aprobado** en el [registro de fase 0](acuerdos-cierre-p2-fase-0.md).
+
+### Consulta vehicular F13 / C13
+
+Contrato aprobado por el usuario el 2026-10-22, sin acreditar aceptación externa
+ni ejecución. `ConsultaVehiculosLocal.consultar(Long empresaId, String matricula,
+Integer pagina, Integer tamano)` devuelve `PaginaConsultaVehiculosDTO`.
+REST: `GET /carga/api/vehiculos/consulta`, solo FUNCIONARIO/ADMINISTRADOR, sin
+vínculo empresarial; autorización en el EJB antes de existencia.
+
+- `empresaId` obligatorio y positivo, incluida empresa inactiva; inexistente: 400.
+- `matricula` opcional, recortada; búsqueda parcial literal sin distinguir
+  mayúsculas. Vacía equivale a sin filtro. `%`, `_` y `!` no son comodines.
+- `pagina` ausente: 0; `tamano` ausente: 20, rango 1–100. Negativos, números
+  no enteros/no interpretables y desplazamiento mayor a `Integer.MAX_VALUE`: 400.
+  Orden `matricula ASC, id ASC`, incluyendo vehículos dados de baja.
+- Respuesta 200: `{registros, pagina, tamano, total, fechaReferencia, zonaHoraria}`.
+  `registros` contiene `ConsultaVehiculoDTO`: `id`, `empresaId`, `matricula`,
+  `habilitado`, `numeroPermiso`, `permisoDesde`, `permisoHasta`, `itvVencimiento`,
+  `estadoPermiso`, `estadoItv`. Fechas ISO-8601 o null para datos ausentes.
+  Página fuera de resultados: lista vacía, total conservado. Conteo y página
+  pueden variar ante escrituras concurrentes; no hay promesa de instantánea.
+- `fechaReferencia`: fecha actual del servidor en `America/Montevideo`, indicada
+  por `zonaHoraria`. Una sola referencia para todos los registros de la respuesta.
+  Permiso `FUTURO`/`VIGENTE`/`VENCIDO`, con inicio y fin inclusivos;
+  `SIN_DATOS` si falta número/fecha o el intervalo está invertido. ITV
+  `VIGENTE` hasta su vencimiento inclusive, `VENCIDO` después, `SIN_DATOS` si
+  falta fecha. No hay estado FUTURO de ITV porque no se conoce su inicio.
+  Habilitación/baja lógica independiente de esos estados; no se modifican reglas CU2.
+- Errores `400 {"error":"mensaje"}` para filtros/paginación/empresa inexistente;
+  401 sin sesión válida y 403 sin rol. Correlación y Bearer existentes conservados.
+
+El consumidor SPA `/funcionario/empresas/:id/vehiculos` es de solo lectura;
+la nueva API no cambia GET ni mutaciones anteriores de `/vehiculos`, sus DTO,
+pertenencia ni excepciones administrativas. No se incorporan cambios SOAP/JMS.
 
 ### Perfil propio F10 / C10
 

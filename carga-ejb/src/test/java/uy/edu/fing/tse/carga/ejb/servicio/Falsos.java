@@ -19,6 +19,7 @@ import uy.edu.fing.tse.carga.ejb.persistencia.FuncionarioDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.SolicitudFuncionarioDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.UsuarioDAO;
 import uy.edu.fing.tse.carga.ejb.seguridad.TokenService;
+import uy.edu.fing.tse.carga.ejb.seguridad.CompatibilidadFuncionarioEmpresa;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -39,6 +41,17 @@ import java.util.Set;
 final class Falsos {
 
     private Falsos() {
+    }
+
+    /** Ejecuta la politica real con estados sinteticos; no acredita consultas ni bloqueos JPA. */
+    static class CompatibilidadFalsa extends CompatibilidadFuncionarioEmpresa {
+        final Set<String> funcionariosActivos = new HashSet<>();
+        final Set<String> responsablesActivos = new HashSet<>();
+        final List<String> bloqueadas = new ArrayList<>();
+
+        @Override public void bloquearUsuario(Usuario persona) { bloqueadas.add(persona.getCedula()); }
+        @Override protected boolean esFuncionarioActivo(String cedula) { return funcionariosActivos.contains(cedula); }
+        @Override protected boolean tieneResponsabilidadActiva(String cedula) { return responsablesActivos.contains(cedula); }
     }
 
     // ---------------- sesion del contenedor ----------------

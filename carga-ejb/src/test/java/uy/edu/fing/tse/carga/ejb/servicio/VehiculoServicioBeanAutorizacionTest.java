@@ -27,6 +27,28 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Dobles: comprueba decisiones y efectos; no ejecuta roles EJB, JPQL ni transacciones. */
 class VehiculoServicioBeanAutorizacionTest {
+    @Test void reglaDeResponsabilidadNoRetiraLaGestionAdministrativa() throws Exception {
+        Escenario e = new Escenario(Roles.ADMINISTRADOR);
+        e.compatibilidad.funcionariosActivos.add("persona-prueba");
+        e.compatibilidad.responsablesActivos.add("persona-prueba");
+        assertEquals(1, e.bean.listar(null).size());
+        assertEquals("NUEVA", e.bean.modificar(10L, datos(1L)).getMatricula());
+    }
+
+    @Test void funcionarioConResponsabilidadHeredadaNoOperaComoResponsable() throws Exception {
+        Escenario e = new Escenario(Roles.CIUDADANO);
+        e.compatibilidad.funcionariosActivos.add("persona-prueba");
+        e.compatibilidad.responsablesActivos.add("persona-prueba");
+        assertThrows(EJBAccessException.class, () -> e.bean.listar(1L));
+        assertThrows(EJBAccessException.class, () -> e.bean.agregar(datos(1L)));
+        assertThrows(EJBAccessException.class, () -> e.bean.modificar(10L, datos(1L)));
+        assertThrows(EJBAccessException.class, () -> e.bean.darDeBaja(10L));
+        assertThrows(EJBAccessException.class, () -> e.bean.reactivar(10L));
+        assertTrue(e.jpql.isEmpty());
+        assertEquals(0, e.persistidos);
+        assertEquals("ORIGINAL", e.vehiculo.getMatricula());
+        assertTrue(e.vehiculo.isHabilitado());
+    }
     @Test void administradorListaGlobalSinConsultarVinculos() throws Exception {
         Escenario e = new Escenario(Roles.ADMINISTRADOR);
         assertEquals(1, e.bean.listar(null).size());
@@ -269,6 +291,7 @@ class VehiculoServicioBeanAutorizacionTest {
 
     private static class Escenario {
         final VehiculoServicioBean bean = new VehiculoServicioBean();
+        final Falsos.CompatibilidadFalsa compatibilidad = new Falsos.CompatibilidadFalsa();
         final Vehiculo vehiculo = new Vehiculo();
         final Map<Long, Empresa> empresas = new HashMap<>();
         final Set<Long> permitidas = new HashSet<>(Set.of(1L));
@@ -283,6 +306,7 @@ class VehiculoServicioBeanAutorizacionTest {
         int persistidos, empresasLeidas;
 
         Escenario(String rol) throws Exception {
+            campo(bean, "compatibilidad", compatibilidad);
             for (Long id : List.of(1L, 2L)) {
                 Empresa empresa = new Empresa(); campo(empresa, "id", id); empresas.put(id, empresa);
             }

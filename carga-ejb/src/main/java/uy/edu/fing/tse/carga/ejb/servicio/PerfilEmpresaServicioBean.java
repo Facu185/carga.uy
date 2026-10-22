@@ -18,6 +18,7 @@ import uy.edu.fing.tse.carga.api.exception.NegocioException;
 import uy.edu.fing.tse.carga.api.security.Roles;
 import uy.edu.fing.tse.carga.ejb.modelo.Empresa;
 import uy.edu.fing.tse.carga.ejb.persistencia.VinculoEmpresaUsuarioDAO;
+import uy.edu.fing.tse.carga.ejb.seguridad.CompatibilidadFuncionarioEmpresa;
 
 import java.security.Principal;
 import java.sql.SQLException;
@@ -35,6 +36,9 @@ public class PerfilEmpresaServicioBean implements PerfilEmpresaServicioLocal {
 
     @EJB
     private VinculoEmpresaUsuarioDAO vinculos;
+
+    @jakarta.inject.Inject
+    private CompatibilidadFuncionarioEmpresa compatibilidad;
 
     @Override
     public EmpresaDTO consultar(Long id) throws NegocioException {
@@ -73,6 +77,7 @@ public class PerfilEmpresaServicioBean implements PerfilEmpresaServicioLocal {
         Principal principal = contexto == null ? null : contexto.getCallerPrincipal();
         if (principal == null || principal.getName() == null || principal.getName().isBlank()
                 || !vinculos.esResponsableActivo(principal.getName(), id)) throw sinAcceso();
+        compatibilidad.verificarEjercicioResponsabilidad(principal.getName());
         Empresa empresa = bloqueo == null ? em.find(Empresa.class, id) : em.find(Empresa.class, id, bloqueo);
         if (empresa == null || !empresa.isActiva()) throw sinAcceso();
         return empresa;

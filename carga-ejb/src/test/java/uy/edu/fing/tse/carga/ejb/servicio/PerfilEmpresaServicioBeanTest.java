@@ -33,6 +33,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Prueba primero: decisiones y efectos con dobles; no acredita roles, JPQL ni rollback JTA. */
 class PerfilEmpresaServicioBeanTest {
+    @Test void funcionarioConResponsabilidadHeredadaNoLeeNiEditaPerfil() throws Exception {
+        Escenario e = new Escenario();
+        e.compatibilidad.funcionariosActivos.add("persona-sintetica");
+        e.compatibilidad.responsablesActivos.add("persona-sintetica");
+        assertThrows(EJBAccessException.class, () -> e.bean.consultar(1L));
+        assertThrows(EJBAccessException.class, () -> e.bean.modificar(1L, datos()));
+        assertEquals(0, e.busquedas);
+        assertEquals(0, e.flushes);
+        sinCambios(e);
+    }
     @Test void consultaPropiaDevuelveDtoSinMutarNiBloquearParaEscritura() throws Exception {
         Escenario e = new Escenario();
         EmpresaDTO dto = e.bean.consultar(1L);
@@ -208,6 +218,7 @@ class PerfilEmpresaServicioBeanTest {
 
     private static final class Escenario {
         final PerfilEmpresaServicioBean bean = new PerfilEmpresaServicioBean();
+        final Falsos.CompatibilidadFalsa compatibilidad = new Falsos.CompatibilidadFalsa();
         final Empresa empresa = new Empresa();
         final List<Long> autorizaciones = new ArrayList<>();
         final List<LockModeType> bloqueos = new ArrayList<>();
@@ -220,6 +231,7 @@ class PerfilEmpresaServicioBeanTest {
         PersistenceException errorFlush;
 
         Escenario() throws Exception {
+            campo(bean, "compatibilidad", compatibilidad);
             campo(empresa, "id", 1L); empresa.setNombre("ORIGINAL"); empresa.setRazonSocial("RAZON ORIGINAL");
             empresa.setDireccion("DIRECCION ORIGINAL"); empresa.setNumeroEmpresa(100L);
             empresa.setFechaAlta(LocalDate.of(2020, 1, 1));

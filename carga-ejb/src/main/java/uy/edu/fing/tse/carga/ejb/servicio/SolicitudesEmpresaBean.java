@@ -23,6 +23,7 @@ import uy.edu.fing.tse.carga.ejb.modelo.*;
 import uy.edu.fing.tse.carga.ejb.persistencia.SolicitudAltaEmpresaDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.UsuarioDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.VinculoEmpresaUsuarioDAO;
+import uy.edu.fing.tse.carga.ejb.seguridad.CompatibilidadFuncionarioEmpresa;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -42,6 +43,7 @@ public class SolicitudesEmpresaBean implements SolicitudesEmpresaLocal {
     @Inject UsuarioDAO usuarios;
     @Inject SolicitudAltaEmpresaDAO solicitudes;
     @Inject VinculoEmpresaUsuarioDAO vinculos;
+    @Inject CompatibilidadFuncionarioEmpresa compatibilidad;
     @EJB AuditoriaLocal auditoria;
 
     @Override @RolesAllowed({Roles.CIUDADANO, Roles.CHOFER})
@@ -51,6 +53,7 @@ public class SolicitudesEmpresaBean implements SolicitudesEmpresaLocal {
         if (solicitudes.pendientePorUsuario(cedula).isPresent()) throw new NegocioException("Ya tenés una solicitud de alta pendiente.");
         if (existeEmpresa(datos.getNumeroEmpresa())) throw new NegocioException("Ya existe una empresa con ese número.");
         Usuario persona = usuarios.buscarPorCedula(cedula).orElseThrow(() -> new NegocioException("No hay registro del usuario actual."));
+        compatibilidad.verificarPuedeSerResponsable(persona);
         SolicitudAltaEmpresa solicitud = solicitudes.guardar(new SolicitudAltaEmpresa(persona, datos.getNombre().trim(),
                 textoOpcional(datos.getRazonSocial()), datos.getDireccion().trim(), datos.getNumeroEmpresa()));
         auditoria.registrar(AccionAuditada.SOLICITUD_EMPRESA_CREADA, ENTIDAD_SOLICITUD, solicitud.getId(), null,
@@ -67,6 +70,7 @@ public class SolicitudesEmpresaBean implements SolicitudesEmpresaLocal {
         Empresa empresa = em.find(Empresa.class, empresaId);
         if (empresa == null || !empresa.isActiva()) throw new NegocioException("La empresa no existe o está inactiva.");
         Usuario persona = usuarios.buscarPorCedula(usuarioActual()).orElseThrow(() -> new NegocioException("No hay registro del usuario actual."));
+        compatibilidad.verificarPuedeSerResponsable(persona);
         if (vinculos.pendiente(persona.getId(), empresaId).isPresent()) throw new NegocioException("Ya tenés una solicitud pendiente para esta empresa.");
         VinculoEmpresaUsuario vinculo = vinculos.guardar(new VinculoEmpresaUsuario(persona, empresa, TipoVinculoEmpresa.RESPONSABLE));
         auditoria.registrar(AccionAuditada.VINCULO_EMPRESA_SOLICITADO, ENTIDAD_VINCULO, vinculo.getId(), null,
@@ -91,6 +95,7 @@ public class SolicitudesEmpresaBean implements SolicitudesEmpresaLocal {
     @Override @RolesAllowed({Roles.FUNCIONARIO, Roles.ADMINISTRADOR})
     public SolicitudAltaEmpresaDTO aprobarAlta(Long id) throws NegocioException {
         SolicitudAltaEmpresa solicitud = pendiente(id);
+        compatibilidad.verificarPuedeSerResponsable(solicitud.getSolicitante());
         if (existeEmpresa(solicitud.getNumeroEmpresa())) throw new NegocioException("Ya existe una empresa con ese número.");
         EmpresaDTO datos = new EmpresaDTO(solicitud.getNombre(), solicitud.getRazonSocial(), solicitud.getNumeroEmpresa(), LocalDate.now());
         datos.setDireccion(solicitud.getDireccion());
@@ -121,6 +126,10 @@ public class SolicitudesEmpresaBean implements SolicitudesEmpresaLocal {
     public VinculoEmpresaDTO aprobarVinculo(Long id) throws NegocioException {
         VinculoEmpresaUsuario vinculo = vinculoPendiente(id);
         if (!vinculo.getEmpresa().isActiva()) throw new NegocioException("No se puede vincular a una empresa inactiva.");
+
+        if (vinculo.getTipo() == TipoVinculoEmpresa.RESPONSABLE) {
+            compatibilidad.verificarPuedeSerResponsable(vinculo.getUsuario());
+        }
         if (vinculo.getTipo() == TipoVinculoEmpresa.RESPONSABLE && hayResponsableActivo(vinculo.getEmpresa().getId()))
             throw new NegocioException("La empresa ya tiene un responsable activo; primero transferí o revocá esa responsabilidad.");
         vinculo.aprobar(usuarioActual());
@@ -135,6 +144,7 @@ public class SolicitudesEmpresaBean implements SolicitudesEmpresaLocal {
         VinculoEmpresaUsuario nuevo = vinculoPendiente(id);
         if (nuevo.getTipo() != TipoVinculoEmpresa.RESPONSABLE) throw new NegocioException("El vínculo no corresponde a un responsable.");
         if (!nuevo.getEmpresa().isActiva()) throw new NegocioException("No se puede transferir una empresa inactiva.");
+        compatibilidad.verificarPuedeSerResponsable(nuevo.getUsuario());
         String aprobador = usuarioActual();
         for (VinculoEmpresaUsuario actual : vinculos.activosDeEmpresa(nuevo.getEmpresa().getId())) {
             if (actual.getTipo() == TipoVinculoEmpresa.RESPONSABLE) actual.revocar(aprobador, "Transferencia: " + motivo);

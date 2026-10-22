@@ -1,6 +1,7 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/contexto'
 import { EncabezadoSitio } from '../../componentes/EncabezadoSitio'
+import { NavegacionFuncionario } from '../../componentes/NavegacionFuncionario'
 import { PieSitio } from '../../componentes/PieSitio'
 import { ProveedorAvisos } from '../../componentes/ProveedorAvisos'
 import { ProveedorConfirmaciones } from '../../componentes/ProveedorConfirmaciones'
@@ -18,11 +19,7 @@ export function LayoutFuncionario() {
             <button type="button" className="boton-secundario boton-chico" onClick={logout}>Salir</button>
           </EncabezadoSitio>
           <main className="pagina-contenido empresa-contenido">
-            <nav className="empresa-nav" aria-label="Área del funcionario">
-              <NavLink to="/mi-cuenta">Mi cuenta</NavLink>
-              <NavLink to="/funcionario/empresas">Empresas</NavLink>
-              <NavLink to="/funcionario/solicitudes-responsables">Solicitudes de responsables</NavLink>
-            </nav>
+            <NavegacionFuncionario />
             <Outlet />
           </main>
           <PieSitio />

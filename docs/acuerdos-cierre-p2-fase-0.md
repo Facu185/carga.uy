@@ -1,15 +1,16 @@
 # Registro de acuerdos — Cierre P2, fase 0
 
-**Fecha:** 2026-10-22. **Base de código inspeccionada:** `c3bc924`.
-**Estado:** cierre parcial; SPA y F10/C10 confirmados por el usuario. F10 cuenta
-con implementación preparada; F12 integra empresas existentes localmente, sin
-validación ejecutada ni aceptación compartida. F13/F14 y demás políticas
-indicadas como propuesta/pendiente siguen sin aprobación.
+**Fecha:** 2026-10-22. **Base original inspeccionada:** `c3bc924`.
+**Actualización C13:** `da10af0` más cambios locales previos y de fase 4.
+**Estado:** cierre parcial; SPA, F10/C10 y F13/C13 confirmados por el usuario.
+F10, F12 y F13 cuentan con implementación local, sin validación ejecutada ni
+aceptación compartida. F14/C14 y las demás políticas indicadas como
+propuesta/pendiente siguen sin aprobación.
 
 Este registro ejecuta la [fase 0](plan-cierre-p2.md#fase-0--resolver-decisiones-que-condicionan-la-implementación).
 No sustituye [contratos publicados](contratos.md), [frentes](frentes.md) ni ADR.
 El usuario confirmó la recomendación de interfaz y posteriormente el alcance
-D0-05/C10 de fase 2; no se registran
+D0-05/C10 de fase 2 y C13 de fase 4; no se registran
 aprobaciones ni compromisos de P1/P3/P4/P5 que no se hayan recibido.
 
 ## 1. Acuerdos y bloqueos por tramo
@@ -21,7 +22,7 @@ aprobaciones ni compromisos de P1/P3/P4/P5 que no se hayan recibido.
 | D0-03 | Principal → vínculo empresarial, no `usuario.empresa_id`. | ADR-0005 alineado documentalmente con código/contrato. | No se cambia ningún permiso; el criterio de tipo sigue en D0-04. |
 | D0-04 | Tipo de vínculo para crear guías y consultar sus catálogos. | Pendiente P1/P2. | Aceptar una de las alternativas de §3 y registrar ADR/contrato antes de cambiar lógica. |
 | D0-05 | Perfil F10: campos, pertenencia y operación específica. | Confirmado por el usuario; [ADR-0014](decisiones/0014-perfil-propio-empresa.md) y C10 publicados. | Implementación local preparada; coordinar despliegue compartido P1/P3 y acreditar ejecución. |
-| D0-06 | Contratos y matriz actor/operación F10/F13/F14. | F10/C10 aprobado y publicado; F13/F14 siguen como borradores. | Resolver cada contrato restante antes de su consumidor; no se cierra el conjunto por aprobar F10. |
+| D0-06 | Contratos y matriz actor/operación F10/F13/F14. | F10/C10 y F13/C13 aprobados por el usuario y publicados; F14/C14 sigue como borrador. | Resolver C14 antes de su consumidor y acreditar aceptación integrada; no se cierra el conjunto por aprobar C13. |
 | D0-07 | Edición de guía y conflictos offline. | Pendiente P2/P3/móvil. | Confirmar si hay cambios permitidos, campos/estados, versión y tratamiento de eventos tardíos/repetidos; ADR antes de implementar. |
 | D0-08 | Estado/historial, inicio/baja y aviso de fin. | Dependencias por confirmar con P3; adaptador P4 existente. | P3 confirma contrato/entrega, exclusión compartida y llamada a P4; no hay compromiso acreditado. |
 | D0-09 | Pesajes asociados a una guía, varios días y disponibilidad. | Pendiente P2/P4. | Acordar consulta/autorización, paginación y metadatos; conservar significado de `guiaId`. |
@@ -45,6 +46,7 @@ funcionario de esta tabla se refieren a una identidad con **solo** ese rol.
 | Alta/modificación/baja administrativa de empresa | FUNCIONARIO, ADMINISTRADOR | `EmpresaServicioBean`; no habilita al responsable ciudadano. Baja desactiva, revoca vínculos activos y registra auditoría; rollback real pendiente. |
 | Consultar/editar perfil propio F10 | CIUDADANO, CHOFER | Nuevo contrato específico: RESPONSABLE/ACTIVO y empresa activa; consulta/edición ajena, inactiva o inexistente denegada. No amplía `modificar` administrativo. |
 | Listar/gestionar vehículos | ADMINISTRADOR, CIUDADANO, CHOFER | No administrador requiere RESPONSABLE/ACTIVO por empresa; administrador tiene excepción. FUNCIONARIO no puede leer ni mutar por este servicio actual. |
+| Consulta vehicular F13/C13 | FUNCIONARIO, ADMINISTRADOR | Nueva operación solo lectura por empresa, sin vínculo; incluye inactivos/bajas y devuelve vigencias a fecha de servidor. No amplía permisos del ABM. |
 | Crear guía | CIUDADANO | Vínculo ACTIVO, sin filtro de tipo, empresa activa y vehículo/chofer de esa empresa. |
 | Catálogos de vehículos/choferes para guía | CIUDADANO | Vínculo ACTIVO, sin filtro de tipo; vehículos habilitados/choferes activos. No extender esta condición a todos los catálogos: rubros/tipos no filtran vínculo. |
 | Listar guías de empresa | CIUDADANO, CHOFER | RESPONSABLE/ACTIVO de la empresa solicitada; no admite funcionario ni excepción administrativa. Paginación 0/20, tamaño 1–100. |
@@ -90,34 +92,37 @@ Ninguna se aplica en esta fase. El cambio documental de ADR-0005 no elige una.
 
 ## 5. Registro de contratos, productores y consumidores
 
-**C12 existente** y **C10 aprobado** se documentan en contratos.md.
-**C13/C14 son borradores para acuerdo, NO rutas ni interfaces disponibles.**
-Sus firmas EJB/DTO definitivas se publicarán antes de implementar consumidores.
+**C12 existente**, **C10 aprobado** y **C13 aprobado por el usuario** se documentan
+en contratos.md. C13 queda registrado en [ADR-0016](decisiones/0016-consulta-vehicular-funcionario.md).
+**C14 sigue como borrador para acuerdo, NO ruta ni interfaz disponible.**
+Sus firmas EJB/DTO definitivas se publicarán antes de implementar su consumidor.
 
 | ID | Productor / responsable | Consumidor y coordinación | Frontera y estado |
 | --- | --- | --- | --- |
 | C01 | P1: identidad, perfil y vínculos | SPA P2, navegación P3 | Entrada local añadida en Mi cuenta para FUNCIONARIO → `/funcionario/empresas`, conservando OIDC web → `/ingreso` → `/mi-cuenta`, Bearer y callback. Aceptación compartida P1/P3 pendiente; no se atribuye aprobación externa por añadir el enlace. |
 | C10 / F10 | P2: `PerfilEmpresaServicioLocal` / EJB / REST | Mi empresa P2, integración compartida P3; P1 para vínculo | Aprobado por el usuario y publicado: GET/PUT `/carga/api/empresas/{id}/perfil`, 200 `EmpresaDTO`; PUT `EditarPerfilEmpresaDTO` limitado a §4. Inactiva/inexistente/sin permiso: 403. Implementación local preparada, sin ejecución acreditada. |
 | C12 / F12 | P2: `EmpresaServicio` / `EmpresaRecurso` | Área SPA P2; coordinar alta/solicitudes con P1 | Existentes GET con `nombre`, POST 201, PUT `/{id}` 200, DELETE `/{id}` 204; DTO `EmpresaDTO`. Consumidor local `/funcionario/empresas` integra GET/PUT/DELETE, sin GET por ID, paginación ni POST de alta nuevo. Bandeja responsable P1 reutilizada, distinta del alta empresarial; coordinación y ejecución pendientes. |
-| C13 / F13 | P2: nueva lectura vehicular por operación | Área SPA P2; permisos con P1 | Propuesto GET `/carga/api/vehiculos/consulta` para FUNCIONARIO/ADMINISTRADOR, sin mutaciones; `empresaId` obligatorio, matrícula opcional, página/tamaño. DTO paginado con datos vehiculares acordados. Fecha/zona de referencia para vigencia pendientes. |
+| C13 / F13 | P2: `ConsultaVehiculosLocal` / EJB / REST | Área SPA P2; aceptación integrada con P1/P3 pendiente | Aprobado por el usuario: GET `/carga/api/vehiculos/consulta` solo FUNCIONARIO/ADMINISTRADOR, sin vínculo ni mutaciones; `empresaId` obligatorio, matrícula parcial literal sin caso, página/tamaño. Incluye bajas y empresas inactivas; DTO con fecha servidor America/Montevideo y vigencias inclusivas separadas de baja. Implementación local, sin ejecución acreditada. |
 | C14 / F14 | P2: nueva consulta de guías | Área SPA P2; fuentes P3/P4 | Propuesto GET `/carga/api/guias/consulta` para FUNCIONARIO/ADMINISTRADOR, `empresaId` obligatorio, período previsto y estado opcionales, página/tamaño. Detalle/asignaciones y DTO por acordar; no modificar `/guias/empresa`. |
 | C14-E | P3: estado e historial reales | Composición F14 P2 | Contrato de lectura, transiciones, orden y campos pendientes de entrega/acuerdo. Separar previsto, persistido e historial; no reconstruir eventos. |
 | C14-P | P4: pesajes/recorridos | Composición F14 P2 | GET diario existente devuelve `List<PesadaRegistradaDTO>`; consulta por guía y metadatos por acordar. Nunca asociar por matrícula/día en el navegador ni atribuir `guiaId=null` a un viaje. |
 | CFIN | P4: `AvisoFinDeViajeLocal`; P3 lo invoca | P3 → adaptador P4; P2 integra consulta | Contrato existente ADR-0010; integración del emisor P3 pendiente de acreditar, no se da por entregada. |
 
-Para los borradores C13/C14 se propone página base 0, tamaño predeterminado 20,
-rango 1–100, desplazamiento dentro de entero de 32 bits y respuesta
-`{registros, pagina, tamano, total}`. C13 ordenaría por matrícula/id; C14 por
-inicio/id descendentes. Confirmar semántica de filtros (igualdad/búsqueda de
-matrícula, límites de período y selección de estados) antes de crear consultas.
+Para C13 se aprobaron página base 0, tamaño predeterminado 20, rango 1–100,
+desplazamiento dentro de entero de 32 bits y orden matrícula/id; la respuesta
+agrega fechaReferencia/zonaHoraria al sobre paginado. Detalle en
+[C13 publicado](contratos.md#consulta-vehicular-f13--c13).
+Para C14 se propone `{registros, pagina, tamano, total}` con esos límites y orden
+inicio/id descendentes; confirmar límites de período y selección de estados antes de crear consultas.
 No deducir estado de la fecha prevista ni descartar históricos sin asignación.
 
-Errores propuestos de C13/C14: `400` para datos/filtros/paginación inválidos
+Errores aprobados para C13 y propuestos para C14: `400` para datos/filtros/paginación inválidos
 y negocio; `401` sin sesión válida, `403` para rol o
 pertenencia insuficiente. Mantener `{"error":"mensaje"}`, correlación y fechas
 ISO-8601, incluida la excepción actual de `EmpresaDTO.fechaAlta`.
-Para C13/C14, el tratamiento de recurso inexistente y orden autorización/existencia deben
-cerrarse expresamente antes de publicar; no introducir `404/409/422` ni el nuevo
+Para C13, empresa inexistente responde 400 tras autorización por rol; C14 aún
+requiere cerrar recurso inexistente y orden autorización/existencia antes de publicar.
+No introducir `404/409/422` ni el nuevo
 sobre del estándar en contratos vigentes por efecto de este borrador.
 
 ## 6. Coordinaciones pendientes y evidencia exigida

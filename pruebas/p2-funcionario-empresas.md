@@ -27,6 +27,15 @@ tokens, cédulas o respuestas sensibles en la evidencia.
 | Caso | Resultado esperado |
 | --- | --- |
 | Funcionario gub.uy, sin vínculo empresarial | Entrada desde Mi cuenta; listado global sin exigir responsabilidad. |
+| Mi cuenta con FUNCIONARIO y CIUDADANO (roles emitidos por gub.uy) | Muestra las pestañas Mi cuenta, Empresas y Solicitudes de responsables, y Tus datos. No muestra la tarjeta Área del funcionario/Gestionar empresas, Guías de tu empresa, Registrar guía, Responsabilidad de empresa ni Pedir acceso como funcionario. |
+| Navegación compartida del funcionario | Las mismas tres pestañas aparecen en Mi cuenta, listado/detalle de empresas y solicitudes. Mi cuenta queda activa solo en `/mi-cuenta`; Empresas también en el detalle; Solicitudes de responsables solo en su bandeja. Cada enlace conserva su URL existente, recarga e historial. |
+| Mi cuenta sin FUNCIONARIO | No muestra las pestañas operativas de funcionario; conserva los accesos propios de ciudadano/chofer. Las rutas de funcionario siguen protegidas. |
+| Pestañas con teclado, zoom y pantalla estrecha | Enlaces alcanzables con Tab y activables con Enter; la sección activa se identifica con `aria-current="page"`, peso y subrayado. La barra permite desplazamiento horizontal sin ocultar destinos. |
+| Mi cuenta con FUNCIONARIO combinado con CHOFER o vínculo RESPONSABLE previo | Prevalece la presentación de funcionario: no muestra Tus guías, Administración de empresa ni Guías de viajes. No revoca vínculos ni modifica roles del servidor. |
+| Funcionario al abrir Mi cuenta y recuperar el foco de la pestaña | No consulta `/solicitudes-empresa/vinculos/mios` ni monta los formularios SolicitudResponsable/SolicitudAcceso; conserva la consulta `/mi-perfil`. |
+| Ciudadano o chofer sin FUNCIONARIO, con/sin responsabilidad activa | Conserva sus opciones anteriores, consulta de vínculos, solicitud de responsabilidad y reconsulta al recuperar el foco. |
+| Sesión con rol principal FUNCIONARIO y sin colección `roles` | Aplica la misma presentación exclusiva de funcionario mediante el fallback existente. |
+| Sesión ciudadana sustituida por una con FUNCIONARIO durante una consulta de vínculos | Desaparecen las opciones empresariales y una respuesta tardía no las vuelve a mostrar ni actualiza el estado de vínculos de la vista de funcionario. |
 | URL directa, recarga y volver atrás | Detalle de la misma empresa; filtro de listado recuperable en historial. |
 | Sin sesión; sesión realmente vencida | Redirección a `/ingresar`; REST directo sin JWT/vencido responde 401. |
 | Ciudadano, chofer, autoridad o administrador sin FUNCIONARIO en ruta nueva | Acceso SPA denegado, sin formulario ni llamadas empresariales desde esa ruta. |
@@ -47,13 +56,26 @@ tokens, cédulas o respuestas sensibles en la evidencia.
 | Fallo red/5xx/respuesta de guardado inválida | Resultado incierto: no reenvío automático; bloquear escrituras hasta reconsultar. |
 | 401/403 al consultar o mutar | No conservar formulario operativo; 401 usa cierre de sesión existente. |
 | Fallo de auditoría durante baja (entorno con inyección de fallo controlada) | Verificar en transacción nueva rollback de empresa, vínculos y auditoría; revertir mecanismo de fallo del entorno. Un mock NO acredita JTA. |
-| Vehículos / Viajes | Indicadores deshabilitados, pendientes de fases 4/5; sin consumir C13/C14 ni simular viajes. |
+| Vehículos / Viajes | Vehículos enlaza a la consulta F13/C13 de solo lectura (ver matriz específica); Viajes sigue deshabilitado, sin consumir C14 ni simular viajes. |
 | Solicitudes de responsables | Reutiliza componente y endpoints P1 existentes; NO es bandeja de altas de empresas. El alta sigue pendiente de coordinación P1. |
 | Título de la bandeja reutilizada | Identifica Área del funcionario en el recorrido nuevo; el backoffice conserva su título y comportamiento anterior. |
 | Teclado, zoom y pantalla estrecha | Etiquetas, mensajes anunciados, tabla desplazable, confirmación con foco; no depender de color. |
 
 ## Evidencia y límites
 
+- La consulta de vehículos de fase 4 se especifica y valida por separado en
+  [F13/C13](p2-consulta-vehicular.md); su implementación local no acredita F12 integrada.
+
+- La incompatibilidad del servidor se especifica por separado en
+  [ADR-0015](../docs/decisiones/0015-incompatibilidad-funcionario-responsable.md)
+  y su [matriz pendiente](incompatibilidad-funcionario-responsable.md). Es una
+  restricción posterior al ajuste visual y no retira funciones oficiales de F12.
+- Regresión visual especificada antes del ajuste de Mi cuenta: el ingreso OIDC
+  conserva CIUDADANO al asignar FUNCIONARIO; antes, ambos bloques se mostraban.
+  Se prioriza FUNCIONARIO solo en la presentación de Mi cuenta. No se cambian
+  rutas directas, permisos REST ni vínculos existentes; ocultar accesos NO impone
+  una incompatibilidad de roles en el servidor. Los escenarios nuevos están
+  **pendientes de ejecución**, sin runner frontend ni ciclo rojo/verde verificado.
 - `EmpresaServicioBeanSeguridadTest`: lectura y declaraciones de roles por operación.
 - `EmpresaServicioBeanAdministracionTest`: edición administrativa, errores previos
   a mutación, baja/revocación y propagación de fallo de auditoría con dobles.

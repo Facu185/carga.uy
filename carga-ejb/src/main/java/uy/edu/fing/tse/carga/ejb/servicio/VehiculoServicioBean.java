@@ -16,6 +16,7 @@ import uy.edu.fing.tse.carga.api.security.Roles;
 import uy.edu.fing.tse.carga.ejb.modelo.Empresa;
 import uy.edu.fing.tse.carga.ejb.modelo.Vehiculo;
 import uy.edu.fing.tse.carga.ejb.persistencia.VinculoEmpresaUsuarioDAO;
+import uy.edu.fing.tse.carga.ejb.seguridad.CompatibilidadFuncionarioEmpresa;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -34,6 +35,9 @@ public class VehiculoServicioBean implements VehiculoServicioLocal {
 
     @jakarta.inject.Inject
     private VinculoEmpresaUsuarioDAO vinculos;
+
+    @jakarta.inject.Inject
+    private CompatibilidadFuncionarioEmpresa compatibilidad;
 
     @Override public VehiculoDTO agregar(VehiculoDTO dto) throws NegocioException {
         validarEmpresaInformada(dto);
@@ -100,6 +104,7 @@ public class VehiculoServicioBean implements VehiculoServicioLocal {
                 || !vinculos.esResponsableActivo(principal.getName(), empresaId)) {
             throw new EJBAccessException("No tienes permiso para gestionar los vehiculos de esta empresa.");
         }
+        compatibilidad.verificarEjercicioResponsabilidad(principal.getName());
     }
 
     private void validarEmpresaInformada(VehiculoDTO dto) throws NegocioException {

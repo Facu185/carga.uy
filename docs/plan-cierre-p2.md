@@ -1,8 +1,8 @@
 # Plan por fases — Cierre de P2 y área del funcionario
 
 **Fecha:** 22 de octubre de 2026. **Línea base observada:** `c3bc924`, árbol limpio antes de esta planificación.
-**Estado:** fase 0 parcial, fase 1 preparada y fases 2 y 3 implementadas localmente al
-2026-10-22, sin validación funcional ejecutada. El usuario confirmó SPA y F10/C10;
+**Estado:** fase 0 parcial, fase 1 preparada y fases 2, 3 y 4 implementadas localmente al
+2026-10-22, sin validación funcional ejecutada. El usuario confirmó SPA, F10/C10 y F13/C13;
 los demás permisos y contratos pendientes no quedan autorizados.
 Véase el [registro de acuerdos de fase 0](acuerdos-cierre-p2-fase-0.md).
 
@@ -12,7 +12,7 @@ Este plan organiza [pendientesP2](pendientesP2.md). El usuario confirmó que **P
 implementará también la pantalla del funcionario**: gestión de empresas F12,
 consulta vehicular F13 y composición del monitoreo F14. La asignación de interfaz
 está confirmada; la tecnología SPA quedó confirmada al iniciar fase 0.
-F10/C10 fue aprobado posteriormente; los contratos nuevos F13/F14 requieren acuerdo.
+F10/C10 y F13/C13 fueron aprobados posteriormente; F14/C14 requiere acuerdo.
 
 | Responsabilidad | Dueño y límite |
 | --- | --- |
@@ -48,23 +48,24 @@ framework nuevo ni cambio de autenticación aprobado por este acuerdo acotado.
 
 ### Estado contrastado con el código al 2026-10-22
 
-Revisión sobre `8140003` más cambios locales de fase 3, sin ejecutar builds, pruebas ni aplicación. `[x]`
+Actualización F13 sobre `da10af0` más cambios locales previos y de fase 4,
+sin ejecutar builds, pruebas ni aplicación. `[x]`
 significa código, prueba escrita o acuerdo documental presente según el texto;
 NO acredita ejecución. Se separan las partes implementadas de su validación.
 
 | Fase | Parte ya presente | Parte que falta para completar la fase |
 | --- | --- | --- |
-| 0 | Asignación P2, elección SPA, ADR-0005 alineado y F10/C10 aprobado/publicado. | Permisos de guías, contratos F13/F14, coordinaciones P1/P3/P4, política offline y reparto F15. |
+| 0 | Asignación P2, elección SPA, ADR-0005 alineado y F10/C10 y F13/C13 aprobados/publicados. | Permisos de guías, C14, coordinaciones P1/P3/P4, política offline y reparto F15. |
 | 1 | ABM F11 existente, matrices y cinco tests HTTP opt-in escritos. | Ejecutar y registrar validación REST/navegador/JSF y ABM empresarial/choferes; priorizar defectos reproducidos. |
 | 2 | Backend C10, formulario de perfil propio y 20 tests Java escritos. | Validar REST/navegador e integración del portal compartido P1/P3. |
 | 3 | Área SPA `/funcionario/empresas`, entrada Mi cuenta, listado/búsqueda, detalle, edición y baja C12; bandeja de responsables P1 reutilizada; ocho regresiones Java y matriz de escenarios preparados. | Validación real de permisos/expiración, navegador, administrador/JSF y rollback JTA; aceptación compartida P1/P3 y coordinación del alta empresarial P1. Vehículos/Viajes quedan para fases 4/5. |
-| 4 | Tests HTTP escritos que rechazan lectura y mutaciones vehiculares actuales a identidad solo FUNCIONARIO. | Lectura autorizada F13 y sus pruebas positivas, interfaz, filtros y reglas de presentación de vigencia. |
+| 4 | C13/ADR-0016 aprobado; EJB/REST de solo lectura y pantalla F13 con filtros/paginación y fecha servidor America/Montevideo. Catorce pruebas unitarias nuevas y escenarios escritos; regresión HTTP F11 conservada. | Ejecutar pruebas y matriz F13 en contenedor/navegador, autorización, JPQL, filtros literales y referencia temporal; aceptación integrada P1/P3. |
 | 5 | Fuentes P4 de pesajes/recorridos existentes, todavía no compuestas en la pantalla F14. | Consulta de guías para funcionario, acuerdos de estado/historial y pesajes por guía, interfaz y escenarios integrados. |
 | 6 | Adaptador P4 de aviso de fin y protección P2 de baja vehicular existentes. | Productor real P3, integración de fin, política offline y pruebas reales de concurrencia/asociación de pesajes. |
 | 7 | Plan, pendientes, contratos, ADR y procedimientos actualizados para los cambios locales. | Aceptación integral ejecutada con evidencia, cobertura medida, dependencias resueltas y cierre documental final. |
 
-**Ninguna fase está cerrada integralmente:** las fases 0–3 tienen avance parcial;
-las fases 4–7 conservan bases reutilizables, pero sus entregas siguen pendientes.
+**Ninguna fase está cerrada integralmente:** las fases 0–4 tienen avance parcial;
+las fases 5–7 conservan bases reutilizables, pero sus entregas siguen pendientes.
 
 ### Orden y dependencias
 
@@ -104,8 +105,9 @@ al final. No se fijan fechas sin conocer disponibilidad de equipo y dependencias
   D0-05/C10 confirmado por el usuario y registrado en ADR-0014.
 - [x] Acordar y publicar matriz, campos, interfaces, DTO, rutas y errores F10/C10
   antes de su consumidor, según ADR-0014.
-- [ ] Acordar matriz de actor/operación y contratos F13/F14, incluidos filtros,
-  paginación y errores, antes de sus consumidores.
+- [x] Acordar y publicar C13/F13 con roles, filtros, paginación, vigencias y errores
+  antes del consumidor; confirmado por el usuario en ADR-0016.
+- [ ] Acordar matriz de actor/operación y contrato F14/C14 antes de su consumidor.
 - [ ] Confirmar con P3/móvil si hay cambios de guía que requieran resolver
   conflictos offline y qué campos/estados comprenden. Acordar política en ADR y
   contratos; no agregar edición/cancelación como requisito supuesto.
@@ -122,7 +124,7 @@ el desacuerdo bloquea solo el tramo afectado y se consulta antes de modificar ot
 
 **Avance registrado:** [acuerdos, matriz observada y borradores de contratos](acuerdos-cierre-p2-fase-0.md).
 Se publicaron en contratos.md las operaciones empresariales PUT/DELETE ya existentes.
-Fase 0 **NO cerrada**: F10/C10 está aprobado por el usuario y publicado; F13/F14,
+Fase 0 **NO cerrada**: F10/C10 y F13/C13 están aprobados por el usuario y publicados; F14/C14,
 permisos de guías, navegación compartida y dependencias P3/P4, offline y reparto F15
 siguen abiertos. La fase 0 original fue documental; la fase 2 posterior sí implementa F10.
 
@@ -190,8 +192,8 @@ NO acredita aún esta salida ni cierra la validación de fase 1.
 - [x] Publicar los contratos PUT/DELETE empresariales observados en código.
 - [x] Añadir navegación local gub.uy → Mi cuenta → `/funcionario/empresas` →
   `/funcionario/empresas/:id`, solo para FUNCIONARIO; callback y sesión P1 intactos.
-  El detalle usa GET del listado, sin inventar GET individual. Vehículos/Viajes
-  se indican deshabilitados, pendientes de fases 4/5 y contratos C13/C14.
+  El detalle usa GET del listado, sin inventar GET individual. Vehículos enlaza
+  a C13 de fase 4; Viajes sigue deshabilitado, pendiente de fase 5/C14.
 - [x] Preparar primero ocho regresiones Java adicionales y escenarios de permisos
   por operación, identidad insuficiente/vencida, errores y administrador.
 - [ ] Ejecutar esos escenarios en contenedor/navegador; las anotaciones y dobles
@@ -226,16 +228,26 @@ anterior sigue pendiente de acreditación; no se cierra la fase por el código l
 
 - [x] Escribir pruebas HTTP del rechazo actual de lectura y alta/edición/baja/
   reactivación para identidad con solo FUNCIONARIO, en la suite F11. Sin ejecución.
-- [ ] Escribir pruebas positivas de la nueva consulta F13 y mantener la regresión
+- [x] Escribir pruebas positivas de la nueva consulta F13 y mantener la regresión
   de rechazo de mutaciones para identidad con solo ese rol.
-- [ ] Añadir una operación de lectura específica o autorización por método,
+- [x] Añadir una operación de lectura específica o autorización por método,
   manteniendo los consumidores actuales. **No** agregar funcionario a los roles
   de toda `VehiculoServicioBean` ni concederle escritura para facilitar el listado.
-- [ ] Mostrar matrícula, habilitación/baja, número y fechas del permiso, ITV y
+- [x] Mostrar matrícula, habilitación/baja, número y fechas del permiso, ITV y
   vencimiento; distinguir permiso futuro/vencido y datos ausentes de baja lógica.
-- [ ] Acordar fecha/zona de referencia y reglas de presentación con negocio;
+- [x] Acordar fecha/zona de referencia y reglas de presentación con negocio;
   no cambiar las reglas temporales de asignación de guías como efecto colateral.
-- [ ] Integrar listado por empresa, filtros acordados, carga/vacío/error y 401/403.
+- [x] Integrar listado por empresa, filtros acordados, carga/vacío/error y manejo de 401/403.
+- [ ] Ejecutar pruebas y [matriz F13](../pruebas/p2-consulta-vehicular.md): roles reales,
+  paginación/JPQL, permisos del ABM intactos, límites temporales y navegador;
+  acreditar aceptación integrada P1/P3.
+
+**Avance local:** `ConsultaVehiculosLocal`/EJB/REST separado del ABM y ruta SPA
+`/funcionario/empresas/:id/vehiculos` enlazada desde F12. Referencia temporal del
+servidor en America/Montevideo y campos/estados acordados en
+[ADR-0016](decisiones/0016-consulta-vehicular-funcionario.md).
+Pruebas escritas, ciclo rojo/verde no ejecutado por restricción de builds.
+La matriz frontend no es automatización; la fase no se declara cerrada en ejecución.
 
 **Salida:** funcionario consulta los datos requeridos; el servidor sigue rechazando
 las mutaciones no concedidas, independientemente de los botones visibles.
@@ -359,6 +371,6 @@ aceptación abiertas; tampoco atribuir a P2 la falta de implementación ajena.
   fase 0 se añadió ADR-0013 por elección explícita del usuario y se alinearon fuentes
   documentales; esto no acredita ejecución de pruebas ni cierre funcional.
 
-**Siguiente paso:** el equipo acredita los escenarios preparados F11/F10/F12 en su
-entorno aislado; confirmar C13 y presentación temporal antes de fase 4, junto con
+**Siguiente paso:** el equipo acredita los escenarios preparados F11/F10/F12/F13
+en su entorno aislado; confirmar C14 y sus fuentes antes de fase 5, junto con
 los acuerdos restantes por bloque de fase 0 antes de depender de ellos.

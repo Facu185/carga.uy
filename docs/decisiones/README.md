@@ -22,3 +22,5 @@ Plantilla: [plantilla.md](plantilla.md).
 | [0012](0012-abm-vehiculos-del-responsable.md) | Vehículos en Mi empresa, baja con control de guía en curso y reactivación | Aceptada para alcance solicitado |
 | [0013](0013-area-funcionario-spa-p2.md) | Área operativa F12–F14 del funcionario en la SPA existente, conservando JSF | Aceptada para alcance P2 solicitado |
 | [0014](0014-perfil-propio-empresa.md) | Perfil propio F10 con contrato y campos separados del ABM administrativo | Aceptada para alcance F10 solicitado |
+| [0015](0015-incompatibilidad-funcionario-responsable.md) | Incompatibilidad entre funcionario activo y responsabilidad empresarial activa | Aceptada para cambio confirmado por usuario |
+| [0016](0016-consulta-vehicular-funcionario.md) | Consulta vehicular F13 separada del ABM, con referencia temporal de servidor | Aceptada para C13 confirmado por usuario |

@@ -25,6 +25,7 @@ import { SolicitudesEmpresa } from './pages/backoffice/SolicitudesEmpresa'
 import { LayoutFuncionario } from './pages/funcionario/LayoutFuncionario'
 import { EmpresasFuncionario } from './pages/funcionario/Empresas'
 import { DetalleEmpresaFuncionario } from './pages/funcionario/DetalleEmpresa'
+import { VehiculosFuncionario } from './pages/funcionario/Vehiculos'
 import { ROLES } from './tipos'
 
 export default function App() {
@@ -100,6 +101,7 @@ export default function App() {
             <Route index element={<Navigate to="/funcionario/empresas" replace />} />
             <Route path="empresas" element={<EmpresasFuncionario />} />
             <Route path="empresas/:id" element={<DetalleEmpresaFuncionario />} />
+            <Route path="empresas/:id/vehiculos" element={<VehiculosFuncionario />} />
             <Route path="solicitudes-responsables" element={<SolicitudesEmpresa backoffice={false} />} />
           </Route>
           <Route path="/backoffice/login" element={<Login />} />

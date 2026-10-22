@@ -23,6 +23,7 @@ import uy.edu.fing.tse.carga.ejb.modelo.Usuario;
 import uy.edu.fing.tse.carga.ejb.persistencia.FuncionarioDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.SolicitudFuncionarioDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.UsuarioDAO;
+import uy.edu.fing.tse.carga.ejb.seguridad.CompatibilidadFuncionarioEmpresa;
 
 import java.util.List;
 
@@ -49,6 +50,9 @@ public class SolicitudesFuncionarioBean implements SolicitudesFuncionarioLocal {
 
     @Inject
     FuncionarioDAO funcionarios;
+
+    @Inject
+    CompatibilidadFuncionarioEmpresa compatibilidad;
 
     @EJB
     AuditoriaLocal auditoria;
@@ -103,9 +107,10 @@ public class SolicitudesFuncionarioBean implements SolicitudesFuncionarioLocal {
     @RolesAllowed(Roles.ADMINISTRADOR)
     public SolicitudFuncionarioDTO aprobar(Long id) throws NegocioException {
         SolicitudFuncionario solicitud = pendiente(id);
+        Usuario persona = solicitud.getSolicitante();
+        compatibilidad.verificarPuedeSerFuncionario(persona);
         solicitud.aprobar(usuarioActual());
 
-        Usuario persona = solicitud.getSolicitante();
         Funcionario funcionario = funcionarios.buscarPorCedula(persona.getCedula())
                 .orElseGet(() -> funcionarios.guardar(new Funcionario(persona, solicitud.getDependencia())));
         funcionario.setActivo(true);

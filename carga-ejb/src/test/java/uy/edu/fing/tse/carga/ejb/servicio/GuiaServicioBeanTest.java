@@ -20,6 +20,25 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Pruebas unitarias del caso de uso: el proxy emula solo el subconjunto JPA que este bean consulta. */
 class GuiaServicioBeanTest {
+    @Test void reglaDeResponsabilidadNoRetiraLaConsultaPropiaDelChofer() throws Exception {
+        Escenario e = new Escenario();
+        e.compatibilidad.funcionariosActivos.add("responsable");
+        e.compatibilidad.responsablesActivos.add("responsable");
+        e.guias = List.of(guia(e.empresa, e.vehiculo, e.chofer));
+        assertEquals(1, e.bean().guiasDelChoferAutenticado().size());
+        assertNull(e.consultaVinculo);
+    }
+
+    @Test void funcionarioConResponsabilidadHeredadaNoCreaGuiaNiConsultaCatalogosEmpresariales() {
+        Escenario e = new Escenario();
+        e.compatibilidad.funcionariosActivos.add("responsable");
+        e.compatibilidad.responsablesActivos.add("responsable");
+        assertThrows(jakarta.ejb.EJBAccessException.class, () -> e.bean().crear(e.comando()));
+        assertThrows(jakarta.ejb.EJBAccessException.class, () -> e.bean().vehiculosDeLaEmpresaAutenticada());
+        assertThrows(jakarta.ejb.EJBAccessException.class, () -> e.bean().choferesDeLaEmpresaAutenticada());
+        assertTrue(e.persistidas.isEmpty());
+        assertEquals(0, e.flushes);
+    }
     @Test void rechazaResponsableSinEmpresa() {
         Escenario e = new Escenario();
         e.empresaVinculada = null;
@@ -293,6 +312,7 @@ class GuiaServicioBeanTest {
     private static Field campo(Object entidad, String nombre) throws Exception { Field f = entidad.getClass().getDeclaredField(nombre); f.setAccessible(true); return f; }
 
     private static final class Escenario {
+        final Falsos.CompatibilidadFalsa compatibilidad = new Falsos.CompatibilidadFalsa();
         final Empresa empresa = conIdSeguro(empresa(1L), 1L);
         final Empresa otraEmpresa = conIdSeguro(empresa(2L), 2L);
         final Vehiculo vehiculo = vehiculo();
@@ -312,7 +332,7 @@ class GuiaServicioBeanTest {
         int indiceConsultaConflicto;
         int secuencia;
 
-        GuiaServicioBean bean() { GuiaServicioBean b = new GuiaServicioBean(); b.contexto = sesion; b.em = em(); return b; }
+        GuiaServicioBean bean() { GuiaServicioBean b = new GuiaServicioBean(); b.contexto = sesion; b.em = em(); b.compatibilidad = compatibilidad; return b; }
         CrearGuiaCommand comando() {
             CrearGuiaCommand c = new CrearGuiaCommand(); c.setVehiculoId(20L); c.setChoferId(10L); c.setRubroId(30L);
             c.setPesoKg(BigDecimal.ONE); c.setVolumenM3(BigDecimal.ONE); c.setInicio("2026-10-06T10:00:00Z"); c.setFin("2026-10-06T11:00:00Z");
