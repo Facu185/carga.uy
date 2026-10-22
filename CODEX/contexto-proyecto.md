@@ -33,6 +33,13 @@ Estos son contrastes documentales/estáticos, NO una auditoría funcional ni aut
 
 ## Pendientes no resueltos por esta guía
 
+**Actualización F12 (2026-10-22):** `/funcionario/empresas` integra localmente
+listado/búsqueda, detalle, edición administrativa y baja C12, con entrada por rol
+desde Mi cuenta y sesión P1 intacta. Reutiliza bandeja P1 de responsables, NO alta
+empresarial. Aceptación compartida P1/P3, alta P1 y validación real pendientes en
+[escenarios F12](../pruebas/p2-funcionario-empresas.md). C13/C14 siguen sin aprobar;
+sus botones están deshabilitados y no se consumen rutas propuestas.
+
 **Actualización F10 (2026-10-22):** [ADR-0014](../docs/decisiones/0014-perfil-propio-empresa.md)
 acepta el perfil propio acotado en SPA y C10. Existe contrato local específico,
 EJB y formulario `/mi-empresa/perfil`; el ABM administrativo/remoto conserva sus

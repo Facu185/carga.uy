@@ -2,7 +2,8 @@
 
 **Fecha:** 2026-10-22. **Base de código inspeccionada:** `c3bc924`.
 **Estado:** cierre parcial; SPA y F10/C10 confirmados por el usuario. F10 cuenta
-con implementación preparada, sin validación ejecutada; F13/F14 y demás políticas
+con implementación preparada; F12 integra empresas existentes localmente, sin
+validación ejecutada ni aceptación compartida. F13/F14 y demás políticas
 indicadas como propuesta/pendiente siguen sin aprobación.
 
 Este registro ejecuta la [fase 0](plan-cierre-p2.md#fase-0--resolver-decisiones-que-condicionan-la-implementación).
@@ -95,9 +96,9 @@ Sus firmas EJB/DTO definitivas se publicarán antes de implementar consumidores.
 
 | ID | Productor / responsable | Consumidor y coordinación | Frontera y estado |
 | --- | --- | --- | --- |
-| C01 | P1: identidad, perfil y vínculos | SPA P2, navegación P3 | Reutilizar OIDC web → `/ingreso` → `/mi-cuenta`, Bearer y sesión existentes; acordar entrada al área nueva, sin modificar callback todavía. |
+| C01 | P1: identidad, perfil y vínculos | SPA P2, navegación P3 | Entrada local añadida en Mi cuenta para FUNCIONARIO → `/funcionario/empresas`, conservando OIDC web → `/ingreso` → `/mi-cuenta`, Bearer y callback. Aceptación compartida P1/P3 pendiente; no se atribuye aprobación externa por añadir el enlace. |
 | C10 / F10 | P2: `PerfilEmpresaServicioLocal` / EJB / REST | Mi empresa P2, integración compartida P3; P1 para vínculo | Aprobado por el usuario y publicado: GET/PUT `/carga/api/empresas/{id}/perfil`, 200 `EmpresaDTO`; PUT `EditarPerfilEmpresaDTO` limitado a §4. Inactiva/inexistente/sin permiso: 403. Implementación local preparada, sin ejecución acreditada. |
-| C12 / F12 | P2: `EmpresaServicio` / `EmpresaRecurso` | Área SPA P2; coordinar alta/solicitudes con P1 | Existentes GET con `nombre`, POST 201, PUT `/{id}` 200, DELETE `/{id}` 204; DTO `EmpresaDTO`. Sin GET por ID ni paginación actuales. No inventar un endpoint de detalle ni añadir paginación al contrato viejo sin acuerdo. |
+| C12 / F12 | P2: `EmpresaServicio` / `EmpresaRecurso` | Área SPA P2; coordinar alta/solicitudes con P1 | Existentes GET con `nombre`, POST 201, PUT `/{id}` 200, DELETE `/{id}` 204; DTO `EmpresaDTO`. Consumidor local `/funcionario/empresas` integra GET/PUT/DELETE, sin GET por ID, paginación ni POST de alta nuevo. Bandeja responsable P1 reutilizada, distinta del alta empresarial; coordinación y ejecución pendientes. |
 | C13 / F13 | P2: nueva lectura vehicular por operación | Área SPA P2; permisos con P1 | Propuesto GET `/carga/api/vehiculos/consulta` para FUNCIONARIO/ADMINISTRADOR, sin mutaciones; `empresaId` obligatorio, matrícula opcional, página/tamaño. DTO paginado con datos vehiculares acordados. Fecha/zona de referencia para vigencia pendientes. |
 | C14 / F14 | P2: nueva consulta de guías | Área SPA P2; fuentes P3/P4 | Propuesto GET `/carga/api/guias/consulta` para FUNCIONARIO/ADMINISTRADOR, `empresaId` obligatorio, período previsto y estado opcionales, página/tamaño. Detalle/asignaciones y DTO por acordar; no modificar `/guias/empresa`. |
 | C14-E | P3: estado e historial reales | Composición F14 P2 | Contrato de lectura, transiciones, orden y campos pendientes de entrega/acuerdo. Separar previsto, persistido e historial; no reconstruir eventos. |

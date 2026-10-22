@@ -9,8 +9,8 @@ import { useTituloPagina } from '../../titulo'
 type Accion = 'rechazar' | 'transferir' | null
 
 /** Bandeja para que funcionarios y administradores resuelvan solicitudes de responsables. */
-export function SolicitudesEmpresa() {
-  useTituloPagina('Solicitudes de empresas', true)
+export function SolicitudesEmpresa({ backoffice = true }: { backoffice?: boolean }) {
+  useTituloPagina(backoffice ? 'Solicitudes de empresas' : 'Solicitudes de responsables · Área del funcionario', backoffice)
   const avisar = useAviso()
   const [solicitudes, setSolicitudes] = useState<VinculoEmpresa[]>([])
   const [cargando, setCargando] = useState(true)

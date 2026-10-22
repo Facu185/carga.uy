@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthProvider'
 import { AvisoSesion } from './componentes/AvisoSesion'
 import { RutaProtegida } from './auth/RutaProtegida'
@@ -22,6 +22,9 @@ import { PerfilEmpresa } from './pages/frontoffice/PerfilEmpresa'
 import { VehiculosEmpresa } from './pages/frontoffice/VehiculosEmpresa'
 import { GuiasEmpresa } from './pages/frontoffice/GuiasEmpresa'
 import { SolicitudesEmpresa } from './pages/backoffice/SolicitudesEmpresa'
+import { LayoutFuncionario } from './pages/funcionario/LayoutFuncionario'
+import { EmpresasFuncionario } from './pages/funcionario/Empresas'
+import { DetalleEmpresaFuncionario } from './pages/funcionario/DetalleEmpresa'
 import { ROLES } from './tipos'
 
 export default function App() {
@@ -89,6 +92,16 @@ export default function App() {
               </RutaProtegida>
             }
           />
+          <Route path="/funcionario" element={
+            <RutaProtegida roles={[ROLES.FUNCIONARIO]} login="/ingresar">
+              <LayoutFuncionario />
+            </RutaProtegida>
+          }>
+            <Route index element={<Navigate to="/funcionario/empresas" replace />} />
+            <Route path="empresas" element={<EmpresasFuncionario />} />
+            <Route path="empresas/:id" element={<DetalleEmpresaFuncionario />} />
+            <Route path="solicitudes-responsables" element={<SolicitudesEmpresa backoffice={false} />} />
+          </Route>
           <Route path="/backoffice/login" element={<Login />} />
           <Route
             path="/backoffice/cambiar-password"

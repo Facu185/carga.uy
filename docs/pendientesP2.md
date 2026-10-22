@@ -95,19 +95,25 @@ usuario no puede modificarlo alterando el ID ni invocando directamente REST.
 
 **Origen:** letra p. 6. **Interfaz:** P2. **Coordinación:** P1 para acceso; P3 para navegación compartida.
 
-**Situación:** existen operaciones de empresa autorizadas para funcionario y
-vistas JSF. ADR-0011 no ofrece destino OIDC JSF; la SPA no tiene una pantalla de
-gestión de empresas existentes para funcionario. La gestión de solicitudes y
-vínculos de P1 no sustituye esa pantalla.
+**Situación:** interfaz F12 implementada localmente en `/funcionario/empresas`,
+con entrada desde Mi cuenta tras gub.uy, búsqueda/detalle, edición administrativa
+y baja por C12 existente. Conserva JSF y callback P1; no necesita puente OIDC JSF.
+La bandeja P1 de responsables se reutiliza, pero NO es un alta empresarial.
+Sin validación ejecutada; aceptación compartida y coordinación del alta pendientes.
 
 - [x] Elegir SPA existente para F12–F14, según ADR-0013; conservar JSF sin
   aceptar una migración general. No crear cuentas internas de funcionario.
 - [ ] Coordinar con P1/P3 la navegación compartida desde el ingreso gub.uy.
-- [ ] Habilitar navegación autenticada para consultar y modificar empresas existentes.
-- [ ] Integrar las acciones del ABM administrativo que correspondan al alcance P2,
-  reutilizando el servicio existente y coordinando el alta con las solicitudes P1.
-- [ ] Preservar el comportamiento existente de baja empresarial: desactivación,
-  revocación de vínculos activos y auditoría en la misma operación de negocio.
+- [x] Habilitar navegación local autenticada para consultar/modificar empresas existentes.
+- [x] Integrar edición administrativa y baja usando el servicio existente;
+  no cambia interfaces ni concede permisos nuevos.
+- [x] Reutilizar la bandeja de vínculos responsables P1 sin duplicar su lógica.
+- [ ] Coordinar el alta empresarial con P1; no confundirla con vínculos responsables.
+- [x] Conservar la llamada a baja existente: desactivación, revocación de vínculos
+  activos y auditoría en la misma operación EJB.
+- [x] Preparar ocho regresiones Java adicionales y [escenarios F12](../pruebas/p2-funcionario-empresas.md)
+  antes de la interfaz; no ejecutados. No hay runner frontend.
+- [ ] Acreditar persistencia y rollback real de la baja en la nueva interfaz.
 - [ ] Probar permisos reales por actor, validaciones, errores y sesión vencida;
   documentar el recorrido de aceptación elegido.
 
@@ -248,7 +254,7 @@ se agregan como faltantes obligatorios.
 
 1. Resolver por bloque autorización, interfaz y contratos de P2-05; acordar reparto F15.
 2. Validar F11 ya implementado y registrar su dependencia P3 aún abierta.
-3. Completar F10 (perfil propio) y construir el área del funcionario F12/F13.
+3. Validar F10/F12 implementados localmente y acordar C13 antes de construir F13.
 4. Preparar consultas e interfaz F14 desde P2 con contratos P3/P4 acordados.
 5. Integrar estado real, concurrencia inicio/baja y política offline con P3/móvil.
 6. Acreditar CU2/ABM/JSF y los recorridos nuevos en integración; registrar evidencia final.

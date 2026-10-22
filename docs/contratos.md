@@ -126,6 +126,23 @@ no acredita rollback ni seguridad en ejecución. Fuente:
 [EmpresaRecurso](../carga-web/src/main/java/uy/edu/fing/tse/carga/web/rest/EmpresaRecurso.java)
 y [EmpresaServicioBean](../carga-ejb/src/main/java/uy/edu/fing/tse/carga/ejb/servicio/EmpresaServicioBean.java).
 
+**Consumidor F12 local (fase 3, 2026-10-22):** `/mi-cuenta` enlaza al área SPA
+`/funcionario/empresas` para FUNCIONARIO. Listado/búsqueda y detalle
+`/funcionario/empresas/:id` usan GET del listado actual (selección por ID en el
+detalle); no se añade GET individual ni paginación. El formulario administrativo
+envía solo los cinco campos editables a PUT y la baja confirmada consume DELETE
+204. `fechaAlta=null` se completa con la fecha actual por el servicio existente;
+esto NO aplica al perfil propio F10. El portal impide editar números fuera del
+rango seguro de JavaScript sin modificar el contrato `long` del servidor.
+`activa` no se envía como campo editable ni se ofrece reactivación.
+
+La nueva área reutiliza la bandeja P1 de **vínculos de responsables** bajo
+`/funcionario/solicitudes-responsables`, no un circuito de alta empresarial.
+Alta y aceptación compartida P1/P3 siguen pendientes. Administrador/JSF conservan
+sus recorridos y permisos anteriores; las rutas SPA no autorizan al servidor.
+Vehículos/Viajes son indicadores deshabilitados, no consumidores C13/C14.
+Validación real pendiente en [escenarios F12](../pruebas/p2-funcionario-empresas.md).
+
 La elección de SPA F12–F14 está acotada por [ADR-0013](decisiones/0013-area-funcionario-spa-p2.md).
 El perfil F10/C10 queda aprobado por el usuario y publicado a continuación.
 Las consultas F13/F14 siguen como **borradores no aprobados** en el

@@ -61,6 +61,7 @@ export function MiCuenta() {
   const roles = sesion?.roles ?? (sesion ? [sesion.rol] : [])
   const esCiudadano = roles.includes(ROLES.CIUDADANO)
   const esChofer = roles.includes(ROLES.CHOFER)
+  const esFuncionario = roles.includes(ROLES.FUNCIONARIO)
   const puedeSolicitarResponsabilidad = esCiudadano || esChofer
   const esResponsable = vinculos?.some((vinculo) => vinculo.tipo === 'RESPONSABLE' && vinculo.estado === 'ACTIVO') ?? false
 
@@ -81,6 +82,14 @@ export function MiCuenta() {
           <p className="mensaje-error" role="alert">
             {error}
           </p>
+        )}
+
+        {esFuncionario && (
+          <section className="ficha" aria-labelledby="titulo-area-funcionario">
+            <h2 id="titulo-area-funcionario" className="titulo-con-icono"><Truck size={22} aria-hidden="true" />Área del funcionario</h2>
+            <p className="ficha-texto">Consulta y administra empresas existentes con tu identidad de funcionario.</p>
+            <Link className="boton-enlace" to="/funcionario/empresas">Gestionar empresas</Link>
+          </section>
         )}
 
         {/* En pantallas anchas: lo que la persona viene a hacer a la izquierda y sus datos al costado */}

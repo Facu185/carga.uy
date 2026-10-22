@@ -1,7 +1,7 @@
 # Plan por fases — Cierre de P2 y área del funcionario
 
 **Fecha:** 22 de octubre de 2026. **Línea base observada:** `c3bc924`, árbol limpio antes de esta planificación.
-**Estado:** fase 0 parcial, fase 1 preparada y fase 2 implementada localmente al
+**Estado:** fase 0 parcial, fase 1 preparada y fases 2 y 3 implementadas localmente al
 2026-10-22, sin validación funcional ejecutada. El usuario confirmó SPA y F10/C10;
 los demás permisos y contratos pendientes no quedan autorizados.
 Véase el [registro de acuerdos de fase 0](acuerdos-cierre-p2-fase-0.md).
@@ -46,6 +46,28 @@ framework nuevo ni cambio de autenticación aprobado por este acuerdo acotado.
 
 ## 2. Secuencia y entregas
 
+### Estado contrastado con el código al 2026-10-22
+
+Revisión sobre `8140003` más cambios locales de fase 3, sin ejecutar builds, pruebas ni aplicación. `[x]`
+significa código, prueba escrita o acuerdo documental presente según el texto;
+NO acredita ejecución. Se separan las partes implementadas de su validación.
+
+| Fase | Parte ya presente | Parte que falta para completar la fase |
+| --- | --- | --- |
+| 0 | Asignación P2, elección SPA, ADR-0005 alineado y F10/C10 aprobado/publicado. | Permisos de guías, contratos F13/F14, coordinaciones P1/P3/P4, política offline y reparto F15. |
+| 1 | ABM F11 existente, matrices y cinco tests HTTP opt-in escritos. | Ejecutar y registrar validación REST/navegador/JSF y ABM empresarial/choferes; priorizar defectos reproducidos. |
+| 2 | Backend C10, formulario de perfil propio y 20 tests Java escritos. | Validar REST/navegador e integración del portal compartido P1/P3. |
+| 3 | Área SPA `/funcionario/empresas`, entrada Mi cuenta, listado/búsqueda, detalle, edición y baja C12; bandeja de responsables P1 reutilizada; ocho regresiones Java y matriz de escenarios preparados. | Validación real de permisos/expiración, navegador, administrador/JSF y rollback JTA; aceptación compartida P1/P3 y coordinación del alta empresarial P1. Vehículos/Viajes quedan para fases 4/5. |
+| 4 | Tests HTTP escritos que rechazan lectura y mutaciones vehiculares actuales a identidad solo FUNCIONARIO. | Lectura autorizada F13 y sus pruebas positivas, interfaz, filtros y reglas de presentación de vigencia. |
+| 5 | Fuentes P4 de pesajes/recorridos existentes, todavía no compuestas en la pantalla F14. | Consulta de guías para funcionario, acuerdos de estado/historial y pesajes por guía, interfaz y escenarios integrados. |
+| 6 | Adaptador P4 de aviso de fin y protección P2 de baja vehicular existentes. | Productor real P3, integración de fin, política offline y pruebas reales de concurrencia/asociación de pesajes. |
+| 7 | Plan, pendientes, contratos, ADR y procedimientos actualizados para los cambios locales. | Aceptación integral ejecutada con evidencia, cobertura medida, dependencias resueltas y cierre documental final. |
+
+**Ninguna fase está cerrada integralmente:** las fases 0–3 tienen avance parcial;
+las fases 4–7 conservan bases reutilizables, pero sus entregas siguen pendientes.
+
+### Orden y dependencias
+
 | Fase | Resultado | Dependencia de entrada |
 | --- | --- | --- |
 | 0 | Alcance, permisos y contratos acordados | Revisión con P1/P2/P3/P4; P5 solo donde corresponda. |
@@ -80,9 +102,10 @@ al final. No se fijan fechas sin conocer disponibilidad de equipo y dependencias
 - [x] Definir campos editables de F10: nombre, razón social, número y dirección;
   excluir estado, fecha de alta, vínculos y bajas de la edición del responsable.
   D0-05/C10 confirmado por el usuario y registrado en ADR-0014.
-- [ ] Acordar matriz de actor/operación y cambios de interfaces, DTO, rutas,
-  filtros, paginación y errores para F10/F13/F14 antes de sus consumidores.
-  F10/C10 aprobado/publicado; F13/F14 siguen pendientes, por lo que este conjunto no se cierra.
+- [x] Acordar y publicar matriz, campos, interfaces, DTO, rutas y errores F10/C10
+  antes de su consumidor, según ADR-0014.
+- [ ] Acordar matriz de actor/operación y contratos F13/F14, incluidos filtros,
+  paginación y errores, antes de sus consumidores.
 - [ ] Confirmar con P3/móvil si hay cambios de guía que requieran resolver
   conflictos offline y qué campos/estados comprenden. Acordar política en ADR y
   contratos; no agregar edición/cancelación como requisito supuesto.
@@ -107,6 +130,9 @@ siguen abiertos. La fase 0 original fue documental; la fase 2 posterior sí impl
 
 **Cobertura:** F11 y primera pasada de P2-04.
 
+- [x] Disponer de la base F11 implementada: ABM del responsable, baja lógica
+  protegida por EN_CURSO y reactivación específica sin renovar permiso/ITV.
+  Es implementación previa reutilizada, no evidencia de aceptación de fase 1.
 - [x] Reutilizar [matriz P2](../pruebas/p2-cierre.md),
   [integración aislada](../pruebas/p2-integracion.md),
   [pruebas vehiculares](pruebas-abm-vehiculos.md) y [regresión JSF](pruebas-abm-jsf.md).
@@ -124,8 +150,9 @@ siguen abiertos. La fase 0 original fue documental; la fase 2 posterior sí impl
   Para cada corrección, escribir primero su regresión y mantener cambios acotados.
 
 **Salida:** resultados iniciales por escenario y versión, con defectos priorizados.
-F11 queda **validado parcialmente** mientras falte acreditar con P3 la carrera
-inicio/baja; no inferir que un viaje terminó por su fecha prevista.
+Solo tras acreditar los escenarios P2 ejecutados podrá declararse F11 **validado
+parcialmente** mientras falte la carrera inicio/baja con P3. Hoy sigue pendiente
+esa validación; no inferir que un viaje terminó por su fecha prevista.
 
 **Avance:** fase 1 abierta. La preparación y el contraste estático no convierten
 F11 en validado: no hay resultados HTTP, de navegador ni JUnit ejecutados.
@@ -158,27 +185,49 @@ NO acredita aún esta salida ni cierra la validación de fase 1.
 
 ## Fase 3 — Construir el área del funcionario y empresas (F12 / P2-02)
 
-- [ ] Definir navegación: **Empresas → detalle → Vehículos / Viajes**, con la
-  tecnología acordada y acceso desde el ingreso gub.uy existente. Las rutas
-  concretas se publican al acordar el contrato, no se presuponen ya disponibles.
-- [ ] Probar primero permisos por operación, identidad insuficiente/vencida,
-  errores y regresión del administrador.
-- [ ] Reutilizar listado/búsqueda y modificación empresarial existentes. Publicar
-  también los contratos PUT/DELETE observados en código antes del nuevo consumo.
-- [ ] Integrar las acciones administrativas acordadas; coordinar el alta con las
-  solicitudes P1, sin duplicar su circuito ni confundir solicitudes con empresas existentes.
-- [ ] Preservar baja empresarial: desactivación, revocación de vínculos activos y
-  auditoría dentro de la misma operación de negocio. Verificar rollback real.
-- [ ] Añadir navegación por rol sin tratarla como autorización; comprobar la
-  identidad real en el contenedor y acceso directo a operaciones.
+- [x] Disponer de listado/búsqueda y modificación empresarial administrativos
+  en los servicios existentes, con roles de funcionario/administrador para mutaciones.
+- [x] Publicar los contratos PUT/DELETE empresariales observados en código.
+- [x] Añadir navegación local gub.uy → Mi cuenta → `/funcionario/empresas` →
+  `/funcionario/empresas/:id`, solo para FUNCIONARIO; callback y sesión P1 intactos.
+  El detalle usa GET del listado, sin inventar GET individual. Vehículos/Viajes
+  se indican deshabilitados, pendientes de fases 4/5 y contratos C13/C14.
+- [x] Preparar primero ocho regresiones Java adicionales y escenarios de permisos
+  por operación, identidad insuficiente/vencida, errores y administrador.
+- [ ] Ejecutar esos escenarios en contenedor/navegador; las anotaciones y dobles
+  no acreditan autorización real, sesión vencida ni regresión administrativa/JSF.
+- [x] Consumir listado/búsqueda y modificación empresarial existentes desde la
+  nueva interfaz operativa del funcionario; el servicio existente no sustituye la pantalla.
+- [x] Integrar modificación administrativa de cinco campos y baja confirmada 204,
+  sin reactivar ni reenviar mutaciones automáticamente. Reutilizar la bandeja P1
+  en `/funcionario/solicitudes-responsables`; es de vínculos, NO de altas empresariales.
+- [ ] Coordinar alta empresarial con P1, sin un POST/formulario paralelo ni dar
+  por equivalente una solicitud de responsabilidad y una solicitud de alta.
+- [x] Mantener la implementación existente de baja empresarial: desactivación,
+  revocación de vínculos activos y llamada de auditoría en la operación EJB.
+- [ ] Acreditar conservación de esa baja desde la nueva interfaz y rollback real
+  de empresa, vínculos y auditoría ante fallo.
+- [x] Añadir navegación por rol reutilizando RutaProtegida; no cambia permisos EJB
+  ni impone gub.uy al administrador de los recorridos anteriores.
+- [ ] Acreditar navegación compartida con P1/P3, identidad real en el contenedor
+  y acceso directo a operaciones.
 
 **Salida:** un funcionario autenticado por gub.uy consulta y modifica empresas
 existentes con sus permisos, sin otra identidad administrativa ni pérdida de JSF.
 
+**Avance local:** interfaz y consumidor C12 presentes, con errores/carga/vacío,
+exclusión de envíos duplicados y reconsulta obligatoria ante resultado incierto.
+Pruebas escritas, ciclo rojo/verde no ejecutado por restricción de builds.
+La SPA no tiene runner; la [matriz F12](../pruebas/p2-funcionario-empresas.md)
+es documentación de aceptación, NO pruebas frontend automatizadas. La salida
+anterior sigue pendiente de acreditación; no se cierra la fase por el código local.
+
 ## Fase 4 — Fiscalizar datos vehiculares en solo lectura (F13 / P2-03)
 
-- [ ] Escribir pruebas que permitan la consulta al funcionario y rechacen alta,
-  edición, baja y reactivación con una identidad que tenga solo ese rol.
+- [x] Escribir pruebas HTTP del rechazo actual de lectura y alta/edición/baja/
+  reactivación para identidad con solo FUNCIONARIO, en la suite F11. Sin ejecución.
+- [ ] Escribir pruebas positivas de la nueva consulta F13 y mantener la regresión
+  de rechazo de mutaciones para identidad con solo ese rol.
 - [ ] Añadir una operación de lectura específica o autorización por método,
   manteniendo los consumidores actuales. **No** agregar funcionario a los roles
   de toda `VehiculoServicioBean` ni concederle escritura para facilitar el listado.
@@ -206,6 +255,8 @@ las mutaciones no concedidas, independientemente de los botones visibles.
 
 ### 5.2. Composición de la interfaz
 
+- [x] Disponer de las APIs P4 existentes de pesajes diarios y recorridos por guía
+  como fuentes reutilizables. No implica consulta de pesajes por guía ni integración F14.
 - [ ] Listar viajes y mostrar detalle con empresa, guía, vehículo y chofer;
   incorporar estado e historial de P3 y pesajes de P4 cuando estén disponibles.
 - [ ] Reutilizar `GET /pesajes?matricula=&fecha=` y, si el alcance necesita
@@ -229,6 +280,8 @@ guía con fin previsto pasado o una maqueta no cierran este requisito.
 
 **Cobertura:** dependencia final F11, F14 y P2-06; participación P2 en F07/F08.
 
+- [x] Disponer del adaptador P4 existente `AvisoFinDeViajeLocal` →
+  `AvisoFinDeViajeBean` → `FinDeViajeMDB`. Su presencia no acredita un emisor P3 conectado.
 - [ ] P3 implementa/entrega eventos y transiciones; P2 coordina que inicio y baja
   tomen la misma exclusión del vehículo, revaliden habilitación y confirmen sin
   estados parciales. Acordar orden de bloqueos con los consumidores existentes.
@@ -238,8 +291,8 @@ guía con fin previsto pasado o una maqueta no cierran este requisito.
 - [ ] Aplicar la política offline acordada: eventos repetidos, tardíos y conflicto
   con cambios permitidos de guía. P3/móvil manejan eventos y deduplicación; P2
   aporta sus reglas y cambios propios, no rehace el receptor.
-- [ ] P3 conecta el fin con `AvisoFinDeViajeLocal`; P4 conserva su adaptador.
-  Acreditar fin → aviso → pesajes → consulta del funcionario, incluido nodo caído.
+- [ ] P3 conecta el fin real con `AvisoFinDeViajeLocal`, reutilizando el adaptador P4.
+- [ ] Acreditar fin → aviso → pesajes → consulta del funcionario, incluido nodo caído.
 - [ ] Comprobar viajes que atraviesan fechas y guías sucesivas del mismo vehículo,
   sin romper asociación de pesajes por `[inicio, fin)` ni interpretación de `guiaId`.
 
@@ -249,6 +302,8 @@ efecto y condición de desbloqueo, sin declararla resuelta desde P2.
 
 ## Fase 7 — Aceptación integral y cierre verificable
 
+- [x] Actualizar plan, pendientes, contratos, ADR y procedimientos de las
+  implementaciones locales F11/F10, dejando visibles pruebas e integraciones no ejecutadas.
 - [ ] Equipo: ejecutar CU2 en WildFly/PostgreSQL: pertenencia, habilitación,
   permiso/ITV durante todo `[inicio, fin)`, peso/volumen independientes, datos
   heredados y límites temporales.
@@ -259,8 +314,9 @@ efecto y condición de desbloqueo, sin declararla resuelta desde P2.
   perfil propio y área del funcionario con identidades sintéticas de cada actor.
 - [ ] Verificar sesión vencida, autorización directa, accesibilidad por teclado,
   errores y respuestas tardías. Medir cobertura antes de afirmar un porcentaje.
-- [ ] Actualizar pendientes, contratos, ADR y procedimientos afectados con
-  versión exacta, entorno, identidad sintética, resultado y evidencia sin secretos.
+- [ ] Completar el cierre documental con versión desplegada exacta, entorno,
+  identidad sintética, resultados ejecutados y evidencia sin secretos; las
+  actualizaciones locales anteriores no sustituyen esta aceptación final.
 - [ ] Registrar resolución de reparto F15 y cualquier integración P5; no añadir
   F15/F04 al cierre propio P2 si no se acordó esa implementación.
 
@@ -303,6 +359,6 @@ aceptación abiertas; tampoco atribuir a P2 la falta de implementación ajena.
   fase 0 se añadió ADR-0013 por elección explícita del usuario y se alinearon fuentes
   documentales; esto no acredita ejecución de pruebas ni cierre funcional.
 
-**Siguiente paso:** el equipo acredita los escenarios preparados de fase 1 en su
-entorno aislado; en paralelo, confirmar los acuerdos restantes por bloque de fase 0
-antes de implementar lógica que dependa de ellos.
+**Siguiente paso:** el equipo acredita los escenarios preparados F11/F10/F12 en su
+entorno aislado; confirmar C13 y presentación temporal antes de fase 4, junto con
+los acuerdos restantes por bloque de fase 0 antes de depender de ellos.
