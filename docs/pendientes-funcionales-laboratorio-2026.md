@@ -33,14 +33,16 @@ Estados utilizados:
 existencia de tablas, interfaces, anotaciones o pruebas no acredita funcionamiento.
 La aplicación móvil está en otro repositorio: NO se declara faltante por no estar aquí.
 No se evalúan exhaustivamente requisitos no funcionales, infraestructura ni entregables.
-Las coordinaciones propuestas abajo no modifican las asignaciones ni aceptan políticas nuevas.
+Las coordinaciones propuestas abajo no aceptan políticas nuevas. Como actualización
+explícita del reparto, el usuario asignó a P2 la interfaz operativa F12–F14 del
+funcionario; los productores de datos P3/P4 conservan su responsabilidad.
 
 ## 2. Resumen por responsable
 
 | Frente | Pendiente principal | Coordinación necesaria |
 | --- | --- | --- |
 | P1 | No se identificó un bloque funcional completo ausente de identidad; falta cerrar su integración con los recorridos JSF/OIDC que dependen de ella. | P2/P3 para acceso ciudadano y funcionario; P5 para uso de la auditoría existente. |
-| P2 | Perfil empresarial editable por el responsable; gestión de empresas y consulta de permisos/ITV por funcionario. ABM vehicular del responsable implementado, con validación pendiente. Detalle: [pendientesP2](pendientesP2.md). | P1 para identidad/autorización y P3 para portal, estado del viaje y concurrencia con la baja. |
+| P2 | Perfil empresarial editable por el responsable; gestión de empresas y consulta de permisos/ITV por funcionario; interfaz operativa F12–F14 asignada a P2. ABM vehicular del responsable implementado, con validación pendiente. Detalle: [pendientesP2](pendientesP2.md) y [plan por fases](plan-cierre-p2.md). | P1 para identidad/autorización; P3 para portal compartido, estado/historial y concurrencia con la baja; P4 para pesajes/recorridos. |
 | P3 | Receptor central de eventos, fotos, deduplicación, estado e historial del viaje, y emisión del aviso de fin de viaje. | Aplicación móvil, P2 para conflictos y P4 para aviso de fin. |
 | P4 | Integración final con emisores/consumidores de P3/P5; no rehacer ingesta, pesajes ni recorridos existentes. | P3 emite fin de viaje; P5 consume información para fiscalizar. |
 | P5 | Motor de reglas, casos, notificaciones, descargos, resolución, parametrización y reportes gerenciales. | P4 para posiciones/pesadas; P1 para auditoría; P3 para inserción en el portal. |
@@ -196,9 +198,9 @@ No se encontró un emisor P3 conectado. Consultar
 | --- | --- | --- | --- |
 | F10 | Perfil de empresa del responsable; letra p. 5. | Consulta y edición de nombre público, razón social, número de empresa y dirección desde su portal. El servicio solo permite modificar a funcionario/administrador; «Mi empresa» ya gestiona choferes y vehículos, no el perfil empresarial. | P2 es dueño del negocio; P3 del portal ciudadano. |
 | F11 | ABM de vehículos del responsable; letra p. 5. | **Implementado en código** en `/mi-empresa/vehiculos`: datos, permiso/ITV, baja protegida y reactivación. Falta validar ejecución e integración con el estado real del viaje; ver checklist inferior. No requiere agregar OIDC JSF para este recorrido React. | P2 es dueño del ABM; P3 debe mantener EN_CURSO/FINALIZADA y coordinar la exclusión con la baja. |
-| F12 | Gestión de empresas por funcionario; letra p. 6. | Completar el recorrido desde ingreso gub.uy para consultar/modificar empresas existentes. Hay servicios, JSF y gestión de solicitudes/vínculos, pero no una experiencia completa identificada desde ese acceso. | P2 es dueño del negocio; acordar integración de acceso e interfaz con P1/P3. |
-| F13 | Listado de vehículos por empresa y vigencia de permisos/ITV para funcionario; letra p. 6. | Consulta accesible al funcionario: sus datos existen, pero el servicio de vehículos admite administrador/ciudadano/chofer, no funcionario. No ampliar permisos de escritura indiscriminadamente. | P2 para consulta/datos, coordinado con P1 para autorización. |
-| F14 | Monitoreo de viajes en curso/realizados y pesajes; letra p. 6. | Integrar una vista operativa del funcionario con estado real e historial del viaje y sus pesajes. El mapa y las posiciones no sustituyen el ciclo del viaje. | P3 para estado/historial y P4 para posiciones/pesajes; falta explicitar dueño de la pantalla integrada. |
+| F12 | Gestión de empresas por funcionario; letra p. 6. | Completar el recorrido desde ingreso gub.uy para consultar/modificar empresas existentes. Hay servicios, JSF y gestión de solicitudes/vínculos, pero no una experiencia completa identificada desde ese acceso. | P2 es dueño del negocio y de la interfaz; coordinar acceso con P1 y navegación compartida con P3. |
+| F13 | Listado de vehículos por empresa y vigencia de permisos/ITV para funcionario; letra p. 6. | Consulta accesible al funcionario: sus datos existen, pero el servicio de vehículos admite administrador/ciudadano/chofer, no funcionario. No ampliar permisos de escritura indiscriminadamente. | P2 para interfaz/consulta/datos, coordinado con P1 para autorización. |
+| F14 | Monitoreo de viajes en curso/realizados y pesajes; letra p. 6. | Integrar una vista operativa del funcionario con estado real e historial del viaje y sus pesajes. El mapa y las posiciones no sustituyen el ciclo del viaje. | P2 integra la pantalla, por asignación explícita del usuario; P3 conserva estado/historial y P4 posiciones/pesajes. |
 
 ### F11. Alcance resuelto en código y cierre pendiente
 
@@ -289,9 +291,9 @@ No resolver silenciosamente estas políticas dentro de una implementación:
 | Plazo de descargo y comportamiento al vencer sin presentación. | P5. | CU6 deja el comportamiento exacto por definir. |
 | Criterio y justificación del desvío de ruta y representación del recorrido esperado. | P5, con datos de P2/P4. | Exigido por la letra; longitud recorrida no lo resuelve. |
 | Canal y condiciones de notificación del caso. | P5; coordinación con portal/móvil cuando corresponda. | Falta concretar el flujo sin imponer un canal no acordado. |
-| Acceso a los recorridos restantes de empresa y funcionario (F10/F12/F13). | P1/P2; P3 para portal. | ADR-0011 conserva JSF sin destino OIDC y ADR-0004 sigue Propuesta. F11 ya tiene recorrido React acotado por ADR-0012; no requiere rehacerse en JSF. |
+| Acceso a los recorridos restantes de empresa y funcionario (F10/F12/F13). | P1/P2; P3 para portal. | ADR-0013 confirma SPA acotada F12–F14, conservando JSF; ADR-0004 sigue Propuesta. Campos/permisos F10, navegación y contratos de lectura siguen pendientes en el [registro de fase 0](acuerdos-cierre-p2-fase-0.md). F11 mantiene ADR-0012. |
 | Inicio de viaje concurrente con baja de vehículo. | P3 y P2. | ABM ya rechaza guías EN_CURSO; el emisor de estados P3 debe coordinar bloqueo y habilitación, sin inferir estado por fechas. |
-| Responsable de integrar la pantalla operativa del funcionario. | P2/P3/P4/P5, con P1 para acceso. | Datos y servicios repartidos; la experiencia completa no tiene un dueño explícito. |
+| Contratos e integración de la pantalla operativa del funcionario, ya asignada a P2. | P2/P3/P4, con P1 para acceso; P5 si se acuerda integrar casos. | P2 compone la interfaz; hay que acordar lecturas y disponibilidad de productores sin trasladar sus servicios a P2. |
 
 Las políticas nuevas de negocio o arquitectura deben acordarse y registrarse en
 los contratos/ADR pertinentes antes de depender de ellas. Este inventario no es un ADR.

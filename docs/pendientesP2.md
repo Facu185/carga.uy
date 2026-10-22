@@ -1,14 +1,22 @@
 # Pendientes P2 — Núcleo de negocio y backoffice
 
 **Fecha de corte:** 22 de octubre de 2026.
-**Base:** `c7041f4` más los cambios locales de vehículos de ADR-0012.
+**Base del inventario original:** `c7041f4` más los cambios locales de vehículos de ADR-0012.
+**Planificación posterior:** contrastada sobre `c3bc924`; ver el
+[plan de cierre por fases](plan-cierre-p2.md), que incluye el área del funcionario a cargo de P2.
+**Avance fase 0:** SPA confirmada por el usuario en
+[ADR-0013](decisiones/0013-area-funcionario-spa-p2.md); matriz y contratos propuestos
+en el [registro de acuerdos](acuerdos-cierre-p2-fase-0.md). No es cierre funcional.
+**Inicio fase 1:** [registro de validación inicial](../pruebas/p2-fase-1.md), con
+cinco tests HTTP F11 nuevos y escenarios pendientes. Sin ejecución funcional.
 
 ## 1. Alcance y criterio de cierre
 
 P2 es dueño del negocio de empresas, vehículos, choferes, creación/asignación de
 guías y sus validaciones, según [frentes](frentes.md). Este documento desglosa los
 pendientes del [inventario general](pendientes-funcionales-laboratorio-2026.md),
-conservando sus identificadores F10–F15; no reasigna trabajo de otros frentes.
+conservando sus identificadores F10–F15. El usuario asignó además a P2 la pantalla
+operativa del funcionario F12–F14; no se reasignan los servicios de otros frentes.
 Las referencias a la letra provienen de ese inventario: no se hizo una nueva
 lectura del PDF externo ni una auditoría exhaustiva en esta actualización.
 
@@ -17,8 +25,10 @@ lectura del PDF externo ni una auditoría exhaustiva en esta actualización.
   se identifica el tipo en cada sección.
 - No se ejecutaron aplicación, pruebas ni builds. Los escenarios del navegador y
   las garantías reales de roles/JTA/JPQL/bloqueos siguen por acreditar.
-- No añadir obligaciones nuevas a partir de una propuesta: F15 y la pantalla F14
-  requieren acordar dueño; la política de conflictos requiere acuerdo y ADR.
+- No añadir obligaciones nuevas a partir de una propuesta: F15 requiere acordar
+  dueño; la pantalla F14 ya fue asignada a P2. La política de conflictos y la
+  concreción de contratos requieren acuerdo antes de depender de ellas. La
+  elección de SPA F12–F14 ya está registrada en ADR-0013, sin migración global.
 
 ## 2. Resumen operativo
 
@@ -26,11 +36,12 @@ lectura del PDF externo ni una auditoría exhaustiva en esta actualización.
 | --- | --- | --- |
 | F10 — Perfil de empresa del responsable | Implementación propia P2, portal con P3 | Consultar/editar su empresa desde el portal, con autorización por pertenencia en servidor. |
 | F11 — Vehículos del responsable | Validación P2 y dependencia P3 | Probar el ABM ya implementado e integrar el estado real del viaje y su concurrencia con baja. |
-| F12 — Empresas para funcionario | Integración de acceso y presentación | Recorrido desde gub.uy hasta consultar/modificar empresas existentes sin retirar seguridad. |
-| F13 — Vehículos/permisos/ITV para funcionario | Consulta y autorización de lectura | Permitir la consulta requerida sin conceder escritura de vehículos al funcionario por extensión accidental. |
+| F12 — Empresas para funcionario | Interfaz P2 e integración de acceso P1 | Recorrido desde gub.uy hasta consultar/modificar empresas existentes sin retirar seguridad. |
+| F13 — Vehículos/permisos/ITV para funcionario | Interfaz P2, consulta y autorización de lectura | Permitir la consulta requerida sin conceder escritura de vehículos al funcionario por extensión accidental. |
 | Guías y ABM existentes | Validación y coherencia de contratos | Acreditar reglas, aislamiento y concurrencia real; resolver discrepancias documentales y de criterio de vínculo. |
 | Conflictos offline y estado del viaje | Coordinación P2/P3 | Acordar política y contrato; mantener P3 como dueño de eventos/estado/historial. |
-| F14 / F15 | Participación o asignación por acordar | Proveer datos/reglas P2 cuando corresponda, sin asumir como propios todos los flujos. |
+| F14 — Pantalla operativa del funcionario | Interfaz e integración a cargo de P2 | Consumir datos P2, estado/historial P3 y posiciones/pesajes P4, sin rehacer sus servicios. |
+| F15 | Participación o asignación por acordar | Proveer datos/reglas P2 solo según el reparto que se acuerde. |
 
 ## 3. Base ya implementada: no rehacer desde cero
 
@@ -78,16 +89,16 @@ usuario no puede modificarlo alterando el ID ni invocando directamente REST.
 
 ### P2-02 / F12 — Gestión de empresas por funcionario
 
-**Origen:** letra p. 6. **Coordinación:** P1 para acceso; P3 para portal.
+**Origen:** letra p. 6. **Interfaz:** P2. **Coordinación:** P1 para acceso; P3 para navegación compartida.
 
 **Situación:** existen operaciones de empresa autorizadas para funcionario y
 vistas JSF. ADR-0011 no ofrece destino OIDC JSF; la SPA no tiene una pantalla de
 gestión de empresas existentes para funcionario. La gestión de solicitudes y
 vínculos de P1 no sustituye esa pantalla.
 
-- [ ] Acordar el recorrido de interfaz: integrar las operaciones en el portal
-  existente o coordinar un destino OIDC para JSF. No crear cuentas internas de
-  funcionario como atajo ni aceptar una migración general sin acuerdo.
+- [x] Elegir SPA existente para F12–F14, según ADR-0013; conservar JSF sin
+  aceptar una migración general. No crear cuentas internas de funcionario.
+- [ ] Coordinar con P1/P3 la navegación compartida desde el ingreso gub.uy.
 - [ ] Habilitar navegación autenticada para consultar y modificar empresas existentes.
 - [ ] Integrar las acciones del ABM administrativo que correspondan al alcance P2,
   reutilizando el servicio existente y coordinando el alta con las solicitudes P1.
@@ -101,7 +112,7 @@ empresas que tiene autorizadas; no depende de una identidad administrativa disti
 
 ### P2-03 / F13 — Consulta de vehículos, permiso e ITV por funcionario
 
-**Origen:** letra p. 6. **Coordinación:** P1 para permisos y P3 para presentación.
+**Origen:** letra p. 6. **Interfaz y datos:** P2. **Coordinación:** P1 para permisos y P3 para navegación compartida.
 
 **Situación:** los datos ya existen, pero `VehiculoServicioBean` permite
 administrador/ciudadano/chofer, no funcionario. Añadir funcionario a la anotación
@@ -173,16 +184,17 @@ equipo si se requiere automatización, sin instalar herramientas por iniciativa 
 
 ### P2-05 — Definiciones/contratos por alinear, no cambios automáticos
 
-- [ ] Alinear [ADR-0005](decisiones/0005-autorizacion-y-concurrencia-de-guias.md),
-  que todavía describe `usuario.empresa_id`, con el contrato y código actuales
-  basados en `VinculoEmpresaUsuario`; no restaurar el esquema anterior.
+- [x] Alinear [ADR-0005](decisiones/0005-autorizacion-y-concurrencia-de-guias.md)
+  con contrato/código basados en `VinculoEmpresaUsuario`, sin restaurar
+  `usuario.empresa_id` ni cambiar criterios de autorización por esta corrección documental.
 - [ ] Acordar con P1/P2 el tipo de vínculo que habilita crear guías y consultar
   catálogos: `empresaParaOperacion` y los catálogos filtran ACTIVO sin tipo,
   mientras la consulta empresarial de guías y el ABM vehicular exigen
   RESPONSABLE/ACTIVO. Documentar el criterio y su regresión antes de cambiar permisos.
 - [ ] Resolver con el equipo el alcance restante de
   [ADR-0004](decisiones/0004-frontend-react-sobre-api-rest.md), aún Propuesta, y su
-  contraste con el reparto JSF. ADR-0012 solo autoriza la pantalla vehicular acotada.
+  contraste con el reparto JSF. ADR-0012 autoriza la pantalla vehicular acotada;
+  ADR-0013 autoriza F12–F14 en SPA, sin aceptar el resto de ADR-0004.
 - [ ] Precisar, si el requisito de cambios de viaje lo necesita, qué datos de una
   guía podrán modificarse y en qué estados. La interfaz actual ofrece creación y
   consultas, no edición; no introducir modificación/cancelación como obligación
@@ -201,11 +213,18 @@ equipo si se requiere automatización, sin instalar herramientas por iniciativa 
 - [ ] Conservar los contratos de períodos/asignaciones consumidos por P4 para
   vincular pesajes; avisar antes de alterar esas reglas compartidas.
 
-### F14 — Pantalla operativa del funcionario: dueño por acordar
+### F14 — Pantalla operativa del funcionario: interfaz a cargo de P2
 
-- [ ] Acordar quién integra la pantalla y qué consultas debe aportar P2.
+**Asignación confirmada:** P2 implementa la pantalla por indicación explícita del usuario.
+
+- [x] Elegir tecnología SPA existente para F12–F14, según ADR-0013.
+- [ ] Acordar navegación y contratos de lectura para el funcionario;
+  la consulta empresarial actual de guías exige vínculo responsable, no habilita
+  por sí sola al funcionario.
 - [ ] Coordinar datos de empresa/guía/asignación P2 con estado/historial P3 y
   posiciones/pesajes P4; no rehacer los adaptadores que esos frentes ya tienen.
+- [ ] Implementar e integrar F12–F14 según el [plan por fases](plan-cierre-p2.md).
+  La gestión de accesos de funcionarios P1 no sustituye esta área operativa.
 
 La llamada de fin de viaje a P4 es pendiente P3 (F09), no un nuevo servicio P2.
 Motor fiscalizador, casos, descargos y reportes corresponden a P5.
@@ -223,13 +242,16 @@ se agregan como faltantes obligatorios.
 
 ## 8. Orden propuesto y evidencia para cerrar
 
-1. Validar F11 ya implementado y coordinar su dependencia P3.
-2. Completar F10 (perfil propio) y el recorrido funcionario F12/F13.
-3. Resolver los criterios de autorización y documentos pendientes de P2-05.
-4. Acreditar CU2/ABM/JSF en integración; cerrar la política offline con P3/móvil.
-5. Acordar participación concreta en F14/F15 antes de implementar alcances nuevos.
+1. Resolver por bloque autorización, interfaz y contratos de P2-05; acordar reparto F15.
+2. Validar F11 ya implementado y registrar su dependencia P3 aún abierta.
+3. Completar F10 (perfil propio) y construir el área del funcionario F12/F13.
+4. Preparar consultas e interfaz F14 desde P2 con contratos P3/P4 acordados.
+5. Integrar estado real, concurrencia inicio/baja y política offline con P3/móvil.
+6. Acreditar CU2/ABM/JSF y los recorridos nuevos en integración; registrar evidencia final.
 
-Este orden es una propuesta, no una planificación aceptada. Para cerrar cada
+El desglose, dependencias y criterios por fase están en el
+[plan de cierre P2](plan-cierre-p2.md); su secuencia es propuesta, no autorización
+para implementar políticas pendientes. Para cerrar cada
 bloque, registrar requisito/contrato, cambio, pruebas realmente ejecutadas,
 entorno y resultado; mantener aparte las dependencias que continúan abiertas.
 Para el agente siguen prohibidos los builds y las pruebas que compilan; la lista

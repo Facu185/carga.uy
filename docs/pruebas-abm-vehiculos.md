@@ -15,6 +15,12 @@ Este documento describe escenarios, NO resultados de ejecución.
 - `VehiculoRecursoTest` comprueba la ruta/PUT declarados y que la reactivación
   delega el ID y propaga denegaciones al mapper. No acredita respuesta 204,
   serialización ni seguridad real: comprobarlo en los escenarios de integración.
+- La nueva suite HTTP opt-in `P2VehiculosContraDespliegueTest` prepara cinco tests
+  de transporte/persistencia para fase 1, incluidos 204 sin cuerpo, reactivación
+  sin sobrescritura, datos heredados, rechazo EN_CURSO por DELETE/PUT y 401/403.
+  Está **escrita, no ejecutada**. Fixtures y activación en
+  [integración F11](../pruebas/p2-integracion.md#suite-http-f11--fase-1-del-plan-vigente);
+  resultados pendientes por escenario en [fase 1](../pruebas/p2-fase-1.md).
 - `carga-front/package.json` no define runner de tests. No instalar uno ni
   presentar escenarios manuales como pruebas automatizadas.
 - Pruebas escritas, ciclo rojo/verde no ejecutado por restricción de builds.

@@ -20,3 +20,4 @@ Plantilla: [plantilla.md](plantilla.md).
 | [0010](0010-integraciones-de-p4-con-p3-y-p5.md) | Integraciones de P4 con P3 (fin de viaje) y con P5 (recorrido) | Aceptada |
 | [0011](0011-autenticacion-del-abm-jsf.md) | Adaptador JWT para conservar el ABM JSF P2 | Aceptada para corrección P2 |
 | [0012](0012-abm-vehiculos-del-responsable.md) | Vehículos en Mi empresa, baja con control de guía en curso y reactivación | Aceptada para alcance solicitado |
+| [0013](0013-area-funcionario-spa-p2.md) | Área operativa F12–F14 del funcionario en la SPA existente, conservando JSF | Aceptada para alcance P2 solicitado |

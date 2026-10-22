@@ -7,7 +7,7 @@ grupo antes de mergear: hay código de otra persona que depende.
 
 | Interfaz | Dueño | Qué garantiza |
 |---|---|---|
-| `EmpresaServicio` / `...Local` / `...Remote` | P2 | Alta y consulta de empresas |
+| `EmpresaServicio` / `...Local` / `...Remote` | P2 | Alta, modificación, baja lógica y consulta de empresas; mutaciones para funcionario/administrador |
 | `VehiculoServicio` / `VehiculoServicioLocal` | P2 | ABM vehicular y reactivación; autorización por vínculo responsable activo o administrador |
 | `IngestaTrackingLocal` | P4 | Recibe una posición y la encola; no bloquea |
 | `PesajeLocal` | P4 | `obtenerPesadas` devuelve las pesadas; `consultarPesadas` además informa si el nodo respondió y cuánto tardó |
@@ -54,6 +54,8 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `GET /carga/api/salud` | healthchecks, monitoreo |
 | `GET /carga/api/empresas[?nombre=]` | frontoffice, backoffice |
 | `POST /carga/api/empresas` | backoffice |
+| `PUT /carga/api/empresas/{id}` | Gestión administrativa existente; `EmpresaDTO`, respuesta 200 con DTO; funcionario/administrador |
+| `DELETE /carga/api/empresas/{id}` | Baja lógica administrativa existente; 204; funcionario/administrador |
 | `GET /carga/api/vehiculos?empresaId=` | Mi empresa (incluye vehículos dados de baja) |
 | `POST /carga/api/vehiculos` · `PUT /carga/api/vehiculos/{id}` | Mi empresa; `VehiculoDTO`, respuestas 201 y 200 |
 | `DELETE /carga/api/vehiculos/{id}` | Baja lógica del vehículo; 204, rechaza guía EN_CURSO con 400 |
@@ -98,6 +100,35 @@ que ya procesó. Un mensaje puede llegar más de una vez y eso tiene que ser ino
 
 ## 5. Esquema de base de datos
 
+## Empresas P2
+
+`EmpresaServicio` expone `agregar`, `modificar`, `darDeBaja`, `listar` y
+`buscarPorNombre`. GET `/carga/api/empresas[?nombre=]` devuelve una lista de
+`EmpresaDTO`, ordenada por ID, sin paginación; nombre ausente/vacío lista todas y
+nombre informado busca coincidencia parcial sin distinguir mayúsculas. La lectura
+admite CIUDADANO, CHOFER, FUNCIONARIO, AUTORIDAD y ADMINISTRADOR; no aplica filtro
+de pertenencia. No equivale a un contrato de perfil propio ni existe GET por ID.
+
+POST devuelve 201 con DTO; PUT `/{id}` devuelve 200 con DTO; DELETE `/{id}`
+devuelve 204 sin cuerpo. Mutaciones solo para FUNCIONARIO/ADMINISTRADOR.
+`EmpresaDTO` contiene `id`, `nombre`, `razonSocial`, `numeroEmpresa`, `direccion`,
+`fechaAlta` y `activa`. La modificación administrativa actual actualiza nombre,
+razón social, número, dirección y fecha de alta; no cambia `activa`.
+No se amplía a responsables ciudadanos por documentarla.
+
+La baja desactiva la empresa, revoca sus vínculos activos y registra auditoría en
+la operación EJB. Repetirla sobre empresa inactiva es error de negocio. Negocio
+(incluido número duplicado/empresa inexistente) responde `400 {"error":"mensaje"}`;
+autenticación/autorización conserva 401/403. Esto describe código existente,
+no acredita rollback ni seguridad en ejecución. Fuente:
+[EmpresaRecurso](../carga-web/src/main/java/uy/edu/fing/tse/carga/web/rest/EmpresaRecurso.java)
+y [EmpresaServicioBean](../carga-ejb/src/main/java/uy/edu/fing/tse/carga/ejb/servicio/EmpresaServicioBean.java).
+
+La elección de SPA F12–F14 está acotada por [ADR-0013](decisiones/0013-area-funcionario-spa-p2.md).
+Los contratos nuevos de perfil F10 y consultas F13/F14 siguen como **borradores
+no publicados ni implementados** en el [registro de fase 0](acuerdos-cierre-p2-fase-0.md).
+No consumir sus rutas propuestas hasta aprobar y publicar cada contrato.
+
 ## Vehículos P2
 
 El ABM requiere `ADMINISTRADOR`, `CIUDADANO` o `CHOFER`; fuera de la excepción
@@ -124,6 +155,12 @@ Las vistas JSF llaman al mismo servicio EJB directamente, no a estos endpoints.
 ## Guías P2
 
 `POST /api/guias` recibe `inicio` y `fin` ISO-8601 con zona horaria, además de los datos de carga. El periodo es semiabierto `[inicio, fin)`: dos viajes consecutivos cuyo fin/inicio coinciden son válidos. La creación toma bloqueos pesimistas de vehículo y chofer y rechaza solapamientos. La autorización empresarial se resuelve exclusivamente desde el principal autenticado mediante un `vinculo_empresa_usuario` activo; nunca desde un rol global ni de un `empresa_id` en `usuario`.
+
+La implementación actual de creación y catálogos empresariales de
+vehículos/choferes exige CIUDADANO y vínculo ACTIVO **sin filtrar su tipo**. El
+listado empresarial siguiente exige RESPONSABLE/ACTIVO. No se unifican estas
+condiciones mediante esta actualización documental: decisión P1/P2 pendiente
+D0-04 en el [registro de fase 0](acuerdos-cierre-p2-fase-0.md).
 
 `GET /api/guias/mis-guias` requiere el rol `CHOFER` y resuelve el chofer por la cédula del principal; nunca acepta un identificador de chofer del cliente.
 
