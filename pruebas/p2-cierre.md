@@ -4,6 +4,15 @@ Fecha local: **2026-10-21** (America/Montevideo). Rama: `RoibethGarciaMac`.
 HEAD observado: `695a7fc5ff966b0969dbb1ac3c01cb7e9da54a8f`.
 Estado: **implementación preparada; operación NO acreditada**. Sin builds, despliegues ni pruebas ejecutadas.
 
+**Referencia vigente al 2026-10-22:** este documento conserva la línea base y la
+secuencia histórica de correcciones. Las fases 0–5 de su sección 5 NO son las
+fases 0–7 del [plan de cierre vigente](../docs/plan-cierre-p2.md). Para el inicio
+actual de fase 1, ver [registro de validación](p2-fase-1.md) y
+[suite HTTP F11](p2-integracion.md#suite-http-f11--fase-1-del-plan-vigente).
+Los puntos 1/2 de control más abajo describen el diagnóstico previo a los cambios,
+no la autorización vehicular actual. ADR-0005 ya fue alineado documentalmente
+en la fase 0 vigente; el criterio de tipo de vínculo en guías sigue pendiente.
+
 ## 1. Línea base conservada
 
 Estado inicial recibido y contrastado con `git status --short`; TODOS estos cambios preceden esta tarea:

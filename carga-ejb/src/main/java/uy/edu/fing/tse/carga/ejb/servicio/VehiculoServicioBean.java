@@ -7,6 +7,7 @@ import jakarta.annotation.Resource;
 import jakarta.annotation.security.DeclareRoles;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import uy.edu.fing.tse.carga.api.contract.service.VehiculoServicioLocal;
 import uy.edu.fing.tse.carga.api.dto.guia.VehiculoDTO;
@@ -15,6 +16,7 @@ import uy.edu.fing.tse.carga.api.security.Roles;
 import uy.edu.fing.tse.carga.ejb.modelo.Empresa;
 import uy.edu.fing.tse.carga.ejb.modelo.Vehiculo;
 import uy.edu.fing.tse.carga.ejb.persistencia.VinculoEmpresaUsuarioDAO;
+import uy.edu.fing.tse.carga.ejb.seguridad.CompatibilidadFuncionarioEmpresa;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -34,6 +36,9 @@ public class VehiculoServicioBean implements VehiculoServicioLocal {
     @jakarta.inject.Inject
     private VinculoEmpresaUsuarioDAO vinculos;
 
+    @jakarta.inject.Inject
+    private CompatibilidadFuncionarioEmpresa compatibilidad;
+
     @Override public VehiculoDTO agregar(VehiculoDTO dto) throws NegocioException {
         validarEmpresaInformada(dto);
         autorizarEmpresa(dto.getEmpresaId());
@@ -44,20 +49,40 @@ public class VehiculoServicioBean implements VehiculoServicioLocal {
 
     @Override public VehiculoDTO modificar(Long id, VehiculoDTO dto) throws NegocioException {
         validarEmpresaInformada(dto);
-        Vehiculo vehiculo = em.find(Vehiculo.class, id);
-        if (vehiculo == null) throw new NegocioException("El vehiculo no existe.");
+        Vehiculo vehiculo = buscarParaModificar(id);
         autorizarEmpresa(vehiculo.getEmpresa().getId());
         autorizarEmpresa(dto.getEmpresaId());
+        // El PUT tambien puede dar de baja: no debe eludir la regla del DELETE.
+        if (!dto.isHabilitado()) validarSinGuiaEnCurso(id);
         validar(dto);
         if (existeMatricula(dto.getMatricula(), id)) throw new NegocioException("Ya existe un vehiculo con esa matricula.");
         aplicar(vehiculo, dto); return aDTO(vehiculo);
     }
 
     @Override public void darDeBaja(Long id) throws NegocioException {
-        Vehiculo vehiculo = em.find(Vehiculo.class, id);
-        if (vehiculo == null) throw new NegocioException("El vehiculo no existe.");
+        Vehiculo vehiculo = buscarParaModificar(id);
         autorizarEmpresa(vehiculo.getEmpresa().getId());
+        validarSinGuiaEnCurso(id);
         vehiculo.setHabilitado(false);
+    }
+
+    @Override public void reactivar(Long id) throws NegocioException {
+        Vehiculo vehiculo = buscarParaModificar(id);
+        autorizarEmpresa(vehiculo.getEmpresa().getId());
+        vehiculo.setHabilitado(true);
+    }
+
+    private Vehiculo buscarParaModificar(Long id) throws NegocioException {
+        // Comparte exclusion con la asignacion de guias y las otras mutaciones del ABM.
+        Vehiculo vehiculo = em.find(Vehiculo.class, id, LockModeType.PESSIMISTIC_WRITE);
+        if (vehiculo == null) throw new NegocioException("El vehiculo no existe.");
+        return vehiculo;
+    }
+
+    private void validarSinGuiaEnCurso(Long vehiculoId) throws NegocioException {
+        long cantidad = em.createQuery("select count(g) from Guia g where g.vehiculo.id = :vehiculoId and g.estado = :estado", Long.class)
+                .setParameter("vehiculoId", vehiculoId).setParameter("estado", "EN_CURSO").getSingleResult();
+        if (cantidad > 0) throw new NegocioException("No se puede dar de baja un vehiculo con una guia en curso.");
     }
 
     @Override public List<VehiculoDTO> listar(Long empresaId) {
@@ -79,6 +104,7 @@ public class VehiculoServicioBean implements VehiculoServicioLocal {
                 || !vinculos.esResponsableActivo(principal.getName(), empresaId)) {
             throw new EJBAccessException("No tienes permiso para gestionar los vehiculos de esta empresa.");
         }
+        compatibilidad.verificarEjercicioResponsabilidad(principal.getName());
     }
 
     private void validarEmpresaInformada(VehiculoDTO dto) throws NegocioException {
@@ -110,5 +136,6 @@ public class VehiculoServicioBean implements VehiculoServicioLocal {
         v.setPermisoDesde(fecha(dto.getPermisoDesde(), "permiso desde")); v.setPermisoHasta(fecha(dto.getPermisoHasta(), "permiso hasta")); v.setItvVencimiento(fecha(dto.getItvVencimiento(), "vencimiento de ITV")); v.setHabilitado(dto.isHabilitado());
     }
     private LocalDate fecha(String valor, String campo) throws NegocioException { try { return valor == null || valor.isBlank() ? null : LocalDate.parse(valor); } catch (DateTimeParseException e) { throw new NegocioException("El " + campo + " debe tener formato AAAA-MM-DD."); } }
-    private VehiculoDTO aDTO(Vehiculo v) { VehiculoDTO dto = new VehiculoDTO(); dto.setId(v.getId()); dto.setEmpresaId(v.getEmpresa().getId()); dto.setMatricula(v.getMatricula()); dto.setMarca(v.getMarca()); dto.setModelo(v.getModelo()); dto.setPesoKg(v.getPesoKg()); dto.setCapacidadCargaKg(v.getCapacidadCargaKg()); dto.setCapacidadVolumenM3(v.getCapacidadVolumenM3()); dto.setNumeroPermiso(v.getNumeroPermiso()); dto.setPermisoDesde(String.valueOf(v.getPermisoDesde())); dto.setPermisoHasta(String.valueOf(v.getPermisoHasta())); dto.setItvVencimiento(String.valueOf(v.getItvVencimiento())); dto.setHabilitado(v.isHabilitado()); return dto; }
+    private VehiculoDTO aDTO(Vehiculo v) { VehiculoDTO dto = new VehiculoDTO(); dto.setId(v.getId()); dto.setEmpresaId(v.getEmpresa().getId()); dto.setMatricula(v.getMatricula()); dto.setMarca(v.getMarca()); dto.setModelo(v.getModelo()); dto.setPesoKg(v.getPesoKg()); dto.setCapacidadCargaKg(v.getCapacidadCargaKg()); dto.setCapacidadVolumenM3(v.getCapacidadVolumenM3()); dto.setNumeroPermiso(v.getNumeroPermiso()); dto.setPermisoDesde(texto(v.getPermisoDesde())); dto.setPermisoHasta(texto(v.getPermisoHasta())); dto.setItvVencimiento(texto(v.getItvVencimiento())); dto.setHabilitado(v.isHabilitado()); return dto; }
+    private static String texto(LocalDate fecha) { return fecha == null ? null : fecha.toString(); }
 }

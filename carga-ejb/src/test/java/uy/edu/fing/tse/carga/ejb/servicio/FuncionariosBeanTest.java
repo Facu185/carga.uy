@@ -18,14 +18,53 @@ class FuncionariosBeanTest {
 
     private FuncionariosBean servicio;
     private Falsos.UsuariosEnMemoria usuarios;
+    private Falsos.CompatibilidadFalsa compatibilidad;
 
     @BeforeEach
     void preparar() {
         usuarios = new Falsos.UsuariosEnMemoria();
         servicio = new FuncionariosBean();
+        compatibilidad = new Falsos.CompatibilidadFalsa();
+        servicio.compatibilidad = compatibilidad;
         servicio.dao = new Falsos.FuncionariosEnMemoria();
         servicio.usuarios = usuarios;
         servicio.auditoria = new Falsos.AuditoriaFalsa();
+    }
+
+    @Test
+    void responsableActivoNoPuedeSerDadoDeAltaYNoSeLeAsignaRolNiSeAuditaExito() {
+        Usuario persona = usuarios.guardar(new Usuario("12345672", "Prueba", null));
+        persona.asignarRol(Falsos.rol(Rol.CIUDADANO));
+        compatibilidad.responsablesActivos.add(persona.getCedula());
+        assertThrows(NegocioException.class, () -> servicio.crear(new NuevoFuncionarioDTO("12345672", "Prueba", "DNT")));
+        assertTrue(servicio.dao.listar().isEmpty());
+        assertFalse(persona.tieneRol(Rol.FUNCIONARIO));
+        assertTrue(persona.tieneRol(Rol.CIUDADANO));
+        assertTrue(((Falsos.AuditoriaFalsa) servicio.auditoria).registros.isEmpty());
+        assertEquals(java.util.List.of("12345672"), compatibilidad.bloqueadas);
+    }
+
+    @Test
+    void responsableHeredadoNoSeReactivaPeroSePuedeDeshabilitarFuncionario() throws NegocioException {
+        FuncionarioDTO f = servicio.crear(new NuevoFuncionarioDTO("12345672", "Prueba", "DNT"));
+        servicio.cambiarEstado(f.getId(), false);
+        compatibilidad.responsablesActivos.add(f.getCedula());
+        int auditorias = ((Falsos.AuditoriaFalsa) servicio.auditoria).registros.size();
+        assertThrows(NegocioException.class, () -> servicio.cambiarEstado(f.getId(), true));
+        assertFalse(servicio.dao.buscarPorId(f.getId()).orElseThrow().isActivo());
+        assertFalse(usuarios.buscarPorCedula(f.getCedula()).orElseThrow().tieneRol(Rol.FUNCIONARIO));
+        assertEquals(auditorias, ((Falsos.AuditoriaFalsa) servicio.auditoria).registros.size());
+        assertFalse(servicio.cambiarEstado(f.getId(), false).isActivo());
+        assertTrue(compatibilidad.responsablesActivos.contains(f.getCedula()));
+    }
+
+    @Test
+    void bajaDeCombinacionHeredadaResuelveConflictoSinRevocarResponsabilidad() throws NegocioException {
+        FuncionarioDTO f = servicio.crear(new NuevoFuncionarioDTO("12345672", "Prueba", "DNT"));
+        compatibilidad.responsablesActivos.add(f.getCedula());
+        assertFalse(servicio.cambiarEstado(f.getId(), false).isActivo());
+        assertFalse(usuarios.buscarPorCedula(f.getCedula()).orElseThrow().tieneRol(Rol.FUNCIONARIO));
+        assertTrue(compatibilidad.responsablesActivos.contains(f.getCedula()));
     }
 
     @Test

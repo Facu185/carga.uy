@@ -20,6 +20,7 @@ import uy.edu.fing.tse.carga.api.dto.guia.RubroDTO;
 import uy.edu.fing.tse.carga.api.dto.guia.TipoCargaDTO;
 import uy.edu.fing.tse.carga.api.dto.guia.VehiculoDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.*;
+import uy.edu.fing.tse.carga.ejb.seguridad.CompatibilidadFuncionarioEmpresa;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -38,6 +39,9 @@ public class GuiaServicioBean implements GuiaServicioLocal {
 
     @jakarta.annotation.Resource
     SessionContext contexto;
+
+    @jakarta.inject.Inject
+    CompatibilidadFuncionarioEmpresa compatibilidad;
 
     @Override
     public GuiaDTO crear(CrearGuiaCommand comando) throws NegocioException {
@@ -104,7 +108,7 @@ public class GuiaServicioBean implements GuiaServicioLocal {
         if (pagina < 0 || tamano < 1 || tamano > 100 || (long) pagina * tamano > Integer.MAX_VALUE)
             throw new ConsultaGuiasInvalidaException("La paginacion no es valida (pagina >= 0, tamano entre 1 y 100).");
 
-        String cedula = principalAutenticado();
+        String cedula = principalEmpresarialAutenticado();
         Empresa empresa = em.createQuery("select x.empresa from VinculoEmpresaUsuario x where x.usuario.cedula = :cedula " +
                         "and x.empresa.id = :empresaId and x.tipo = :tipo and x.estado = :estado", Empresa.class)
                 .setParameter("cedula", cedula).setParameter("empresaId", empresaId)
@@ -135,17 +139,19 @@ public class GuiaServicioBean implements GuiaServicioLocal {
 
     @Override
     public List<VehiculoDTO> vehiculosDeLaEmpresaAutenticada() throws NegocioException {
+        String cedula = principalEmpresarialAutenticado();
         return em.createQuery("select v from Vehiculo v where v.habilitado = true and exists " +
                         "(select x.id from VinculoEmpresaUsuario x where x.empresa = v.empresa and x.usuario.cedula = :cedula and x.estado = :estado) order by v.matricula", Vehiculo.class)
-                .setParameter("cedula", principalAutenticado()).setParameter("estado", EstadoVinculoEmpresa.ACTIVO)
+                .setParameter("cedula", cedula).setParameter("estado", EstadoVinculoEmpresa.ACTIVO)
                 .getResultList().stream().map(this::vehiculoDTO).toList();
     }
 
     @Override
     public List<ChoferDTO> choferesDeLaEmpresaAutenticada() throws NegocioException {
+        String cedula = principalEmpresarialAutenticado();
         return em.createQuery("select c from Chofer c where c.activo = true and exists " +
                         "(select x.id from VinculoEmpresaUsuario x where x.empresa = c.empresa and x.usuario.cedula = :cedula and x.estado = :estado) order by c.nombre", Chofer.class)
-                .setParameter("cedula", principalAutenticado()).setParameter("estado", EstadoVinculoEmpresa.ACTIVO)
+                .setParameter("cedula", cedula).setParameter("estado", EstadoVinculoEmpresa.ACTIVO)
                 .getResultList().stream().map(this::choferDTO).toList();
     }
 
@@ -171,7 +177,7 @@ public class GuiaServicioBean implements GuiaServicioLocal {
 
     /** La autorización se evalúa por empresa; no se deduce de un rol global ni de Usuario.empresa. */
     private Empresa empresaParaOperacion(Long empresaId) throws NegocioException {
-        String cedula = principalAutenticado();
+        String cedula = principalEmpresarialAutenticado();
         Empresa empresa = em.createQuery("select x.empresa from VinculoEmpresaUsuario x where x.usuario.cedula = :cedula " +
                         "and x.empresa.id = :empresaId and x.estado = :estado", Empresa.class)
                 .setParameter("cedula", cedula).setParameter("empresaId", empresaId).setParameter("estado", EstadoVinculoEmpresa.ACTIVO)
@@ -193,6 +199,12 @@ public class GuiaServicioBean implements GuiaServicioLocal {
         if (contexto == null || contexto.getCallerPrincipal() == null || contexto.getCallerPrincipal().getName() == null || contexto.getCallerPrincipal().getName().isBlank())
             throw new NegocioException("No hay un usuario autenticado.");
         return contexto.getCallerPrincipal().getName();
+    }
+
+    private String principalEmpresarialAutenticado() throws NegocioException {
+        String cedula = principalAutenticado();
+        compatibilidad.verificarEjercicioResponsabilidad(cedula);
+        return cedula;
     }
     private Instant instante(String valor, String campo) throws NegocioException {
         if (valor == null || valor.isBlank()) throw new NegocioException("El " + campo + " del viaje es obligatorio.");

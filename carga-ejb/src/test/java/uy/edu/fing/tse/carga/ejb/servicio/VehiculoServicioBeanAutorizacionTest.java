@@ -3,6 +3,7 @@ package uy.edu.fing.tse.carga.ejb.servicio;
 import jakarta.ejb.EJBAccessException;
 import jakarta.ejb.SessionContext;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.TypedQuery;
 import org.junit.jupiter.api.Test;
 import uy.edu.fing.tse.carga.api.dto.guia.VehiculoDTO;
@@ -26,6 +27,28 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Dobles: comprueba decisiones y efectos; no ejecuta roles EJB, JPQL ni transacciones. */
 class VehiculoServicioBeanAutorizacionTest {
+    @Test void reglaDeResponsabilidadNoRetiraLaGestionAdministrativa() throws Exception {
+        Escenario e = new Escenario(Roles.ADMINISTRADOR);
+        e.compatibilidad.funcionariosActivos.add("persona-prueba");
+        e.compatibilidad.responsablesActivos.add("persona-prueba");
+        assertEquals(1, e.bean.listar(null).size());
+        assertEquals("NUEVA", e.bean.modificar(10L, datos(1L)).getMatricula());
+    }
+
+    @Test void funcionarioConResponsabilidadHeredadaNoOperaComoResponsable() throws Exception {
+        Escenario e = new Escenario(Roles.CIUDADANO);
+        e.compatibilidad.funcionariosActivos.add("persona-prueba");
+        e.compatibilidad.responsablesActivos.add("persona-prueba");
+        assertThrows(EJBAccessException.class, () -> e.bean.listar(1L));
+        assertThrows(EJBAccessException.class, () -> e.bean.agregar(datos(1L)));
+        assertThrows(EJBAccessException.class, () -> e.bean.modificar(10L, datos(1L)));
+        assertThrows(EJBAccessException.class, () -> e.bean.darDeBaja(10L));
+        assertThrows(EJBAccessException.class, () -> e.bean.reactivar(10L));
+        assertTrue(e.jpql.isEmpty());
+        assertEquals(0, e.persistidos);
+        assertEquals("ORIGINAL", e.vehiculo.getMatricula());
+        assertTrue(e.vehiculo.isHabilitado());
+    }
     @Test void administradorListaGlobalSinConsultarVinculos() throws Exception {
         Escenario e = new Escenario(Roles.ADMINISTRADOR);
         assertEquals(1, e.bean.listar(null).size());
@@ -148,6 +171,112 @@ class VehiculoServicioBeanAutorizacionTest {
         assertEquals(0, e.persistidos);
     }
 
+    @Test void guiaEnCursoImpideBajaInclusoAlAdministrador() throws Exception {
+        for (String rol : List.of(Roles.CIUDADANO, Roles.CHOFER, Roles.ADMINISTRADOR)) {
+            Escenario e = new Escenario(rol);
+            e.guiasEnCurso = 1L;
+            NegocioException error = assertThrows(NegocioException.class, () -> e.bean.darDeBaja(10L));
+            assertTrue(error.getMessage().contains("guia en curso"));
+            assertTrue(e.vehiculo.isHabilitado());
+            assertEquals("ORIGINAL", e.vehiculo.getMatricula());
+            assertEquals(10L, e.parametros.get("vehiculoId"));
+            assertEquals("EN_CURSO", e.parametros.get("estado"));
+            assertTrue(e.jpql.getFirst().contains("g.vehiculo.id = :vehiculoId"));
+            assertTrue(e.jpql.getFirst().contains("g.estado = :estado"));
+            assertEquals(List.of(LockModeType.PESSIMISTIC_WRITE), e.bloqueos);
+        }
+    }
+
+    @Test void modificarNoPermiteEludirBajaConGuiaEnCursoNiAlteraOtrosDatos() throws Exception {
+        Escenario e = new Escenario(Roles.CIUDADANO);
+        e.guiasEnCurso = 1L;
+        VehiculoDTO dto = datos(1L);
+        dto.setHabilitado(false);
+        assertThrows(NegocioException.class, () -> e.bean.modificar(10L, dto));
+        assertTrue(e.vehiculo.isHabilitado());
+        assertEquals("ORIGINAL", e.vehiculo.getMatricula());
+        assertEquals(List.of(LockModeType.PESSIMISTIC_WRITE), e.bloqueos);
+    }
+
+    @Test void sinGuiaEnCursoPermiteBajaPorDeleteYPorModificacion() throws Exception {
+        Escenario baja = new Escenario(Roles.CIUDADANO);
+        baja.bean.darDeBaja(10L);
+        assertFalse(baja.vehiculo.isHabilitado());
+        assertEquals("EN_CURSO", baja.parametros.get("estado"));
+
+        Escenario edicion = new Escenario(Roles.CIUDADANO);
+        VehiculoDTO dto = datos(1L);
+        dto.setHabilitado(false);
+        assertFalse(edicion.bean.modificar(10L, dto).isHabilitado());
+        assertEquals("NUEVA", edicion.vehiculo.getMatricula());
+    }
+
+    @Test void edicionSinBajaConservaOperacionAunqueExistaGuiaEnCurso() throws Exception {
+        Escenario e = new Escenario(Roles.CIUDADANO);
+        e.guiasEnCurso = 1L;
+        assertTrue(e.bean.modificar(10L, datos(1L)).isHabilitado());
+        assertTrue(e.jpql.stream().noneMatch(consulta -> consulta.contains("from Guia")));
+    }
+
+    @Test void reactivacionPropiaEsRepetibleYNoSobrescribeDatosDelVehiculo() throws Exception {
+        for (String rol : List.of(Roles.CIUDADANO, Roles.CHOFER, Roles.ADMINISTRADOR)) {
+            Escenario e = new Escenario(rol);
+            e.vehiculo.setHabilitado(false);
+            e.vehiculo.setNumeroPermiso("PERMISO-ORIGINAL");
+            e.vehiculo.setItvVencimiento(java.time.LocalDate.of(2020, 1, 1));
+            e.bean.reactivar(10L);
+            e.bean.reactivar(10L);
+            assertTrue(e.vehiculo.isHabilitado());
+            assertEquals("ORIGINAL", e.vehiculo.getMatricula());
+            assertEquals("PERMISO-ORIGINAL", e.vehiculo.getNumeroPermiso());
+            assertEquals(java.time.LocalDate.of(2020, 1, 1), e.vehiculo.getItvVencimiento());
+            assertEquals(1L, e.vehiculo.getEmpresa().getId());
+            assertEquals(List.of(LockModeType.PESSIMISTIC_WRITE, LockModeType.PESSIMISTIC_WRITE), e.bloqueos);
+            assertTrue(e.jpql.isEmpty());
+        }
+    }
+
+    @Test void reactivacionAjenaOSinVinculoNoCambiaHabilitacion() throws Exception {
+        Escenario e = new Escenario(Roles.CIUDADANO);
+        e.vehiculo.setHabilitado(false);
+        e.permitidas.clear();
+        assertThrows(EJBAccessException.class, () -> e.bean.reactivar(10L));
+        assertFalse(e.vehiculo.isHabilitado());
+        assertTrue(e.jpql.isEmpty());
+
+        e.permitidas.add(1L);
+        e.vehiculo.setEmpresa(e.empresas.get(2L));
+        assertThrows(EJBAccessException.class, () -> e.bean.reactivar(10L));
+        assertFalse(e.vehiculo.isHabilitado());
+    }
+
+    @Test void bajaYReactivacionSinPrincipalNoCambianEstado() throws Exception {
+        Escenario e = new Escenario(Roles.CIUDADANO);
+        e.principal = null;
+        assertThrows(EJBAccessException.class, () -> e.bean.darDeBaja(10L));
+        assertTrue(e.vehiculo.isHabilitado());
+        e.vehiculo.setHabilitado(false);
+        assertThrows(EJBAccessException.class, () -> e.bean.reactivar(10L));
+        assertFalse(e.vehiculo.isHabilitado());
+        assertTrue(e.jpql.isEmpty());
+    }
+
+    @Test void vehiculoInexistenteDaErrorDeNegocioEnBajaYReactivacion() throws Exception {
+        Escenario e = new Escenario(Roles.CIUDADANO);
+        e.existeVehiculo = false;
+        assertThrows(NegocioException.class, () -> e.bean.darDeBaja(99L));
+        assertThrows(NegocioException.class, () -> e.bean.reactivar(99L));
+        assertTrue(e.empresasAutorizadas.isEmpty());
+    }
+
+    @Test void fechasAusentesSeSerializanComoNullNoComoTextoNull() throws Exception {
+        Escenario e = new Escenario(Roles.CIUDADANO);
+        VehiculoDTO dto = e.bean.listar(1L).getFirst();
+        assertNull(dto.getPermisoDesde());
+        assertNull(dto.getPermisoHasta());
+        assertNull(dto.getItvVencimiento());
+    }
+
     private static VehiculoDTO datos(Long empresa) {
         VehiculoDTO dto = new VehiculoDTO(); dto.setEmpresaId(empresa); dto.setMatricula("nueva");
         dto.setPesoKg(1000); dto.setCapacidadCargaKg(2000); dto.setCapacidadVolumenM3(BigDecimal.TEN);
@@ -162,17 +291,22 @@ class VehiculoServicioBeanAutorizacionTest {
 
     private static class Escenario {
         final VehiculoServicioBean bean = new VehiculoServicioBean();
+        final Falsos.CompatibilidadFalsa compatibilidad = new Falsos.CompatibilidadFalsa();
         final Vehiculo vehiculo = new Vehiculo();
         final Map<Long, Empresa> empresas = new HashMap<>();
         final Set<Long> permitidas = new HashSet<>(Set.of(1L));
         final List<Long> empresasAutorizadas = new ArrayList<>();
         final List<String> jpql = new ArrayList<>();
         final Map<String, Object> parametros = new HashMap<>();
+        final List<LockModeType> bloqueos = new ArrayList<>();
+        long guiasEnCurso;
+        boolean existeVehiculo = true;
         Principal principal = () -> "persona-prueba";
         String cedulaConsultada;
         int persistidos, empresasLeidas;
 
         Escenario(String rol) throws Exception {
+            campo(bean, "compatibilidad", compatibilidad);
             for (Long id : List.of(1L, 2L)) {
                 Empresa empresa = new Empresa(); campo(empresa, "id", id); empresas.put(id, empresa);
             }
@@ -194,7 +328,8 @@ class VehiculoServicioBeanAutorizacionTest {
                 return switch (m.getName()) {
                     case "find" -> {
                         if (a[0] == Empresa.class) { empresasLeidas++; yield empresas.get(a[1]); }
-                        yield vehiculo;
+                        if (a.length > 2) bloqueos.add((LockModeType) a[2]);
+                        yield existeVehiculo ? vehiculo : null;
                     }
                     case "getReference" -> empresas.get(a[1]);
                     case "createQuery" -> consulta((String) a[0]);
@@ -209,7 +344,7 @@ class VehiculoServicioBeanAutorizacionTest {
             jpql.add(consulta);
             return Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{TypedQuery.class}, (p, m, a) -> switch (m.getName()) {
                 case "setParameter" -> { parametros.put((String) a[0], a[1]); yield p; }
-                case "getSingleResult" -> 0L;
+                case "getSingleResult" -> consulta.contains("from Guia") ? guiasEnCurso : 0L;
                 case "getResultList" -> List.of(vehiculo);
                 default -> throw new UnsupportedOperationException(m.getName());
             });

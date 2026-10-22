@@ -15,5 +15,6 @@ public class VehiculoRecurso {
     @POST public Response agregar(VehiculoDTO dto) { try { return Response.status(Response.Status.CREATED).entity(servicio.agregar(dto)).build(); } catch (NegocioException e) { return error(e); } }
     @PUT @Path("/{id}") public Response modificar(@PathParam("id") Long id, VehiculoDTO dto) { try { return Response.ok(servicio.modificar(id, dto)).build(); } catch (NegocioException e) { return error(e); } }
     @DELETE @Path("/{id}") public Response baja(@PathParam("id") Long id) { try { servicio.darDeBaja(id); return Response.noContent().build(); } catch (NegocioException e) { return error(e); } }
+    @PUT @Path("/{id}/reactivar") public Response reactivar(@PathParam("id") Long id) { try { servicio.reactivar(id); return Response.noContent().build(); } catch (NegocioException e) { return error(e); } }
     private Response error(NegocioException e) { return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", e.getMessage())).build(); }
 }

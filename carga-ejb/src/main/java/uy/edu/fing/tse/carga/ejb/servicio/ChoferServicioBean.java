@@ -14,6 +14,7 @@ import uy.edu.fing.tse.carga.api.security.Roles;
 import uy.edu.fing.tse.carga.ejb.modelo.Chofer;
 import uy.edu.fing.tse.carga.ejb.modelo.Empresa;
 import uy.edu.fing.tse.carga.ejb.persistencia.VinculoEmpresaUsuarioDAO;
+import uy.edu.fing.tse.carga.ejb.seguridad.CompatibilidadFuncionarioEmpresa;
 
 import java.util.List;
 
@@ -24,6 +25,7 @@ public class ChoferServicioBean implements ChoferServicioLocal {
     @PersistenceContext(unitName = "cargaPU") private EntityManager em;
     @Resource private SessionContext contexto;
     @jakarta.inject.Inject VinculoEmpresaUsuarioDAO vinculos;
+    @jakarta.inject.Inject private CompatibilidadFuncionarioEmpresa compatibilidad;
     @Override public ChoferDTO agregar(ChoferDTO dto) throws NegocioException { validar(dto); autorizarEmpresa(dto.getEmpresaId()); if (existeCedula(dto.getCedula(), null)) throw new NegocioException("Ya existe un chofer con esa cedula."); Chofer c = new Chofer(); aplicar(c, dto); em.persist(c); em.flush(); return aDTO(c); }
     @Override public ChoferDTO modificar(Long id, ChoferDTO dto) throws NegocioException { validar(dto); Chofer c = buscar(id); autorizarEmpresa(c.getEmpresa().getId()); autorizarEmpresa(dto.getEmpresaId()); if (existeCedula(dto.getCedula(), id)) throw new NegocioException("Ya existe un chofer con esa cedula."); aplicar(c, dto); return aDTO(c); }
     @Override public void darDeBaja(Long id) throws NegocioException { Chofer c = buscar(id); autorizarEmpresa(c.getEmpresa().getId()); c.setActivo(false); }
@@ -37,6 +39,7 @@ public class ChoferServicioBean implements ChoferServicioLocal {
         if (esAdministrador()) return;
         String cedula = contexto.getCallerPrincipal().getName();
         if (!vinculos.esResponsableActivo(cedula, empresaId)) throw new NegocioException("No tenés permiso para gestionar los choferes de esta empresa.");
+        compatibilidad.verificarEjercicioResponsabilidad(cedula);
     }
     private void aplicar(Chofer c, ChoferDTO dto) { c.setEmpresa(em.getReference(Empresa.class, dto.getEmpresaId())); c.setCedula(dto.getCedula().trim()); c.setNombre(dto.getNombre().trim()); c.setActivo(dto.isActivo()); }
     private ChoferDTO aDTO(Chofer c) { ChoferDTO dto = new ChoferDTO(); dto.setId(c.getId()); dto.setEmpresaId(c.getEmpresa().getId()); dto.setCedula(c.getCedula()); dto.setNombre(c.getNombre()); dto.setActivo(c.isActivo()); return dto; }

@@ -26,12 +26,44 @@ Estos son contrastes documentales/estáticos, NO una auditoría funcional ni aut
 
 | Tema | Evidencia contrastada | Conducta del agente |
 | --- | --- | --- |
-| Frontend | [ADR-0004](../docs/decisiones/0004-frontend-react-sobre-api-rest.md) sigue **Propuesta** y conserva pendientes; ya existen [SPA](../carga-front/src/App.tsx), contenedor y job frontend en [CI](../.github/workflows/ci.yml). Los estándares Java aún dicen no incorporar otro ecosistema. | Reconocer ambas implementaciones; no borrar JSF ni afirmar aceptación del ADR. Coordinar cambios de política/tecnología. |
-| Autorización de guías | [ADR-0005](../docs/decisiones/0005-autorizacion-y-concurrencia-de-guias.md) menciona `usuario.empresa_id`; [contrato Guías P2](../docs/contratos.md) y [GuiaServicioBean](../carga-ejb/src/main/java/uy/edu/fing/tse/carga/ejb/servicio/GuiaServicioBean.java) usan `VinculoEmpresaUsuario` activo. | No restaurar el esquema anterior ni tomar un ID empresarial del cliente como autorización. Resolver la discrepancia documental con el equipo si afecta el cambio. |
+| Frontend | [ADR-0004](../docs/decisiones/0004-frontend-react-sobre-api-rest.md) sigue **Propuesta**; existen [SPA](../carga-front/src/App.tsx), contenedor y job frontend. [ADR-0013](../docs/decisiones/0013-area-funcionario-spa-p2.md) acepta solo el área P2 F12–F14 en la SPA existente. Los estándares Java no se amplían globalmente. | Conservar JSF y autenticación P1; no confundir la aceptación acotada con migración general. Navegación compartida y contratos nuevos pendientes en el [registro de fase 0](../docs/acuerdos-cierre-p2-fase-0.md). |
+| Autorización de guías | [ADR-0005](../docs/decisiones/0005-autorizacion-y-concurrencia-de-guias.md) fue alineado documentalmente el 2026-10-22 con `VinculoEmpresaUsuario`. Creación/catálogos empresariales en [GuiaServicioBean](../carga-ejb/src/main/java/uy/edu/fing/tse/carga/ejb/servicio/GuiaServicioBean.java) exigen ACTIVO sin tipo; listado empresarial y ABM vehicular exigen RESPONSABLE/ACTIVO (con excepción administrativa solo en ABM). | No restaurar `usuario.empresa_id` ni unificar silenciosamente los permisos. D0-04 sigue pendiente de acuerdo P1/P2; la corrección documental no cambia lógica. |
 | Errores REST | [Estándar API](../docs/Estandares/api-design.md) propone un sobre con código/detalles y distinción 409/422; contrato y [Errores.java](../carga-web/src/main/java/uy/edu/fing/tse/carga/web/rest/Errores.java) usan `{"error":"mensaje"}`; [NegocioExceptionMapper](../carga-web/src/main/java/uy/edu/fing/tse/carga/web/rest/NegocioExceptionMapper.java) devuelve 400. El cliente SPA espera ese formato. | No cambiar forma/códigos publicados unilateralmente; diseñar compatibilidad y coordinar antes. |
 | Builds y commits | [CONTRIBUTING](../CONTRIBUTING.md) pide compilar y muestra commits sin prefijo; [AGENTS.md](../AGENTS.md) prohíbe builds para el agente y exige Conventional Commits cuando se soliciten. | Para el agente se aplican las restricciones de AGENTS; no alterar CI ni declarar pruebas verdes sin ejecutarlas. |
 
 ## Pendientes no resueltos por esta guía
+
+**Actualización incompatibilidad (2026-10-22):**
+[ADR-0015](../docs/decisiones/0015-incompatibilidad-funcionario-responsable.md)
+acepta por confirmación del usuario la exclusión entre funcionario activo y
+RESPONSABLE/ACTIVO. Hay guardia interna compartida P1/P2 para habilitación manual/
+por solicitud, asignación de responsabilidad y bloqueo del ejercicio heredado,
+sin revocar vínculos, quitar CIUDADANO ni modificar derechos propios del CHOFER.
+Se bloquea Usuario antes de habilitar/asignar en ambos sentidos. No cierra D0-04
+ni acredita coordinación externa o concurrencia real: ver
+[validaciones pendientes](../pruebas/incompatibilidad-funcionario-responsable.md).
+
+**Actualización F12 (2026-10-22):** `/funcionario/empresas` integra localmente
+listado/búsqueda, detalle, edición administrativa y baja C12, con entrada por rol
+desde Mi cuenta y sesión P1 intacta. Reutiliza bandeja P1 de responsables, NO alta
+empresarial. Aceptación compartida P1/P3, alta P1 y validación real pendientes en
+[escenarios F12](../pruebas/p2-funcionario-empresas.md). El detalle ahora enlaza
+a F13/C13; Viajes continúa deshabilitado, sin consumir C14.
+
+**Actualización F13 (2026-10-22):** [ADR-0016](../docs/decisiones/0016-consulta-vehicular-funcionario.md)
+registra C13 confirmado por el usuario. `ConsultaVehiculosLocal`/EJB/REST separado
+del ABM ofrece lectura por empresa a FUNCIONARIO/ADMINISTRADOR sin vínculo,
+incluye empresas inactivas y bajas, matrícula parcial literal y paginación. La SPA
+`/funcionario/empresas/:id/vehiculos` muestra vigencias calculadas con fecha servidor
+America/Montevideo; no altera permisos ABM ni asignaciones CU2. Pruebas y
+[aceptación F13](../pruebas/p2-consulta-vehicular.md) pendientes de ejecución y
+aceptación integrada P1/P3. C14 sigue sin aprobar.
+
+**Actualización F10 (2026-10-22):** [ADR-0014](../docs/decisiones/0014-perfil-propio-empresa.md)
+acepta el perfil propio acotado en SPA y C10. Existe contrato local específico,
+EJB y formulario `/mi-empresa/perfil`; el ABM administrativo/remoto conserva sus
+permisos. No amplía ADR-0004 ni resuelve D0-04 de guías. Aceptación real pendiente
+según [pruebas del perfil](../pruebas/p2-perfil-empresa.md), sin builds ejecutados.
 
 - La guía de casos críticos mantiene políticas a definir sobre conflictos offline y vencimiento de descargos. Consultar ADR y equipo antes de inventar una transición o regla.
 - [ADR-0010](../docs/decisiones/0010-integraciones-de-p4-con-p3-y-p5.md) y contratos describen el enlace de P3 al aviso de fin de viaje y el consumo futuro de pesadas por P5. En el código inspeccionado existen los adaptadores P4 (`AvisoFinDeViajeBean`, `FinDeViajeMDB`), no un flujo completo P3/P5 acreditado.

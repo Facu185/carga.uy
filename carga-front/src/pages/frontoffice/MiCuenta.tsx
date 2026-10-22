@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../../api/cliente'
 import { useAuth } from '../../auth/contexto'
 import { EncabezadoSitio } from '../../componentes/EncabezadoSitio'
+import { NavegacionFuncionario } from '../../componentes/NavegacionFuncionario'
 import { Etiqueta } from '../../componentes/Etiqueta'
 import { PieSitio } from '../../componentes/PieSitio'
 import { formatearCedula, formatearFecha, nombreRol } from '../../formato'
@@ -29,6 +30,13 @@ export function MiCuenta() {
   const [versionVinculos, setVersionVinculos] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
+  const roles = sesion?.roles ?? (sesion ? [sesion.rol] : [])
+  const esCiudadano = roles.includes(ROLES.CIUDADANO)
+  const esChofer = roles.includes(ROLES.CHOFER)
+  const esFuncionario = roles.includes(ROLES.FUNCIONARIO)
+  // gub.uy tambien asigna CIUDADANO a los funcionarios; en esta vista prevalece su area operativa.
+  const puedeVerOpcionesEmpresa = !esFuncionario && (esCiudadano || esChofer)
+
   useEffect(() => {
     let vigente = true
     api<Perfil>('/mi-perfil')
@@ -40,6 +48,12 @@ export function MiCuenta() {
   }, [])
 
   useEffect(() => {
+    if (!puedeVerOpcionesEmpresa) {
+      setVinculos(null)
+      setErrorVinculos(null)
+      setCargandoVinculos(false)
+      return
+    }
     let vigente = true
     setCargandoVinculos(true)
     setErrorVinculos(null)
@@ -48,20 +62,17 @@ export function MiCuenta() {
       .catch((causa: unknown) => { if (vigente) setErrorVinculos(causa instanceof Error ? causa.message : 'No se pudo consultar tu vínculo con la empresa.') })
       .finally(() => { if (vigente) setCargandoVinculos(false) })
     return () => { vigente = false }
-  }, [versionVinculos])
+  }, [puedeVerOpcionesEmpresa, versionVinculos])
 
   // Al volver de otra pestaña se refleja una aprobación sin renovar el JWT.
   useEffect(() => {
+    if (!puedeVerOpcionesEmpresa) return
     const actualizar = () => setVersionVinculos((version) => version + 1)
     window.addEventListener('focus', actualizar)
     return () => window.removeEventListener('focus', actualizar)
-  }, [])
+  }, [puedeVerOpcionesEmpresa])
 
   const verificado = perfil?.verificacionDnic === 'VERIFICADO'
-  const roles = sesion?.roles ?? (sesion ? [sesion.rol] : [])
-  const esCiudadano = roles.includes(ROLES.CIUDADANO)
-  const esChofer = roles.includes(ROLES.CHOFER)
-  const puedeSolicitarResponsabilidad = esCiudadano || esChofer
   const esResponsable = vinculos?.some((vinculo) => vinculo.tipo === 'RESPONSABLE' && vinculo.estado === 'ACTIVO') ?? false
 
   return (
@@ -74,6 +85,7 @@ export function MiCuenta() {
       </EncabezadoSitio>
 
       <main className="pagina-contenido">
+        {esFuncionario && <NavegacionFuncionario />}
         <h1 className="saludo">Hola, {sesion?.nombre}</h1>
         <p className="saludo-rol">{nombreRol(sesion?.rol)}</p>
 
@@ -84,8 +96,8 @@ export function MiCuenta() {
         )}
 
         {/* En pantallas anchas: lo que la persona viene a hacer a la izquierda y sus datos al costado */}
-        <div className={esCiudadano || esChofer ? 'cuenta-grilla' : 'cuenta-grilla cuenta-grilla-simple'}>
-          {(esCiudadano || esChofer) && (
+        <div className={puedeVerOpcionesEmpresa ? 'cuenta-grilla' : 'cuenta-grilla cuenta-grilla-simple'}>
+          {puedeVerOpcionesEmpresa && (
             <div className="cuenta-principal">
               <section className="ficha" aria-labelledby="titulo-empresa">
                 <h2 id="titulo-empresa" className="titulo-con-icono">
@@ -124,14 +136,14 @@ export function MiCuenta() {
                   <Link className="boton-enlace" to="/mi-empresa/guias">Ver guías de viajes</Link>
                 </section>
               )}
-              {puedeSolicitarResponsabilidad && cargandoVinculos && !vinculos && <p role="status">Consultando el vínculo con tu empresa…</p>}
-              {puedeSolicitarResponsabilidad && errorVinculos && (
+              {puedeVerOpcionesEmpresa && cargandoVinculos && !vinculos && <p role="status">Consultando el vínculo con tu empresa…</p>}
+              {puedeVerOpcionesEmpresa && errorVinculos && (
                 <div>
                   <p className="mensaje-error" role="alert">{errorVinculos}</p>
                   <button type="button" className="boton-secundario" disabled={cargandoVinculos} onClick={() => setVersionVinculos((version) => version + 1)}>Reintentar consulta de empresa</button>
                 </div>
               )}
-              {puedeSolicitarResponsabilidad && vinculos && !errorVinculos && !esResponsable && <SolicitudResponsable />}
+              {puedeVerOpcionesEmpresa && vinculos && !errorVinculos && !esResponsable && <SolicitudResponsable />}
               {esCiudadano && <SolicitudAcceso />}
             </div>
           )}

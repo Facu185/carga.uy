@@ -26,6 +26,7 @@ class SolicitudesFuncionarioBeanTest {
     private Falsos.FuncionariosEnMemoria funcionarios;
     private Falsos.AuditoriaFalsa auditoria;
     private Usuario ana;
+    private Falsos.CompatibilidadFalsa compatibilidad;
 
     @BeforeEach
     void preparar() {
@@ -35,6 +36,8 @@ class SolicitudesFuncionarioBeanTest {
         funcionarios = new Falsos.FuncionariosEnMemoria();
         auditoria = new Falsos.AuditoriaFalsa();
         servicio = new SolicitudesFuncionarioBean();
+        compatibilidad = new Falsos.CompatibilidadFalsa();
+        servicio.compatibilidad = compatibilidad;
         servicio.usuarios = usuarios;
         servicio.solicitudes = solicitudes;
         servicio.funcionarios = funcionarios;
@@ -48,6 +51,32 @@ class SolicitudesFuncionarioBeanTest {
 
     private void comoAdministrador() {
         servicio.contexto = Falsos.sesion("admin", "ADMINISTRADOR");
+    }
+
+    @Test
+    void responsabilidadActivaImpideAprobacionSinResolverLaSolicitudNiDarRol() throws NegocioException {
+        SolicitudFuncionarioDTO s = solicitar();
+        compatibilidad.responsablesActivos.add(CEDULA);
+        comoAdministrador();
+        assertThrows(NegocioException.class, () -> servicio.aprobar(s.getId()));
+        assertTrue(solicitudes.buscarPorId(s.getId()).orElseThrow().estaPendiente());
+        assertTrue(funcionarios.funcionarios.isEmpty());
+        assertFalse(ana.tieneRol(Rol.FUNCIONARIO));
+        assertEquals(1, auditoria.registros.size());
+        assertEquals(java.util.List.of(CEDULA), compatibilidad.bloqueadas);
+    }
+
+    @Test
+    void responsabilidadActivaImpideReactivacionPorSolicitudYConservaDependencia() throws NegocioException {
+        Funcionario anterior = funcionarios.guardar(new Funcionario(ana, "Otra"));
+        anterior.setActivo(false);
+        SolicitudFuncionarioDTO s = solicitar();
+        compatibilidad.responsablesActivos.add(CEDULA);
+        comoAdministrador();
+        assertThrows(NegocioException.class, () -> servicio.aprobar(s.getId()));
+        assertFalse(anterior.isActivo());
+        assertEquals("Otra", anterior.getDependencia());
+        assertTrue(solicitudes.buscarPorId(s.getId()).orElseThrow().estaPendiente());
     }
 
     @Test

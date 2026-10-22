@@ -116,3 +116,92 @@ sus mensajes de aserción y no imprime datos personales.
 **Pruebas escritas, ciclo rojo/verde no ejecutado por restricción de builds.**
 Hasta que el equipo compile/despliegue y ejecute los casos, P2 permanece como
 **implementación preparada, operación no acreditada**.
+
+## Suite HTTP F11 — fase 1 del plan vigente
+
+Clase nueva:
+[P2VehiculosContraDespliegueTest](../carga-ejb/src/test/java/uy/edu/fing/tse/carga/ejb/servicio/P2VehiculosContraDespliegueTest.java).
+**Cinco tests escritos, NO ejecutados**, para las brechas descritas en el
+[registro de fase 1](p2-fase-1.md). Reutiliza JUnit, HttpClient y JSON Nimbus;
+no cambia POM, CI, contratos ni lógica productiva. No requiere proveedor JSON-B local.
+
+### Activación independiente
+
+- Etiqueta `integracion` y `ExecutionMode.SAME_THREAD`, igual que la suite CU2.
+- **Opt-in propio:** `P2_F11_PRUEBAS_HABILITADAS=true`. El opt-in anterior
+  `P2_PRUEBAS_HABILITADAS` NO activa esta suite, ni el nuevo activa la anterior.
+- Requiere `P2_ENTORNO_AISLADO_CONFIRMADO=true`. Configuración inválida con opt-in
+  falla, no se omite silenciosamente. Sin opt-in se aborta antes de HTTP.
+- El equipo selecciona exclusivamente la clase F11 en su procedimiento autorizado.
+  No se ejecutan conjuntamente estas suites sobre las mismas empresas ni se
+  reutilizan los vehículos/ventanas de las carreras CU2. No activar todo el perfil
+  global como sustituto de esa selección.
+
+### Fixtures que provee el equipo
+
+Dos empresas sintéticas A/B activas y exclusivas, sin escritores concurrentes:
+
+1. Responsable A con **solo CIUDADANO** y vínculo RESPONSABLE/ACTIVO con A,
+   sin vínculo autorizado con B; administrador con **solo ADMINISTRADOR**.
+2. Otro ciudadano con **solo CIUDADANO**, vínculo RESPONSABLE/REVOCADO con A y
+   ningún vínculo RESPONSABLE/ACTIVO con A. Su **sesión permanece válida**: no
+   confundir revocación empresarial con token vencido/revocado.
+3. Identidad con **solo FUNCIONARIO**, obtenida por el flujo P1 existente.
+   La suite no crea usuarios ni fabrica JWT. Consulta `/auth/yo` para comprobar
+   sesiones y roles; consulta vínculos propios para comprobar ACTIVO/REVOCADO.
+4. Vehículo heredado de A, inicialmente `habilitado=false`, con las tres fechas
+   (`permisoDesde`, `permisoHasta`, `itvVencimiento`) y capacidad volumétrica nulas.
+   Es una fixture histórica acordada, no un alta válida por el contrato actual.
+5. Otro vehículo de A habilitado y con guía persistida `EN_CURSO`. El equipo
+   acuerda esa fixture; la suite comprueba empresa, guía, vehículo y estado por
+   el listado empresarial. No inventa eventos, modifica estados ni presupone fin
+   por fecha. Este escenario no acredita un inicio real P3.
+6. Un tercer vehículo distinto de B, consultable por administrador.
+
+Los IDs vehiculares deben ser distintos. P1 provisiona identidad/vínculos mediante
+sus flujos; el equipo prepara datos históricos/de viaje conforme al procedimiento
+aislado acordado. No agregar endpoints de prueba ni modificar SQL de identidad.
+La lista de vínculos propios debe incluir las fixtures previstas en su límite actual.
+
+### Variables exactas para F11
+
+Todas son obligatorias; ninguna credencial o URL tiene un valor predeterminado.
+No se usan aquí tokens de chofer, rubro ni ventana de la suite CU2.
+
+| Variable | Contenido |
+| --- | --- |
+| `P2_F11_PRUEBAS_HABILITADAS` | Literal `true`; habilita llamadas y mutaciones F11. |
+| `P2_ENTORNO_AISLADO_CONFIRMADO` | Literal `true`; confirmación explícita del equipo. |
+| `P2_API_URL` | Base HTTP(S) terminada en `/carga/api`, sin credenciales/query/fragmento. |
+| `P2_TOKEN_RESPONSABLE_A`, `P2_TOKEN_ADMIN` | Tokens vigentes sin `Bearer`; en F11 ambos son obligatorios. |
+| `P2_F11_TOKEN_REVOCADO_A` | Token vigente del ciudadano cuyo vínculo con A está revocado. |
+| `P2_F11_TOKEN_FUNCIONARIO` | Token vigente de identidad con solo rol FUNCIONARIO. |
+| `P2_EMPRESA_A_ID`, `P2_EMPRESA_B_ID` | IDs positivos de las dos empresas. |
+| `P2_F11_VEHICULO_HEREDADO_ID` | ID positivo de la fixture histórica dada de baja. |
+| `P2_F11_VEHICULO_EN_CURSO_ID` | ID positivo del vehículo A con la guía EN_CURSO. |
+| `P2_F11_GUIA_EN_CURSO_ID` | ID positivo de esa guía; no se cambia su estado. |
+| `P2_F11_VEHICULO_B_ID` | ID positivo de la fixture vehicular de B. |
+
+### Aserciones y efectos
+
+- Ciclo POST 201 → PUT 200 → DELETE 204 → edición inactiva sin reactivar → dos
+  reactivaciones PUT 204 sin cuerpo; lecturas independientes de todos los campos.
+  Matrículas sintéticas menores de 20 caracteres; fechas vencidas fijas para
+  comprobar que no se renuevan. No crea guías con esos vehículos.
+- POST duplicado/PUT de peso inválido: 400 y misma flota persistida observable.
+- Heredado reactivado sin completar fechas ni volumen; acepta null JSON/ausencia,
+  no texto `"null"`. Compara capacidades numéricamente, sin depender de escala JSON.
+- DELETE/PUT con baja ante EN_CURSO: 400 por esa causa, para responsable y
+  administrador, sin cambios observables en vehículo/guía.
+- 401 sin sesión y 403 por empresa ajena, vínculo revocado o rol FUNCIONARIO en
+  lectura y mutaciones; PUT a empresa no autorizada también se rechaza.
+- Cada solicitud tiene timeout de 20 segundos, correlación nueva y redirecciones
+  deshabilitadas. No reintenta mutaciones ni imprime tokens, identidades o cuerpos.
+
+Si todo pasa deja **un vehículo nuevo activo con fechas vencidas** y el heredado
+reactivado. No elimina nada ni restaura silenciosamente el heredado; el equipo
+descarta/restaura la base aislada. Reprovisionar el heredado dado de baja antes de
+repetir; un fallo puede dejar otros efectos y requiere inspección antes de reintentar.
+No se afirma ejecución ni cobertura funcional: registrar el informe y las versiones
+del equipo en [fase 1](p2-fase-1.md). Navegador, JSF, otros estados y carrera real
+inicio/baja siguen pendientes.

@@ -17,6 +17,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Dobles JPA: verifican consultas y DTO, no ejecutan JPQL ni interceptores de WildFly. */
 class GuiasEmpresaTest {
+    @Test void funcionarioConResponsabilidadHeredadaNoListaGuiasEmpresariales() throws Exception {
+        Escenario e = new Escenario();
+        e.compatibilidad.funcionariosActivos.add("responsable-prueba");
+        e.compatibilidad.responsablesActivos.add("responsable-prueba");
+        assertThrows(jakarta.ejb.EJBAccessException.class, () -> e.bean.guiasDeLaEmpresaResponsable(1L, 0, 20));
+        assertNull(e.consultaVinculo);
+        assertNull(e.consultaConteo);
+        assertNull(e.consultaGuias);
+    }
     @Test void incluyeAsignadasYFinalizadasConChoferInactivo() throws Exception {
         Escenario e = new Escenario();
         e.chofer.setActivo(false);
@@ -122,6 +131,7 @@ class GuiasEmpresaTest {
 
     private static class Escenario {
         final GuiaServicioBean bean = new GuiaServicioBean();
+        final Falsos.CompatibilidadFalsa compatibilidad = new Falsos.CompatibilidadFalsa();
         final Empresa empresa = new Empresa();
         final Chofer chofer = new Chofer();
         final Vehiculo vehiculo = new Vehiculo();
@@ -132,6 +142,7 @@ class GuiasEmpresaTest {
         int desde, limite;
 
         Escenario() throws Exception {
+            bean.compatibilidad = compatibilidad;
             campo(empresa, "id", 1L);
             campo(chofer, "id", 3L);
             campo(vehiculo, "id", 4L);

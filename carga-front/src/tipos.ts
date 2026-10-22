@@ -85,6 +85,17 @@ export interface Empresa {
   activa: boolean
 }
 
+/** EmpresaDTO de F10. Estado y fecha de alta son de solo lectura en este recorrido. */
+export interface PerfilEmpresa extends Empresa {
+  razonSocial: string | null
+  numeroEmpresa: number
+  direccion: string | null
+  fechaAlta: string | null
+}
+
+/** Coincide con EditarPerfilEmpresaDTO; no se reenvia el DTO administrativo completo. */
+export type DatosPerfilEmpresa = Pick<PerfilEmpresa, 'nombre' | 'razonSocial' | 'numeroEmpresa' | 'direccion'>
+
 /** Vínculo auditable de la persona con una empresa. RESPONSABLE activo habilita su gestión. */
 export interface VinculoEmpresa {
   id: number
@@ -161,6 +172,20 @@ export interface PaginaGuiasEmpresa {
 }
 
 export interface VehiculoCatalogo { id: number; matricula: string; marca: string | null; modelo: string | null; capacidadCargaKg: number; capacidadVolumenM3: number | null }
+
+/** VehiculoDTO de P2; las fechas son ISO-8601 o null para datos heredados. */
+export interface Vehiculo extends VehiculoCatalogo {
+  empresaId: number
+  pesoKg: number
+  numeroPermiso: string | null
+  permisoDesde: string | null
+  permisoHasta: string | null
+  itvVencimiento: string | null
+  habilitado: boolean
+}
+
+/** El formulario no elige empresa ni cambia la habilitación. */
+export type DatosVehiculo = Omit<Vehiculo, 'id' | 'empresaId' | 'habilitado'>
 export interface ChoferCatalogo { id: number; cedula: string; nombre: string }
 export interface OpcionCatalogo { id: number; nombre: string }
 
