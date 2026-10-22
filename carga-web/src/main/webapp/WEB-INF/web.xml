@@ -33,4 +33,11 @@
         <param-name>jakarta.faces.PROJECT_STAGE</param-name>
         <param-value>Development</param-value>
     </context-param>
+
+    <!-- Roles web usados por isUserInRole en las vistas; los permisos de negocio siguen en los EJB. -->
+    <security-role><role-name>ADMINISTRADOR</role-name></security-role>
+    <security-role><role-name>AUTORIDAD</role-name></security-role>
+    <security-role><role-name>FUNCIONARIO</role-name></security-role>
+    <security-role><role-name>CIUDADANO</role-name></security-role>
+    <security-role><role-name>CHOFER</role-name></security-role>
 </web-app>

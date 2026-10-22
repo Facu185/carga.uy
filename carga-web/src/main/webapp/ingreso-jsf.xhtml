@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html" xmlns:ui="jakarta.faces.facelets">
+<h:head>
+    <title>carga.uy - Ingreso al ABM JSF</title>
+    <link rel="stylesheet" href="recursos/estilos.css"/>
+</h:head>
+<h:body>
+<main class="contenedor">
+    <h1>Ingreso al ABM JSF</h1>
+    <p>Usa tu cuenta interna de administrador. Se conservan los permisos de los servicios.</p>
+    <p>Ciudadanos y funcionarios mantienen su ingreso con gub.uy en el portal web.</p>
+    <ui:fragment rendered="#{param.error eq 'credenciales'}"><p role="alert">Usuario o contraseña incorrectos.</p></ui:fragment>
+    <ui:fragment rendered="#{param.error eq 'bloqueo'}"><p role="alert">Cuenta bloqueada temporalmente por intentos fallidos. Intenta nuevamente más tarde.</p></ui:fragment>
+    <ui:fragment rendered="#{param.error eq 'servicio'}"><p role="alert">El servicio de autenticación no está disponible. Intenta nuevamente más tarde.</p></ui:fragment>
+    <form method="post" action="#{request.contextPath}/jsf/ingresar">
+        <p><label for="usuario">Usuario</label> <input id="usuario" name="usuario" autocomplete="username" required="required"/></p>
+        <p><label for="password">Contraseña</label> <input id="password" name="password" type="password" autocomplete="current-password" required="required"/></p>
+        <button type="submit">Ingresar</button>
+    </form>
+    <p><h:link outcome="index" value="Volver al inicio"/></p>
+</main>
+</h:body>
+</html>

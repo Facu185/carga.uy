@@ -21,6 +21,7 @@ out/
 docker-compose.override.yml
 local.properties
 resultados-carga/
+.atl/
 
 # sistema
 .DS_Store

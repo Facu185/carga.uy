@@ -6,14 +6,21 @@ import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.security.enterprise.SecurityContext;
 import uy.edu.fing.tse.carga.api.contract.service.ChoferServicioLocal;
 import uy.edu.fing.tse.carga.api.contract.service.EmpresaServicioLocal;
+import uy.edu.fing.tse.carga.api.contract.service.SolicitudesEmpresaLocal;
+import uy.edu.fing.tse.carga.api.dto.empresa.VinculoEmpresaDTO;
+import uy.edu.fing.tse.carga.api.security.Roles;
 import uy.edu.fing.tse.carga.api.dto.comun.EmpresaDTO;
 import uy.edu.fing.tse.carga.api.dto.guia.ChoferDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Named("choferVista")
 @ViewScoped
@@ -25,8 +32,15 @@ public class ChoferVista implements Serializable {
     @EJB
     private transient EmpresaServicioLocal empresaServicio;
 
-    private List<ChoferDTO> choferes;
-    private List<EmpresaDTO> empresas;
+    @EJB
+    private transient SolicitudesEmpresaLocal vinculosServicio;
+
+    @Inject
+    private transient SecurityContext seguridad;
+
+    private List<ChoferDTO> choferes = List.of();
+    private List<EmpresaDTO> empresas = List.of();
+    private Long empresaConsultaId;
     private ChoferDTO nuevo = new ChoferDTO();
 
     @PostConstruct
@@ -35,12 +49,25 @@ public class ChoferVista implements Serializable {
     }
 
     public void refrescar() {
+        boolean administrador = seguridad.isCallerInRole(Roles.ADMINISTRADOR);
+        empresas = empresaServicio.listar().stream().filter(EmpresaDTO::isActiva).toList();
+        if (!administrador) {
+            Set<Long> propias = vinculosServicio.misVinculos().stream()
+                    .filter(v -> "RESPONSABLE".equals(v.getTipo()) && "ACTIVO".equals(v.getEstado()))
+                    .map(VinculoEmpresaDTO::getEmpresaId).collect(Collectors.toSet());
+            empresas = empresas.stream().filter(e -> propias.contains(e.getId())).toList();
+            if (empresaConsultaId == null && !empresas.isEmpty()) empresaConsultaId = empresas.getFirst().getId();
+        }
+        nuevo.setEmpresaId(empresaConsultaId);
+        choferes = List.of();
+        if ((!administrador && empresaConsultaId == null)
+                || (empresaConsultaId != null && empresas.stream().noneMatch(e -> e.getId().equals(empresaConsultaId)))) return;
         try {
-            choferes = servicio.listar(null);
+            // La vista coordina el filtro; el EJB vuelve a comprobar pertenencia y estado del vinculo.
+            choferes = servicio.listar(empresaConsultaId);
         } catch (NegocioException e) {
             mensaje(FacesMessage.SEVERITY_ERROR, e.getMessage());
         }
-        empresas = empresaServicio.listar().stream().filter(EmpresaDTO::isActiva).toList();
     }
 
     public void agregar() {
@@ -90,6 +117,8 @@ public class ChoferVista implements Serializable {
 
     public List<ChoferDTO> getChoferes() { return choferes; }
     public List<EmpresaDTO> getEmpresas() { return empresas; }
+    public Long getEmpresaConsultaId() { return empresaConsultaId; }
+    public void setEmpresaConsultaId(Long empresaConsultaId) { this.empresaConsultaId = empresaConsultaId; }
     public ChoferDTO getNuevo() { return nuevo; }
     public void setNuevo(ChoferDTO nuevo) { this.nuevo = nuevo; }
 }

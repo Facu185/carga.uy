@@ -9,9 +9,12 @@ import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import uy.edu.fing.tse.carga.api.contract.service.GuiaServicioLocal;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.exception.ConsultaGuiasInvalidaException;
 import uy.edu.fing.tse.carga.api.security.Roles;
 import uy.edu.fing.tse.carga.api.dto.guia.CrearGuiaCommand;
 import uy.edu.fing.tse.carga.api.dto.guia.GuiaDTO;
+import uy.edu.fing.tse.carga.api.dto.guia.GuiaEmpresaDTO;
+import uy.edu.fing.tse.carga.api.dto.guia.PaginaGuiasEmpresaDTO;
 import uy.edu.fing.tse.carga.api.dto.guia.ChoferDTO;
 import uy.edu.fing.tse.carga.api.dto.guia.RubroDTO;
 import uy.edu.fing.tse.carga.api.dto.guia.TipoCargaDTO;
@@ -91,6 +94,43 @@ public class GuiaServicioBean implements GuiaServicioLocal {
         if (chofer == null) throw new NegocioException("El usuario autenticado no esta registrado como chofer.");
         return em.createQuery("select g from Guia g where g.chofer.id = :choferId order by g.inicio desc", Guia.class)
                 .setParameter("choferId", chofer.getId()).getResultList().stream().map(Guia::aDTO).toList();
+    }
+
+    @Override
+    @RolesAllowed({Roles.CIUDADANO, Roles.CHOFER})
+    public PaginaGuiasEmpresaDTO guiasDeLaEmpresaResponsable(Long empresaId, int pagina, int tamano) throws NegocioException {
+        if (empresaId == null || empresaId <= 0)
+            throw new ConsultaGuiasInvalidaException("La empresa es obligatoria y debe ser positiva.");
+        if (pagina < 0 || tamano < 1 || tamano > 100 || (long) pagina * tamano > Integer.MAX_VALUE)
+            throw new ConsultaGuiasInvalidaException("La paginacion no es valida (pagina >= 0, tamano entre 1 y 100).");
+
+        String cedula = principalAutenticado();
+        Empresa empresa = em.createQuery("select x.empresa from VinculoEmpresaUsuario x where x.usuario.cedula = :cedula " +
+                        "and x.empresa.id = :empresaId and x.tipo = :tipo and x.estado = :estado", Empresa.class)
+                .setParameter("cedula", cedula).setParameter("empresaId", empresaId)
+                .setParameter("tipo", TipoVinculoEmpresa.RESPONSABLE).setParameter("estado", EstadoVinculoEmpresa.ACTIVO)
+                .setMaxResults(1).getResultStream().findFirst().orElse(null);
+        if (empresa == null)
+            throw new NegocioException("No tiene un vinculo responsable activo con la empresa solicitada.");
+
+        long total = em.createQuery("select count(g) from Guia g where g.empresa.id = :empresaId", Long.class)
+                .setParameter("empresaId", empresaId).getSingleResult();
+        List<GuiaEmpresaDTO> registros = em.createQuery("select g from Guia g left join fetch g.chofer left join fetch g.vehiculo " +
+                        "where g.empresa.id = :empresaId order by g.inicio desc, g.id desc", Guia.class)
+                .setParameter("empresaId", empresaId).setFirstResult(pagina * tamano).setMaxResults(tamano)
+                .getResultList().stream().map(g -> {
+                    GuiaEmpresaDTO dto = new GuiaEmpresaDTO();
+                    dto.setGuia(g.aDTO());
+                    dto.setNombreChofer(g.getChofer() == null ? null : g.getChofer().getNombre());
+                    dto.setMatricula(g.getVehiculo() == null ? null : g.getVehiculo().getMatricula());
+                    return dto;
+                }).toList();
+        PaginaGuiasEmpresaDTO resultado = new PaginaGuiasEmpresaDTO();
+        resultado.setRegistros(registros);
+        resultado.setPagina(pagina);
+        resultado.setTamano(tamano);
+        resultado.setTotal(total);
+        return resultado;
     }
 
     @Override

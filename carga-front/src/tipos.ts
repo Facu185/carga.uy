@@ -128,8 +128,8 @@ export interface CrearGuia {
 export interface Guia {
   id: number
   empresaId: number
-  vehiculoId: number
-  choferId: number
+  vehiculoId: number | null
+  choferId: number | null
   rubroId: number | null
   tipoCargaId: number | null
   pesoKg: number
@@ -144,6 +144,20 @@ export interface Guia {
   destinoLon: number | null
   estado: string
   creadaEn: string
+}
+
+/** Datos actuales de las asignaciones; no excluye choferes inactivos. */
+export interface GuiaEmpresa {
+  guia: Guia
+  nombreChofer: string | null
+  matricula: string | null
+}
+
+export interface PaginaGuiasEmpresa {
+  registros: GuiaEmpresa[]
+  pagina: number
+  tamano: number
+  total: number
 }
 
 export interface VehiculoCatalogo { id: number; matricula: string; marca: string | null; modelo: string | null; capacidadCargaKg: number; capacidadVolumenM3: number | null }

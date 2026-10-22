@@ -3,15 +3,26 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="jakarta.faces.html"
       xmlns:f="jakarta.faces.core"
-      xmlns:p="http://primefaces.org/ui">
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:pt="jakarta.faces.passthrough">
 <h:head>
     <title>carga.uy - Choferes</title>
 </h:head>
 <h:body>
+    <ui:include src="/WEB-INF/fragmentos/navegacion-abm.xhtml"/>
     <h:form id="formulario">
         <p:growl id="avisos" showDetail="true"/>
+        <p:outputLabel for="empresaConsulta" value="Empresa a consultar"/>
+        <p:selectOneMenu id="empresaConsulta" value="#{choferVista.empresaConsultaId}">
+            <f:selectItem itemLabel="#{request.isUserInRole('ADMINISTRADOR') ? 'Todas las empresas' : 'Seleccione una empresa'}"
+                          itemValue="#{null}" itemDisabled="#{not request.isUserInRole('ADMINISTRADOR')}"/>
+            <f:selectItems value="#{choferVista.empresas}" var="empresa" itemValue="#{empresa.id}" itemLabel="#{empresa.nombre}"/>
+            <p:ajax listener="#{choferVista.refrescar}" process="@this" update="formulario"/>
+        </p:selectOneMenu>
+        <h:outputText value="No tienes empresas activas para gestionar como responsable." rendered="#{empty choferVista.empresas}"/>
 
-        <p:panel header="Nuevo chofer">
+        <p:panel header="Nuevo chofer" rendered="#{not empty choferVista.empresas}">
             <h:panelGrid columns="2" cellpadding="4">
                 <p:outputLabel for="empresa" value="Empresa"/>
                 <p:selectOneMenu id="empresa" value="#{choferVista.nuevo.empresaId}">
@@ -26,19 +37,19 @@
                 <p:outputLabel for="nombre" value="Nombre"/>
                 <p:inputText id="nombre" value="#{choferVista.nuevo.nombre}"/>
             </h:panelGrid>
-            <p:commandButton value="Agregar" action="#{choferVista.agregar}" update="formulario"/>
+            <p:commandButton value="Agregar" action="#{choferVista.agregar}" process="@this empresa cedula nombre" update="formulario"/>
         </p:panel>
 
         <p:dataTable id="tabla" value="#{choferVista.choferes}" var="chofer" emptyMessage="Sin choferes.">
             <p:column headerText="Id"><h:outputText value="#{chofer.id}"/></p:column>
             <p:column headerText="Empresa"><h:outputText value="#{chofer.empresaId}"/></p:column>
-            <p:column headerText="Cedula"><p:inputText value="#{chofer.cedula}"/></p:column>
-            <p:column headerText="Nombre"><p:inputText value="#{chofer.nombre}"/></p:column>
+            <p:column headerText="Cedula"><p:inputText id="editarCedula" value="#{chofer.cedula}" pt:aria-label="Cédula del chofer"/></p:column>
+            <p:column headerText="Nombre"><p:inputText id="editarNombre" value="#{chofer.nombre}" pt:aria-label="Nombre del chofer"/></p:column>
             <p:column headerText="Estado"><h:outputText value="#{chofer.activo ? 'Activo' : 'Inactivo'}"/></p:column>
             <p:column headerText="Acciones">
-                <p:commandButton value="Guardar" action="#{choferVista.modificar(chofer)}" update="formulario"/>
-                <p:commandButton value="Baja" action="#{choferVista.darDeBaja(chofer)}" update="formulario" disabled="#{not chofer.activo}"/>
-                <p:commandButton value="Alta" action="#{choferVista.darDeAlta(chofer)}" update="formulario" disabled="#{chofer.activo}"/>
+                <p:commandButton value="Guardar" action="#{choferVista.modificar(chofer)}" process="@this editarCedula editarNombre" update="formulario"/>
+                <p:commandButton value="Baja" action="#{choferVista.darDeBaja(chofer)}" process="@this" update="formulario" disabled="#{not chofer.activo}"/>
+                <p:commandButton value="Alta" action="#{choferVista.darDeAlta(chofer)}" process="@this" update="formulario" disabled="#{chofer.activo}"/>
             </p:column>
         </p:dataTable>
     </h:form>

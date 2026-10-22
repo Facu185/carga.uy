@@ -27,6 +27,12 @@ Para proteger un servicio propio alcanza con `@RolesAllowed(Roles.X)` (constante
 `uy.edu.fing.tse.carga.api.security.Roles`). La identidad la establece la capa web a partir del token
 (`Authorization: Bearer ...`); ningún servicio recibe el usuario por parámetro.
 
+Excepción de transporte **limitada al ABM JSF P2**: sus páginas pueden recibir el mismo
+JWT en la cookie HttpOnly `cargauy_jsf`, validada por P1 en cada petición. La cookie
+no autentica REST/SOAP/P4 ni reemplaza Bearer en los contratos existentes. El login JSF
+reutiliza las cuentas internas; no agrega un destino OIDC para funcionarios/ciudadanos.
+Detalle y límites: [ADR-0011](decisiones/0011-autenticacion-del-abm-jsf.md).
+
 Regla: **las interfaces viven en `carga-api`, las implementaciones en `carga-ejb`.** Quien consume
 depende de la interfaz, nunca de la clase.
 
@@ -92,6 +98,25 @@ que ya procesó. Un mensaje puede llegar más de una vez y eso tiene que ser ino
 `POST /api/guias` recibe `inicio` y `fin` ISO-8601 con zona horaria, además de los datos de carga. El periodo es semiabierto `[inicio, fin)`: dos viajes consecutivos cuyo fin/inicio coinciden son válidos. La creación toma bloqueos pesimistas de vehículo y chofer y rechaza solapamientos. La autorización empresarial se resuelve exclusivamente desde el principal autenticado mediante un `vinculo_empresa_usuario` activo; nunca desde un rol global ni de un `empresa_id` en `usuario`.
 
 `GET /api/guias/mis-guias` requiere el rol `CHOFER` y resuelve el chofer por la cédula del principal; nunca acepta un identificador de chofer del cliente.
+
+`GET /carga/api/guias/empresa?empresaId=1&pagina=0&tamano=20` consulta las guías de
+una empresa para su responsable aprobado. Requiere rol `CIUDADANO` o `CHOFER` y
+vínculo `RESPONSABLE/ACTIVO` del principal con la empresa solicitada, comprobado
+en el EJB. El ID recibido selecciona la empresa, NO acredita autorización.
+No filtra por estado de guía ni por actividad actual del chofer/vehículo: incluye
+asignadas y finalizadas, y guías históricas sin asignaciones (`choferId`,
+`vehiculoId`, `nombreChofer` o `matricula` pueden ser nulos). Orden: `inicio DESC, id DESC`.
+
+Devuelve `PaginaGuiasEmpresaDTO`: `{registros, pagina, tamano, total}`; cada registro
+es `GuiaEmpresaDTO`: `{guia: GuiaDTO, nombreChofer, matricula}`. Se conservan los
+contratos de creación y de consulta del chofer sin cambios. `pagina` empieza en 0
+(predeterminado 0), `tamano` admite 1–100 (predeterminado 20); el desplazamiento
+debe caber en un entero de 32 bits. Empresa ausente/no positiva o paginación
+inválida: `400`; sin vínculo autorizado: `403`, con `{"error":"mensaje"}`.
+El total corresponde a esa empresa, no a todas las empresas del usuario.
+El nombre y la matrícula reflejan los registros relacionados actuales; no son
+instantáneas históricas. La consulta no modifica estados ni deduce finalización
+por la fecha prevista del viaje.
 
 Tablas compartidas (las toca más de un frente): `empresa`, `vehiculo`, `chofer`, `guia`, `usuario`,
 `rol`, `auditoria`. Cambiarlas requiere aviso.
