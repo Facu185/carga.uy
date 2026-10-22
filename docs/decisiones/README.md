@@ -21,3 +21,4 @@ Plantilla: [plantilla.md](plantilla.md).
 | [0011](0011-autenticacion-del-abm-jsf.md) | Adaptador JWT para conservar el ABM JSF P2 | Aceptada para corrección P2 |
 | [0012](0012-abm-vehiculos-del-responsable.md) | Vehículos en Mi empresa, baja con control de guía en curso y reactivación | Aceptada para alcance solicitado |
 | [0013](0013-area-funcionario-spa-p2.md) | Área operativa F12–F14 del funcionario en la SPA existente, conservando JSF | Aceptada para alcance P2 solicitado |
+| [0014](0014-perfil-propio-empresa.md) | Perfil propio F10 con contrato y campos separados del ABM administrativo | Aceptada para alcance F10 solicitado |

@@ -27,6 +27,9 @@ Tablas: `usuario`, `rol`, `usuario_rol`, `auditoria`. Código de arranque: `PdiB
 - Empresas, vehículos, choferes: altas, bajas, modificaciones y consultas.
 - Guías de viaje de carga: creación, asignación de vehículo y chofer. **Caso de uso crítico.**
 - Backoffice en JSF + PrimeFaces.
+- Perfil propio F10 en la SPA, alcance acotado aprobado por el usuario en
+  [ADR-0014](decisiones/0014-perfil-propio-empresa.md). Conserva Choferes/Vehículos
+  y requiere acreditar integración del portal compartido con P1/P3.
 - Área operativa del funcionario: gestión de empresas, consulta de vehículos y
   permisos/ITV, e integración del monitoreo de viajes/pesajes (F12–F14), asignada
   a P2 por el usuario el 2026-10-22. P3 conserva estado/historial y P4 sus datos e

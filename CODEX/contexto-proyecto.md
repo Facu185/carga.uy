@@ -33,6 +33,12 @@ Estos son contrastes documentales/estáticos, NO una auditoría funcional ni aut
 
 ## Pendientes no resueltos por esta guía
 
+**Actualización F10 (2026-10-22):** [ADR-0014](../docs/decisiones/0014-perfil-propio-empresa.md)
+acepta el perfil propio acotado en SPA y C10. Existe contrato local específico,
+EJB y formulario `/mi-empresa/perfil`; el ABM administrativo/remoto conserva sus
+permisos. No amplía ADR-0004 ni resuelve D0-04 de guías. Aceptación real pendiente
+según [pruebas del perfil](../pruebas/p2-perfil-empresa.md), sin builds ejecutados.
+
 - La guía de casos críticos mantiene políticas a definir sobre conflictos offline y vencimiento de descargos. Consultar ADR y equipo antes de inventar una transición o regla.
 - [ADR-0010](../docs/decisiones/0010-integraciones-de-p4-con-p3-y-p5.md) y contratos describen el enlace de P3 al aviso de fin de viaje y el consumo futuro de pesadas por P5. En el código inspeccionado existen los adaptadores P4 (`AvisoFinDeViajeBean`, `FinDeViajeMDB`), no un flujo completo P3/P5 acreditado.
 - El panel JSF sin inicio de sesión figura como limitación conocida en [contratos](../docs/contratos.md) y [ADR-0007](../docs/decisiones/0007-seguridad-de-nodos-y-endpoints-p4.md); no usarlo como patrón seguro para nuevas pantallas.

@@ -8,6 +8,7 @@ grupo antes de mergear: hay código de otra persona que depende.
 | Interfaz | Dueño | Qué garantiza |
 |---|---|---|
 | `EmpresaServicio` / `...Local` / `...Remote` | P2 | Alta, modificación, baja lógica y consulta de empresas; mutaciones para funcionario/administrador |
+| `PerfilEmpresaServicioLocal` | P2 | Consulta/edición del perfil propio; CIUDADANO/CHOFER con vínculo RESPONSABLE/ACTIVO y empresa activa |
 | `VehiculoServicio` / `VehiculoServicioLocal` | P2 | ABM vehicular y reactivación; autorización por vínculo responsable activo o administrador |
 | `IngestaTrackingLocal` | P4 | Recibe una posición y la encola; no bloquea |
 | `PesajeLocal` | P4 | `obtenerPesadas` devuelve las pesadas; `consultarPesadas` además informa si el nodo respondió y cuánto tardó |
@@ -56,6 +57,7 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `POST /carga/api/empresas` | backoffice |
 | `PUT /carga/api/empresas/{id}` | Gestión administrativa existente; `EmpresaDTO`, respuesta 200 con DTO; funcionario/administrador |
 | `DELETE /carga/api/empresas/{id}` | Baja lógica administrativa existente; 204; funcionario/administrador |
+| `GET /carga/api/empresas/{id}/perfil` · `PUT /carga/api/empresas/{id}/perfil` | Mi empresa / F10; 200 con `EmpresaDTO`; PUT recibe solo `EditarPerfilEmpresaDTO` |
 | `GET /carga/api/vehiculos?empresaId=` | Mi empresa (incluye vehículos dados de baja) |
 | `POST /carga/api/vehiculos` · `PUT /carga/api/vehiculos/{id}` | Mi empresa; `VehiculoDTO`, respuestas 201 y 200 |
 | `DELETE /carga/api/vehiculos/{id}` | Baja lógica del vehículo; 204, rechaza guía EN_CURSO con 400 |
@@ -125,9 +127,37 @@ no acredita rollback ni seguridad en ejecución. Fuente:
 y [EmpresaServicioBean](../carga-ejb/src/main/java/uy/edu/fing/tse/carga/ejb/servicio/EmpresaServicioBean.java).
 
 La elección de SPA F12–F14 está acotada por [ADR-0013](decisiones/0013-area-funcionario-spa-p2.md).
-Los contratos nuevos de perfil F10 y consultas F13/F14 siguen como **borradores
-no publicados ni implementados** en el [registro de fase 0](acuerdos-cierre-p2-fase-0.md).
-No consumir sus rutas propuestas hasta aprobar y publicar cada contrato.
+El perfil F10/C10 queda aprobado por el usuario y publicado a continuación.
+Las consultas F13/F14 siguen como **borradores no aprobados** en el
+[registro de fase 0](acuerdos-cierre-p2-fase-0.md); no consumir sus rutas propuestas.
+
+### Perfil propio F10 / C10
+
+`PerfilEmpresaServicioLocal.consultar(Long id)` y
+`modificar(Long id, EditarPerfilEmpresaDTO datos)` conservan la API administrativa
+y remota existente. GET/PUT `/carga/api/empresas/{id}/perfil` devuelven 200 con
+`EmpresaDTO` (incluida la excepción de fechaAlta ya publicada). Sin paginación.
+
+GET y PUT requieren CIUDADANO o CHOFER con vínculo RESPONSABLE/ACTIVO comprobado
+desde el principal en EJB y empresa activa. No hay excepción administrativa en
+este contrato: los administradores conservan su ABM anterior. Inexistencia,
+inactividad y falta de pertenencia responden 403 sin distinguir el motivo.
+Sin sesión válida: 401. ID no positivo, payload ausente/inválido o número
+duplicado: 400. Errores `{"error":"mensaje"}` y correlación sin cambios.
+
+PUT recibe `{nombre, razonSocial, numeroEmpresa, direccion}`: nombre no vacío,
+número entero positivo de 64 bits/único; longitudes máximas del esquema 200,
+200 y 300 para los tres textos, respectivamente. Razón social y dirección
+pueden ser null/ausentes. El nombre se guarda sin espacios exteriores.
+`id`, `fechaAlta`, `activa`, vínculos y bajas NO son campos de entrada: el
+servidor nunca los asigna desde este payload, aunque un cliente los añada.
+Un campo desconocido no obtiene permisos por aparecer en JSON.
+
+El PUT bloquea la empresa y valida antes de asignar los cuatro campos; el flush
+permite traducir duplicados de la restricción existente a negocio con rollback.
+Esto requiere acreditación WildFly/PostgreSQL; no se promete exclusión de todos
+los flujos administrativos ni rollback a partir de una prueba con dobles.
+Alcance aceptado y alternativas en [ADR-0014](decisiones/0014-perfil-propio-empresa.md).
 
 ## Vehículos P2
 

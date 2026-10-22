@@ -85,6 +85,17 @@ export interface Empresa {
   activa: boolean
 }
 
+/** EmpresaDTO de F10. Estado y fecha de alta son de solo lectura en este recorrido. */
+export interface PerfilEmpresa extends Empresa {
+  razonSocial: string | null
+  numeroEmpresa: number
+  direccion: string | null
+  fechaAlta: string | null
+}
+
+/** Coincide con EditarPerfilEmpresaDTO; no se reenvia el DTO administrativo completo. */
+export type DatosPerfilEmpresa = Pick<PerfilEmpresa, 'nombre' | 'razonSocial' | 'numeroEmpresa' | 'direccion'>
+
 /** Vínculo auditable de la persona con una empresa. RESPONSABLE activo habilita su gestión. */
 export interface VinculoEmpresa {
   id: number

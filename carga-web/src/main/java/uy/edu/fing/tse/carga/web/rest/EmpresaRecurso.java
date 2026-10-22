@@ -13,6 +13,8 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import uy.edu.fing.tse.carga.api.contract.service.EmpresaServicioLocal;
+import uy.edu.fing.tse.carga.api.contract.service.PerfilEmpresaServicioLocal;
+import uy.edu.fing.tse.carga.api.dto.empresa.EditarPerfilEmpresaDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 import uy.edu.fing.tse.carga.api.dto.comun.EmpresaDTO;
 
@@ -30,6 +32,19 @@ public class EmpresaRecurso {
 
     @EJB
     private EmpresaServicioLocal servicio;
+
+    @EJB
+    private PerfilEmpresaServicioLocal perfiles;
+
+    @GET @Path("/{id}/perfil")
+    public EmpresaDTO consultarPerfil(@PathParam("id") Long id) throws NegocioException {
+        return perfiles.consultar(id);
+    }
+
+    @PUT @Path("/{id}/perfil")
+    public EmpresaDTO modificarPerfil(@PathParam("id") Long id, EditarPerfilEmpresaDTO datos) throws NegocioException {
+        return perfiles.modificar(id, datos);
+    }
 
     @GET
     public List<EmpresaDTO> listar(@QueryParam("nombre") String nombre) {

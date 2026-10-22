@@ -9,6 +9,9 @@
 en el [registro de acuerdos](acuerdos-cierre-p2-fase-0.md). No es cierre funcional.
 **Inicio fase 1:** [registro de validación inicial](../pruebas/p2-fase-1.md), con
 cinco tests HTTP F11 nuevos y escenarios pendientes. Sin ejecución funcional.
+**Fase 2 / F10:** implementación local de perfil preparada según
+[ADR-0014](decisiones/0014-perfil-propio-empresa.md), con
+[aceptación pendiente](../pruebas/p2-perfil-empresa.md).
 
 ## 1. Alcance y criterio de cierre
 
@@ -34,7 +37,7 @@ lectura del PDF externo ni una auditoría exhaustiva en esta actualización.
 
 | Bloque | Tipo de pendiente | Resultado esperado para cerrar |
 | --- | --- | --- |
-| F10 — Perfil de empresa del responsable | Implementación propia P2, portal con P3 | Consultar/editar su empresa desde el portal, con autorización por pertenencia en servidor. |
+| F10 — Perfil de empresa del responsable | Implementación local preparada; validación e integración P1/P3 pendientes | Acreditar consulta/edición de su empresa, con pertenencia en servidor y campos administrativos preservados. |
 | F11 — Vehículos del responsable | Validación P2 y dependencia P3 | Probar el ABM ya implementado e integrar el estado real del viaje y su concurrencia con baja. |
 | F12 — Empresas para funcionario | Interfaz P2 e integración de acceso P1 | Recorrido desde gub.uy hasta consultar/modificar empresas existentes sin retirar seguridad. |
 | F13 — Vehículos/permisos/ITV para funcionario | Interfaz P2, consulta y autorización de lectura | Permitir la consulta requerida sin conceder escritura de vehículos al funcionario por extensión accidental. |
@@ -69,19 +72,20 @@ y [rutas SPA](../carga-front/src/App.tsx).
 **Origen:** letra p. 5, según inventario general. **Coordinación:** P1 para
 identidad/vínculo; P3 para integrar el portal.
 
-**Situación:** `EmpresaDTO` ya contiene `nombre`, `razonSocial`, `numeroEmpresa` y
-`direccion`. `EmpresaServicioBean.modificar` admite funcionario/administrador,
-no al responsable ciudadano. Mi empresa administra choferes y vehículos, no esos datos.
+**Situación:** el usuario aprobó C10/ADR-0014 y existe perfil específico con esos
+cuatro campos en `/mi-empresa/perfil`. Su EJB requiere vínculo RESPONSABLE/ACTIVO
+y empresa activa; el ABM administrativo permanece separado. Ejecución pendiente.
 
-- [ ] Implementar la consulta del perfil de su empresa en Mi empresa.
-- [ ] Implementar edición de los campos empresariales del requisito, reutilizando
+- [x] Implementar la consulta del perfil de su empresa en Mi empresa.
+- [x] Implementar edición de los campos empresariales del requisito, reutilizando
   DTO/validaciones existentes y delimitando explícitamente los campos editables.
-- [ ] Autorizar la modificación en EJB por principal y vínculo responsable activo
+- [x] Autorizar la modificación en EJB por principal y vínculo responsable activo
   de esa empresa, sin abrir la modificación de cualquier empresa al rol ciudadano.
-- [ ] Conservar por separado las operaciones administrativas: editar el perfil no
+- [x] Conservar por separado las operaciones administrativas: editar el perfil no
   debe permitir bajas, alteración de vínculos o cambios de estado implícitos.
-- [ ] Coordinar contrato y consumidor, y escribir primero pruebas positivas y de
+- [x] Publicar contrato aprobado e implementar consumidor local; escribir primero pruebas positivas y de
   rechazo: empresa ajena, vínculo ausente/revocado, datos inválidos y número duplicado.
+- [ ] Acreditar integración compartida con P1/P3 y sus identidades reales de prueba.
 - [ ] Validar el flujo autenticado en servidor/navegador, no solo la visibilidad del formulario.
 
 **Cierre:** el responsable puede consultar y guardar su perfil autorizado; otro

@@ -1,8 +1,9 @@
 # Plan por fases — Cierre de P2 y área del funcionario
 
 **Fecha:** 22 de octubre de 2026. **Línea base observada:** `c3bc924`, árbol limpio antes de esta planificación.
-**Estado:** fase 0 con cierre parcial y fase 1 iniciada al 2026-10-22. El usuario confirmó
-la recomendación SPA; permisos y contratos nuevos pendientes no quedan autorizados.
+**Estado:** fase 0 parcial, fase 1 preparada y fase 2 implementada localmente al
+2026-10-22, sin validación funcional ejecutada. El usuario confirmó SPA y F10/C10;
+los demás permisos y contratos pendientes no quedan autorizados.
 Véase el [registro de acuerdos de fase 0](acuerdos-cierre-p2-fase-0.md).
 
 ## 1. Alcance y decisiones de partida
@@ -10,8 +11,8 @@ Véase el [registro de acuerdos de fase 0](acuerdos-cierre-p2-fase-0.md).
 Este plan organiza [pendientesP2](pendientesP2.md). El usuario confirmó que **P2
 implementará también la pantalla del funcionario**: gestión de empresas F12,
 consulta vehicular F13 y composición del monitoreo F14. La asignación de interfaz
-está confirmada; la tecnología SPA quedó confirmada al iniciar fase 0, mientras
-los contratos nuevos todavía requieren acuerdo.
+está confirmada; la tecnología SPA quedó confirmada al iniciar fase 0.
+F10/C10 fue aprobado posteriormente; los contratos nuevos F13/F14 requieren acuerdo.
 
 | Responsabilidad | Dueño y límite |
 | --- | --- |
@@ -76,10 +77,12 @@ al final. No se fijan fechas sin conocer disponibilidad de equipo y dependencias
   el ABM vehicular exigen `RESPONSABLE/ACTIVO`. No unificar permisos silenciosamente.
 - [x] Alinear ADR-0005 con `VinculoEmpresaUsuario`, sin restaurar `usuario.empresa_id`.
   D0-03: alineación documental; no modifica el criterio ACTIVO/RESPONSABLE pendiente.
-- [ ] Definir campos editables de F10: nombre, razón social, número y dirección;
+- [x] Definir campos editables de F10: nombre, razón social, número y dirección;
   excluir estado, fecha de alta, vínculos y bajas de la edición del responsable.
+  D0-05/C10 confirmado por el usuario y registrado en ADR-0014.
 - [ ] Acordar matriz de actor/operación y cambios de interfaces, DTO, rutas,
   filtros, paginación y errores para F10/F13/F14 antes de sus consumidores.
+  F10/C10 aprobado/publicado; F13/F14 siguen pendientes, por lo que este conjunto no se cierra.
 - [ ] Confirmar con P3/móvil si hay cambios de guía que requieran resolver
   conflictos offline y qué campos/estados comprenden. Acordar política en ADR y
   contratos; no agregar edición/cancelación como requisito supuesto.
@@ -96,9 +99,9 @@ el desacuerdo bloquea solo el tramo afectado y se consulta antes de modificar ot
 
 **Avance registrado:** [acuerdos, matriz observada y borradores de contratos](acuerdos-cierre-p2-fase-0.md).
 Se publicaron en contratos.md las operaciones empresariales PUT/DELETE ya existentes.
-Fase 0 **NO cerrada**: los borradores F10/F13/F14 no son contratos aprobados; faltan
-confirmaciones de campos/permisos, navegación y dependencias P3/P4, offline y reparto F15.
-No se implementaron pantallas ni cambios de lógica en esta entrega.
+Fase 0 **NO cerrada**: F10/C10 está aprobado por el usuario y publicado; F13/F14,
+permisos de guías, navegación compartida y dependencias P3/P4, offline y reparto F15
+siguen abiertos. La fase 0 original fue documental; la fase 2 posterior sí implementa F10.
 
 ## Fase 1 — Acreditar la base existente, sin rehacer F11
 
@@ -131,20 +134,27 @@ escenarios F1-01–12; la carrera con inicio P3 permanece como dependencia de fa
 
 ## Fase 2 — Completar el perfil propio de empresa (F10 / P2-01)
 
-- [ ] Escribir primero pruebas de responsable válido, empresa ajena, vínculo
+- [x] Escribir primero pruebas de responsable válido, empresa ajena, vínculo
   ausente/revocado/no responsable, datos inválidos y número duplicado.
-- [ ] Acordar y exponer consulta/edición del perfil propio, resolviendo identidad y
+- [x] Acordar y exponer consulta/edición del perfil propio, resolviendo identidad y
   pertenencia en EJB. Preferir una operación específica frente a ampliar sin más
   `modificar`: delimita campos y evita habilitar acciones administrativas; añade
   contrato, por lo que requiere coordinación.
-- [ ] Reutilizar DTO/validaciones adecuados y actualizar solo campos acordados;
+- [x] Reutilizar DTO/validaciones adecuados y actualizar solo campos acordados;
   un cuerpo manipulado no debe cambiar estado, fecha de alta ni vínculos.
-- [ ] Integrar formulario en Mi empresa con P3; conservar Choferes/Vehículos,
+- [x] Implementar formulario local en Mi empresa; conservar Choferes/Vehículos,
   estados de carga/guardado/error y tratamiento de sesión vencida.
+- [ ] Acreditar la integración del portal compartido con P1/P3 en el despliegue del equipo.
 - [ ] Validar por REST y navegador; mantener aparte la modificación administrativa.
 
 **Salida:** responsable guarda su perfil y ve el resultado persistido; un actor
 ajeno no puede hacerlo ni manipulando ID/payload ni invocando REST directamente.
+
+**Avance:** backend C10 y `/mi-empresa/perfil` preparados según ADR-0014; pruebas
+escritas antes de la lógica Java, sin ciclo rojo/verde ejecutado. La SPA carece de
+runner de tests; los escenarios no equivalen a automatización frontend. Ver
+[aceptación y límites](../pruebas/p2-perfil-empresa.md). La implementación presente
+NO acredita aún esta salida ni cierra la validación de fase 1.
 
 ## Fase 3 — Construir el área del funcionario y empresas (F12 / P2-02)
 
