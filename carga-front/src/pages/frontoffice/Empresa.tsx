@@ -1,6 +1,6 @@
-import { Building2, LogOut, Users } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { api } from '../../api/cliente'
 import { useAuth } from '../../auth/contexto'
 import { useAviso } from '../../componentes/avisos'
@@ -9,6 +9,7 @@ import { EncabezadoSitio } from '../../componentes/EncabezadoSitio'
 import { Etiqueta } from '../../componentes/Etiqueta'
 import { FilasCargando } from '../../componentes/FilasCargando'
 import { PieSitio } from '../../componentes/PieSitio'
+import { NavegacionEmpresa } from '../../componentes/NavegacionEmpresa'
 import { ProveedorAvisos } from '../../componentes/ProveedorAvisos'
 import { ProveedorConfirmaciones } from '../../componentes/ProveedorConfirmaciones'
 import { formatearCedula } from '../../formato'
@@ -108,10 +109,7 @@ function GestionEmpresa() {
         <button type="button" className="boton-secundario boton-chico" onClick={logout}><LogOut size={15} aria-hidden="true" /> Salir</button>
       </EncabezadoSitio>
       <main className="pagina-contenido empresa-contenido">
-        <nav className="empresa-nav" aria-label="Secciones de la empresa">
-          <NavLink to="/mi-cuenta"><Building2 size={18} aria-hidden="true" /> Mi cuenta</NavLink>
-          <NavLink to="/mi-empresa"><Users size={18} aria-hidden="true" /> Choferes</NavLink>
-        </nav>
+        <NavegacionEmpresa />
         <header className="seccion-encabezado">
           <div><h1>Choferes</h1><p>{empresa ? `Gestioná los choferes habilitados de ${empresa.nombreEmpresa}.` : 'Gestioná los choferes habilitados de tu empresa.'}</p></div>
         </header>

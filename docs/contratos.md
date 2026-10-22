@@ -8,6 +8,7 @@ grupo antes de mergear: hay código de otra persona que depende.
 | Interfaz | Dueño | Qué garantiza |
 |---|---|---|
 | `EmpresaServicio` / `...Local` / `...Remote` | P2 | Alta y consulta de empresas |
+| `VehiculoServicio` / `VehiculoServicioLocal` | P2 | ABM vehicular y reactivación; autorización por vínculo responsable activo o administrador |
 | `IngestaTrackingLocal` | P4 | Recibe una posición y la encola; no bloquea |
 | `PesajeLocal` | P4 | `obtenerPesadas` devuelve las pesadas; `consultarPesadas` además informa si el nodo respondió y cuánto tardó |
 | `MonitorLocal` | P4 | Métricas de ingesta, estado de los nodos y mapa de la flota (solo lectura) |
@@ -53,6 +54,10 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `GET /carga/api/salud` | healthchecks, monitoreo |
 | `GET /carga/api/empresas[?nombre=]` | frontoffice, backoffice |
 | `POST /carga/api/empresas` | backoffice |
+| `GET /carga/api/vehiculos?empresaId=` | Mi empresa (incluye vehículos dados de baja) |
+| `POST /carga/api/vehiculos` · `PUT /carga/api/vehiculos/{id}` | Mi empresa; `VehiculoDTO`, respuestas 201 y 200 |
+| `DELETE /carga/api/vehiculos/{id}` | Baja lógica del vehículo; 204, rechaza guía EN_CURSO con 400 |
+| `PUT /carga/api/vehiculos/{id}/reactivar` | Mi empresa; sin cuerpo, reactiva sin modificar otros datos, 204 |
 | `GET /carga/api/pdi/personas/{cedula}` | pruebas del frente P1 (atajo al cliente SOAP) |
 | `POST /carga/api/tracking/posiciones` | **nodo Tracking** — responde `202`; `503` + `Retry-After` si la cola está saturada (ADR-0008) |
 | `POST /carga/api/tracking/posiciones/lote` | **nodo Tracking** — hasta 500 posiciones; `202` con aceptadas y rechazadas; `503` + `Retry-After` si está saturada |
@@ -92,6 +97,29 @@ listas de clases permitidas en Artemis y ata productor y consumidor a la misma v
 que ya procesó. Un mensaje puede llegar más de una vez y eso tiene que ser inofensivo.
 
 ## 5. Esquema de base de datos
+
+## Vehículos P2
+
+El ABM requiere `ADMINISTRADOR`, `CIUDADANO` o `CHOFER`; fuera de la excepción
+administrativa se comprueba en EJB un vínculo `RESPONSABLE/ACTIVO` del principal
+con la empresa. El ID selecciona, no autoriza. El responsable no puede listar
+globalmente ni gestionar vehículos de otra empresa. El portal usa su única empresa
+responsable activa y no permite seleccionar ni cambiar la empresa del vehículo.
+
+Se conservan los campos de `VehiculoDTO`: id, empresaId, matrícula, marca/modelo,
+pesoKg, capacidadCargaKg, capacidadVolumenM3, numeroPermiso, permisoDesde,
+permisoHasta, itvVencimiento y habilitado; las fechas ausentes se serializan como
+null, no como el texto `"null"`. No se adjuntan archivos. Las validaciones actuales
+continúan en EJB; la ITV ausente no habilita al vehículo para nuevas guías.
+
+La baja por DELETE o por PUT con `habilitado=false` rechaza una guía del vehículo
+en estado `EN_CURSO`, también para administrador. No bloquea otros estados ni
+deduce fin del viaje por fechas. Reactivar solo cambia `habilitado=true`; no
+renueva permiso/ITV ni elimina historial. Modificación, baja y reactivación bloquean
+el vehículo dentro de la transacción. Coordinar el futuro inicio de viaje P3 con
+ese mismo bloqueo y verificación de habilitación. Alcance y límites en
+[ADR-0012](decisiones/0012-abm-vehiculos-del-responsable.md).
+Las vistas JSF llaman al mismo servicio EJB directamente, no a estos endpoints.
 
 ## Guías P2
 

@@ -18,6 +18,7 @@ import { MiCuenta } from './pages/frontoffice/MiCuenta'
 import { NuevaGuia } from './pages/frontoffice/NuevaGuia'
 import { MisGuias } from './pages/frontoffice/MisGuias'
 import { Empresa } from './pages/frontoffice/Empresa'
+import { VehiculosEmpresa } from './pages/frontoffice/VehiculosEmpresa'
 import { GuiasEmpresa } from './pages/frontoffice/GuiasEmpresa'
 import { SolicitudesEmpresa } from './pages/backoffice/SolicitudesEmpresa'
 import { ROLES } from './tipos'
@@ -60,6 +61,14 @@ export default function App() {
             element={
               <RutaProtegida roles={[ROLES.CIUDADANO, ROLES.CHOFER]} login="/ingresar">
                 <Empresa />
+              </RutaProtegida>
+            }
+          />
+          <Route
+            path="/mi-empresa/vehiculos"
+            element={
+              <RutaProtegida roles={[ROLES.CIUDADANO, ROLES.CHOFER]} login="/ingresar">
+                <VehiculosEmpresa />
               </RutaProtegida>
             }
           />

@@ -161,6 +161,20 @@ export interface PaginaGuiasEmpresa {
 }
 
 export interface VehiculoCatalogo { id: number; matricula: string; marca: string | null; modelo: string | null; capacidadCargaKg: number; capacidadVolumenM3: number | null }
+
+/** VehiculoDTO de P2; las fechas son ISO-8601 o null para datos heredados. */
+export interface Vehiculo extends VehiculoCatalogo {
+  empresaId: number
+  pesoKg: number
+  numeroPermiso: string | null
+  permisoDesde: string | null
+  permisoHasta: string | null
+  itvVencimiento: string | null
+  habilitado: boolean
+}
+
+/** El formulario no elige empresa ni cambia la habilitación. */
+export type DatosVehiculo = Omit<Vehiculo, 'id' | 'empresaId' | 'habilitado'>
 export interface ChoferCatalogo { id: number; cedula: string; nombre: string }
 export interface OpcionCatalogo { id: number; nombre: string }
 
