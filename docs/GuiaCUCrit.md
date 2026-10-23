@@ -42,7 +42,7 @@ El sistema redirige al usuario a Usuario gub.uy e inicia un flujo OpenID Connect
 El usuario se autentica en Usuario gub.uy.
 Usuario gub.uy redirige al componente central con un código de autorización.
 El componente central canjea el código por los tokens y valida su firma, emisor, audiencia, vigencia, state y nonce.
-El sistema obtiene de los datos del token la cédula y el correo del usuario.
+El central consulta UserInfo con el access_token, exige que su sub coincida exactamente con el del id_token validado y obtiene la cédula y, cuando estén disponibles, nombre y correo. Si faltan el documento o el sub, o si no coinciden las identidades, no crea sesión. No usa los datos personales del id_token como alternativa silenciosa (ADR-0017).
 Si es el primer ingreso de un ciudadano, el sistema registra su perfil y consulta a DNIC a través de la PDI (Web Service SOAP) para completar sus datos.
 El sistema determina los roles del usuario y, si corresponde, la empresa a la que está vinculado.
 El sistema crea la sesión sin guardar estado en el servidor de aplicación y habilita las funcionalidades según el rol.
@@ -50,6 +50,7 @@ El sistema crea la sesión sin guardar estado en el servidor de aplicación y ha
 Flujos alternativos
 3a. El usuario cancela la autenticación o esta falla en Usuario gub.uy: no se crea la sesión.
 5a. El token no supera la validación (firma inválida, state distinto o token vencido): se rechaza el ingreso y se registra como evento de seguridad.
+6a. UserInfo no responde, rechaza el access_token o devuelve datos inválidos: se rechaza el ingreso sin crear sesión ni registrar a la persona; la degradación por PDI no se aplica a la verificación de identidad.
 7a. La PDI no responde (timeout o mecanismo de corte abierto): se completa el ingreso con la cédula y el correo, y la consulta a DNIC queda pendiente de reintento.
 8a. El usuario no tiene rol ni empresa asociada en carga.uy: solo accede a las funcionalidades públicas.
 9a. La sesión vence: el usuario debe volver a autenticarse.

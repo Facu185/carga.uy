@@ -33,6 +33,15 @@ Estos son contrastes documentales/estáticos, NO una auditoría funcional ni aut
 
 ## Pendientes no resueltos por esta guía
 
+**Actualización ID Uruguay (2026-10-23):**
+[ADR-0017](../docs/decisiones/0017-id-uruguay-userinfo-testing.md) registra el alcance
+confirmado: validar `id_token`, consultar UserInfo y vincular ambos por `sub` exacto,
+sin fallback a claims personales del token. El
+[override de testing](../docker-compose.gubuy-testing.yml) exige secreto local no
+vacío; el Compose base conserva simulador y el cierre sigue siendo local. No se
+modificó `.env` ni se habilitó una conexión real. Pruebas Java y autenticación real
+pendientes; ver [guía de testing](../docs/integracion-id-uruguay-testing.md).
+
 **Actualización incompatibilidad (2026-10-22):**
 [ADR-0015](../docs/decisiones/0015-incompatibilidad-funcionario-responsable.md)
 acepta por confirmación del usuario la exclusión entre funcionario activo y

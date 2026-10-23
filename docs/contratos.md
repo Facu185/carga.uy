@@ -408,6 +408,15 @@ reintenta dentro de las 24 horas.
 Nada de URLs ni credenciales hardcodeadas en el código: todo por entorno, con un default que
 funcione en `docker compose`.
 
+**ID Uruguay testing (ADR-0017):** `docker-compose.gubuy-testing.yml` sobre el Compose base
+selecciona el proveedor real de testing y exige `GUBUY_CLIENT_SECRET` no vacío. No cambia
+rutas REST, `IngresoGubUyLocal`, `SesionDTO`, destinos web/móvil, roles ni cierre local.
+El cliente descubre `userinfo_endpoint`, valida primero el `id_token`, consulta UserInfo
+con Bearer y exige igualdad exacta de `sub`. Cédula obligatoria; nombre/correo siguen
+siendo opcionales. Fallas de UserInfo impiden el ingreso, sin fallback a datos personales
+del `id_token`; la PDI conserva su degradación posterior. Configuración, límites y pruebas
+pendientes: [guía de testing](integracion-id-uruguay-testing.md).
+
 ## 7. Observabilidad: ID de correlación
 
 La letra (Sección 4.4, punto 7) pide logs estructurados con un identificador que siga una misma

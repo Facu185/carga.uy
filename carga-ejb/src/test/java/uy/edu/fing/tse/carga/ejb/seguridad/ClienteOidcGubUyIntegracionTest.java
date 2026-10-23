@@ -20,15 +20,17 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Levanta un gub.uy falso (discovery, JWKS y token) en un puerto local y verifica que el central
- * valide de verdad el id_token: firma, audiencia, nonce y vencimiento.
+ * Proveedor local con discovery, JWKS, token y UserInfo; no consulta ID Uruguay real.
+ * Verifica el id_token y la vinculacion de los datos personales de UserInfo con su subject.
  */
 class ClienteOidcGubUyIntegracionTest {
 
@@ -43,6 +45,16 @@ class ClienteOidcGubUyIntegracionTest {
     private volatile int estadoToken = 200;
     private volatile String cuerpoToken;
     private volatile String autorizacionToken;
+    private volatile String accessToken = "acceso-sintetico";
+    private volatile String tipoToken = "Bearer";
+    private volatile int estadoUserInfo = 200;
+    private volatile String respuestaUserInfo = "{\"sub\":\"uid-1\",\"numero_documento\":\"12345672\","
+            + "\"email\":\"ana@example.test\",\"nombre_completo\":\"Ana Prueba\"}";
+    private volatile String autorizacionUserInfo;
+    private volatile String metodoUserInfo;
+    private volatile String queryUserInfo;
+    private volatile String endpointUserInfo;
+    private final AtomicInteger consultasUserInfo = new AtomicInteger();
 
     @BeforeEach
     void levantarGubUyFalso() throws Exception {
@@ -50,10 +62,12 @@ class ClienteOidcGubUyIntegracionTest {
         claveFirma = clave;
         servidor = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         issuer = "http://127.0.0.1:" + servidor.getAddress().getPort() + "/gubuy";
+        endpointUserInfo = issuer + "/userinfo";
 
         servidor.createContext("/gubuy/.well-known/openid-configuration", ex -> responder(ex, 200,
-                "{\"authorization_endpoint\":\"" + issuer + "/authorize\","
+                "{\"issuer\":\"" + issuer + "\",\"authorization_endpoint\":\"" + issuer + "/authorize\","
                         + "\"token_endpoint\":\"" + issuer + "/token\","
+                        + (endpointUserInfo == null ? "" : "\"userinfo_endpoint\":\"" + endpointUserInfo + "\",")
                         + "\"jwks_uri\":\"" + issuer + "/jwks\"}"));
         servidor.createContext("/gubuy/jwks", ex -> responder(ex, 200, new JWKSet(clave.toPublicJWK()).toString()));
         servidor.createContext("/gubuy/token", ex -> {
@@ -63,7 +77,16 @@ class ClienteOidcGubUyIntegracionTest {
                 responder(ex, estadoToken, "{\"error\":\"invalid_grant\"}");
                 return;
             }
-            responder(ex, 200, "{\"id_token\":\"" + firmar(claimsAEmitir, claveFirma) + "\"}");
+            responder(ex, 200, "{\"id_token\":\"" + firmar(claimsAEmitir, claveFirma) + "\","
+                    + (accessToken == null ? "" : "\"access_token\":\"" + accessToken + "\",")
+                    + "\"token_type\":\"" + tipoToken + "\"}");
+        });
+        servidor.createContext("/gubuy/userinfo", ex -> {
+            consultasUserInfo.incrementAndGet();
+            autorizacionUserInfo = ex.getRequestHeaders().getFirst("Authorization");
+            metodoUserInfo = ex.getRequestMethod();
+            queryUserInfo = ex.getRequestURI().getRawQuery();
+            responder(ex, estadoUserInfo, respuestaUserInfo);
         });
         servidor.start();
     }
@@ -103,9 +126,6 @@ class ClienteOidcGubUyIntegracionTest {
                 .issueTime(ahora)
                 .expirationTime(new Date(ahora.getTime() + segundosHastaVencer * 1000))
                 .claim("nonce", nonce)
-                .claim("numero_documento", "12345672")
-                .claim("email", "ana@correo.uy")
-                .claim("nombre_completo", "Ana P\u00e9rez")
                 .build();
     }
 
@@ -127,17 +147,213 @@ class ClienteOidcGubUyIntegracionTest {
         IdentidadGubUy identidad = cliente(issuer, null).canjearCodigo("codigo-1", "verifier-1", "nonce-1");
 
         assertEquals("12345672", identidad.documento());
-        assertEquals("ana@correo.uy", identidad.email());
-        assertEquals("Ana P\u00e9rez", identidad.nombre());
+        assertEquals("uid-1", identidad.sub());
+        assertEquals("ana@example.test", identidad.email());
+        assertEquals("Ana Prueba", identidad.nombre());
         assertTrue(cuerpoToken.contains("code=codigo-1"));
         assertTrue(cuerpoToken.contains("code_verifier=verifier-1"));
         assertTrue(autorizacionToken.startsWith("Basic "), "el secreto viaja en el header, no en la URL");
+        assertEquals("Bearer acceso-sintetico", autorizacionUserInfo);
+        assertEquals("GET", metodoUserInfo);
+        assertNull(queryUserInfo, "el access_token no debe viajar en la URL");
+        assertEquals(1, consultasUserInfo.get());
+    }
+
+    @Test
+    void usaUserInfoAunqueElIdTokenTambienTengaDatosPersonales() {
+        claimsAEmitir = new JWTClaimsSet.Builder(claims(CLIENT_ID, "nonce-1", 300))
+                .claim("numero_documento", "99999999")
+                .claim("email", "otro@example.test")
+                .claim("nombre_completo", "Nombre del token")
+                .build();
+
+        IdentidadGubUy identidad = cliente(issuer, null).canjearCodigo("c", "v", "nonce-1");
+
+        assertEquals("12345672", identidad.documento());
+        assertEquals("ana@example.test", identidad.email());
+        assertEquals("Ana Prueba", identidad.nombre());
+    }
+
+    @Test
+    void rechazaUserInfoDeOtraPersona() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        respuestaUserInfo = "{\"sub\":\"otro-uid\",\"numero_documento\":\"12345672\"}";
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+    }
+
+    @Test
+    void rechazaUserInfoSinSubject() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        respuestaUserInfo = "{\"numero_documento\":\"12345672\"}";
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+    }
+
+    @Test
+    void rechazaUserInfoSinDocumentoSinRecurrirAlIdToken() {
+        claimsAEmitir = new JWTClaimsSet.Builder(claims(CLIENT_ID, "nonce-1", 300))
+                .claim("numero_documento", "12345672").build();
+        respuestaUserInfo = "{\"sub\":\"uid-1\"}";
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+    }
+
+    @Test
+    void conservaNombreYCorreoOpcionales() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        respuestaUserInfo = "{\"sub\":\"uid-1\",\"numero_documento\":\"12345672\"}";
+
+        IdentidadGubUy identidad = cliente(issuer, null).canjearCodigo("c", "v", "nonce-1");
+
+        assertEquals("12345672", identidad.documento());
+        assertNull(identidad.nombre());
+        assertNull(identidad.email());
+    }
+
+    @Test
+    void rechazaUserInfoConJsonInvalidoSinExponerElCuerpo() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        respuestaUserInfo = "contenido-personal-no-json";
+
+        GubUyException error = assertThrows(GubUyException.class,
+                () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+
+        assertFalse(error.toString().contains(respuestaUserInfo));
+        assertNull(error.getCause(), "no registrar cuerpos personales en la causa de parseo");
+    }
+
+    @Test
+    void rechazaUserInfoConClaimDeTipoIncorrecto() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        respuestaUserInfo = "{\"sub\":\"uid-1\",\"numero_documento\":12345672}";
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+    }
+
+    @Test
+    void noCreaIdentidadSiUserInfoRechazaElAccessToken() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        estadoUserInfo = 401;
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+    }
+
+    @Test
+    void noCreaIdentidadSiUserInfoEstaCaido() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        estadoUserInfo = 503;
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+    }
+
+    @Test
+    void noSigueRedireccionesDeUserInfo() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        servidor.removeContext("/gubuy/userinfo");
+        servidor.createContext("/gubuy/userinfo", ex -> {
+            ex.getResponseHeaders().set("Location", issuer + "/otro-destino");
+            responder(ex, 302, "{}");
+        });
+        servidor.createContext("/gubuy/otro-destino", ex -> {
+            consultasUserInfo.incrementAndGet();
+            responder(ex, 200, respuestaUserInfo);
+        });
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+        assertEquals(0, consultasUserInfo.get(), "no reenviar credenciales al destino de una redireccion");
+    }
+
+    @Test
+    void rechazaCanjeSinAccessToken() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        accessToken = null;
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+        assertEquals(0, consultasUserInfo.get());
+    }
+
+    @Test
+    void rechazaCanjeConAccessTokenVacio() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        accessToken = "";
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+        assertEquals(0, consultasUserInfo.get());
+    }
+
+    @Test
+    void rechazaTipoDeTokenNoBearer() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        tipoToken = "otro";
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+        assertEquals(0, consultasUserInfo.get());
+    }
+
+    @Test
+    void requiereUserInfoEnDiscovery() {
+        endpointUserInfo = null;
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).urlAutorizacion("e", "n", "v"));
+    }
+
+    @Test
+    void rechazaEndpointUserInfoRelativo() {
+        endpointUserInfo = "/userinfo";
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).urlAutorizacion("e", "n", "v"));
+    }
+
+    @Test
+    void rechazaEndpointUserInfoConEsquemaNoHttp() {
+        endpointUserInfo = "file:///datos-personales";
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).urlAutorizacion("e", "n", "v"));
+    }
+
+    @Test
+    void usaElEndpointUserInfoPublicadoEnDiscovery() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        endpointUserInfo = issuer + "/datos-persona";
+        servidor.removeContext("/gubuy/userinfo");
+        servidor.createContext("/gubuy/datos-persona", ex -> responder(ex, 200, respuestaUserInfo));
+
+        IdentidadGubUy identidad = cliente(issuer, null).canjearCodigo("c", "v", "nonce-1");
+
+        assertEquals("12345672", identidad.documento());
+    }
+
+    @Test
+    void aceptaTipoBearerSinDependerDeMayusculas() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        tipoToken = "bearer";
+
+        assertEquals("12345672", cliente(issuer, null).canjearCodigo("c", "v", "nonce-1").documento());
+    }
+
+    @Test
+    void rechazaIdTokenDeOtroEmisorAntesDeConsultarUserInfo() {
+        claimsAEmitir = new JWTClaimsSet.Builder(claims(CLIENT_ID, "nonce-1", 300))
+                .issuer("https://otro-emisor.example.test").build();
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+        assertEquals(0, consultasUserInfo.get());
+    }
+
+    @Test
+    void rechazaIdTokenSinSubjectAntesDeConsultarUserInfo() {
+        claimsAEmitir = new JWTClaimsSet.Builder(claims(CLIENT_ID, "nonce-1", 300)).subject(null).build();
+
+        assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+        assertEquals(0, consultasUserInfo.get());
     }
 
     @Test
     void rechazaUnNonceDistinto() {
         claimsAEmitir = claims(CLIENT_ID, "nonce-de-otro-ingreso", 300);
         assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+        assertEquals(0, consultasUserInfo.get(), "validar id_token antes de consultar datos personales");
     }
 
     @Test
@@ -157,6 +373,7 @@ class ClienteOidcGubUyIntegracionTest {
         claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
         claveFirma = new RSAKeyGenerator(2048).keyID("k1").generate();
         assertThrows(GubUyException.class, () -> cliente(issuer, null).canjearCodigo("c", "v", "nonce-1"));
+        assertEquals(0, consultasUserInfo.get());
     }
 
     @Test

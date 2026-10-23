@@ -5,6 +5,8 @@ import { api } from '../../api/cliente'
 import { useAuth } from '../../auth/contexto'
 import { EncabezadoSitio } from '../../componentes/EncabezadoSitio'
 import { NavegacionFuncionario } from '../../componentes/NavegacionFuncionario'
+import { NavegacionEmpresa } from '../../componentes/NavegacionEmpresa'
+import { NavegacionChofer } from '../../componentes/NavegacionChofer'
 import { Etiqueta } from '../../componentes/Etiqueta'
 import { PieSitio } from '../../componentes/PieSitio'
 import { formatearCedula, formatearFecha, nombreRol } from '../../formato'
@@ -74,6 +76,7 @@ export function MiCuenta() {
 
   const verificado = perfil?.verificacionDnic === 'VERIFICADO'
   const esResponsable = vinculos?.some((vinculo) => vinculo.tipo === 'RESPONSABLE' && vinculo.estado === 'ACTIVO') ?? false
+  const mostrarAccesos = puedeVerOpcionesEmpresa && !esResponsable && !esChofer
 
   return (
     <div className="pagina">
@@ -86,6 +89,8 @@ export function MiCuenta() {
 
       <main className="pagina-contenido">
         {esFuncionario && <NavegacionFuncionario />}
+        {puedeVerOpcionesEmpresa && esResponsable && <NavegacionEmpresa />}
+        {!esFuncionario && !esResponsable && esChofer && <NavegacionChofer />}
         <h1 className="saludo">Hola, {sesion?.nombre}</h1>
         <p className="saludo-rol">{nombreRol(sesion?.rol)}</p>
 
@@ -95,56 +100,26 @@ export function MiCuenta() {
           </p>
         )}
 
-        {/* En pantallas anchas: lo que la persona viene a hacer a la izquierda y sus datos al costado */}
-        <div className={puedeVerOpcionesEmpresa ? 'cuenta-grilla' : 'cuenta-grilla cuenta-grilla-simple'}>
-          {puedeVerOpcionesEmpresa && (
+        {puedeVerOpcionesEmpresa && cargandoVinculos && !vinculos && <p role="status">Consultando el vínculo con tu empresa…</p>}
+        {puedeVerOpcionesEmpresa && errorVinculos && (
+          <div>
+            <p className="mensaje-error" role="alert">{errorVinculos}</p>
+            <button type="button" className="boton-secundario" disabled={cargandoVinculos} onClick={() => setVersionVinculos((version) => version + 1)}>Reintentar consulta de empresa</button>
+          </div>
+        )}
+
+        {/* Responsable y chofer navegan arriba; solo el ciudadano sin responsabilidad conserva el acceso por tarjeta. */}
+        <div className={mostrarAccesos ? 'cuenta-grilla' : 'cuenta-grilla cuenta-grilla-simple'}>
+          {mostrarAccesos && (
             <div className="cuenta-principal">
               <section className="ficha" aria-labelledby="titulo-empresa">
                 <h2 id="titulo-empresa" className="titulo-con-icono">
                   <Truck size={22} aria-hidden="true" />
-                  {esChofer ? 'Tus guías' : 'Guías de tu empresa'}
+                  Guías de tu empresa
                 </h2>
-                {esChofer ? (
-                  <>
-                    <p className="ficha-texto">Consultá las guías de carga que fueron asignadas a tu cédula.</p>
-                    <Link className="boton-enlace" to="/mis-guias">Ver mis guías</Link>
-                  </>
-                ) : (
-                  <>
-                    <p className="ficha-texto">Registrá una guía para tu empresa. El sistema verifica que el vehículo y el chofer estén habilitados y disponibles.</p>
-                    <Link className="boton-enlace" to="/guias/nueva">Registrar guía</Link>
-                  </>
-                )}
+                <p className="ficha-texto">Registrá una guía para tu empresa. El sistema verifica que el vehículo y el chofer estén habilitados y disponibles.</p>
+                <Link className="boton-enlace" to="/guias/nueva">Registrar guía</Link>
               </section>
-              {esResponsable && (
-                <section className="ficha" aria-labelledby="titulo-administrar-empresa">
-                  <h2 id="titulo-administrar-empresa" className="titulo-con-icono">
-                    <Truck size={22} aria-hidden="true" />
-                    Administración de empresa
-                  </h2>
-                  <p className="ficha-texto">Gestioná los choferes habilitados de la empresa de la que sos responsable.</p>
-                  <Link className="boton-enlace" to="/mi-empresa">Administrar choferes</Link>
-                </section>
-              )}
-              {esResponsable && (
-                <section className="ficha" aria-labelledby="titulo-guias-viajes">
-                  <h2 id="titulo-guias-viajes" className="titulo-con-icono">
-                    <Truck size={22} aria-hidden="true" />
-                    Guías de viajes
-                  </h2>
-                  <p className="ficha-texto">Consultá todas las guías de tu empresa, incluidas las finalizadas, junto con el chofer y el vehículo asignados.</p>
-                  <Link className="boton-enlace" to="/mi-empresa/guias">Ver guías de viajes</Link>
-                </section>
-              )}
-              {puedeVerOpcionesEmpresa && cargandoVinculos && !vinculos && <p role="status">Consultando el vínculo con tu empresa…</p>}
-              {puedeVerOpcionesEmpresa && errorVinculos && (
-                <div>
-                  <p className="mensaje-error" role="alert">{errorVinculos}</p>
-                  <button type="button" className="boton-secundario" disabled={cargandoVinculos} onClick={() => setVersionVinculos((version) => version + 1)}>Reintentar consulta de empresa</button>
-                </div>
-              )}
-              {puedeVerOpcionesEmpresa && vinculos && !errorVinculos && !esResponsable && <SolicitudResponsable />}
-              {esCiudadano && <SolicitudAcceso />}
             </div>
           )}
           <div className="cuenta-datos">
@@ -188,6 +163,8 @@ export function MiCuenta() {
             )}
           </div>
         </div>
+        {puedeVerOpcionesEmpresa && vinculos && !errorVinculos && !esResponsable && <SolicitudResponsable />}
+        {puedeVerOpcionesEmpresa && esCiudadano && <SolicitudAcceso />}
       </main>
 
       <PieSitio />

@@ -24,3 +24,4 @@ Plantilla: [plantilla.md](plantilla.md).
 | [0014](0014-perfil-propio-empresa.md) | Perfil propio F10 con contrato y campos separados del ABM administrativo | Aceptada para alcance F10 solicitado |
 | [0015](0015-incompatibilidad-funcionario-responsable.md) | Incompatibilidad entre funcionario activo y responsabilidad empresarial activa | Aceptada para cambio confirmado por usuario |
 | [0016](0016-consulta-vehicular-funcionario.md) | Consulta vehicular F13 separada del ABM, con referencia temporal de servidor | Aceptada para C13 confirmado por usuario |
+| [0017](0017-id-uruguay-userinfo-testing.md) | Datos personales por UserInfo y configuración explícita de ID Uruguay testing | Aceptada para alcance confirmado por usuario |

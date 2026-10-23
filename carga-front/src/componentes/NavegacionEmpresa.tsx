@@ -1,13 +1,21 @@
-import { Building2, Truck, Users } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
+import { useAuth } from '../auth/contexto'
+import { ROLES } from '../tipos'
 
 export function NavegacionEmpresa() {
+  const { sesion } = useAuth()
+  const roles = sesion?.roles ?? (sesion ? [sesion.rol] : [])
+
   return (
     <nav className="empresa-nav" aria-label="Secciones de la empresa">
-      <NavLink to="/mi-cuenta"><Building2 size={18} aria-hidden="true" /> Mi cuenta</NavLink>
-      <NavLink to="/mi-empresa/perfil"><Building2 size={18} aria-hidden="true" /> Perfil</NavLink>
-      <NavLink to="/mi-empresa" end><Users size={18} aria-hidden="true" /> Choferes</NavLink>
-      <NavLink to="/mi-empresa/vehiculos"><Truck size={18} aria-hidden="true" /> Vehículos</NavLink>
+      <NavLink to="/mi-cuenta" end>Mi cuenta</NavLink>
+      {roles.includes(ROLES.CHOFER) && <NavLink to="/mis-guias" end>Mis guías</NavLink>}
+      <NavLink to="/mi-empresa/perfil">Perfil de empresa</NavLink>
+      <NavLink to="/mi-empresa" end>Choferes</NavLink>
+      <NavLink to="/mi-empresa/vehiculos">Vehículos</NavLink>
+      <NavLink to="/mi-empresa/guias">Guías de viajes</NavLink>
+      {roles.includes(ROLES.CIUDADANO) && !roles.includes(ROLES.FUNCIONARIO)
+        && <NavLink to="/guias/nueva">Registrar guía</NavLink>}
     </nav>
   )
 }

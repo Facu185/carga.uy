@@ -168,6 +168,12 @@ curl -s http://localhost:8080/carga/api/auth/yo -H "Authorization: Bearer $TOKEN
 Ingreso con gub.uy: en http://localhost:3000/ingresar, con una cédula del padrón del simulador PDI
 (`1.111.111-1` es válida) para que además se complete la fecha de nacimiento desde DNIC.
 
+Para usar **ID Uruguay real en testing**, consulta la
+[configuración y validación manual](docs/integracion-id-uruguay-testing.md).
+El Compose base conserva el simulador; el override de testing exige un secreto local.
+La implementación consulta UserInfo después de validar el `id_token`; el cierre de
+sesión sigue siendo local, no cierra la sesión del proveedor.
+
 En **Windows PowerShell** usá `curl.exe` (no `curl`, que ahí es un alias de `Invoke-WebRequest`).
 
 ---

@@ -47,8 +47,8 @@ import java.util.stream.Collectors;
  * 1. iniciar: arma la redireccion a gub.uy. state, nonce y el verifier de PKCE viajan firmados en una
  *    cookie HttpOnly (no se guarda nada en el servidor).
  * 2. completar: gub.uy vuelve con code y state; se valida el state, se canjea el code, se valida el
- *    id_token y se redirige al frontend (o a la app) con NUESTRO token en el fragmento (#). El fragmento
- *    no se manda a ningun servidor ni queda en logs.
+ *    id_token, se consulta UserInfo y se redirige al frontend (o a la app) con NUESTRO token en
+ *    el fragmento (#). El fragmento no se manda a ningun servidor ni queda en logs.
  *
  * gub.uy dice QUIEN es la persona; los ROLES los decide carga.uy.
  */

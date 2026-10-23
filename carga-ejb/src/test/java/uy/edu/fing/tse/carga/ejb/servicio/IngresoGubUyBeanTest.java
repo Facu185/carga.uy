@@ -5,15 +5,21 @@ import org.junit.jupiter.api.Test;
 import uy.edu.fing.tse.carga.api.contract.annotation.AccionAuditada;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 import uy.edu.fing.tse.carga.api.dto.comun.PersonaDTO;
+import uy.edu.fing.tse.carga.api.dto.comun.RedireccionDTO;
 import uy.edu.fing.tse.carga.api.dto.cuenta.SesionDTO;
 import uy.edu.fing.tse.carga.ejb.modelo.Funcionario;
 import uy.edu.fing.tse.carga.ejb.modelo.Chofer;
 import uy.edu.fing.tse.carga.ejb.modelo.Rol;
 import uy.edu.fing.tse.carga.ejb.modelo.Usuario;
 import uy.edu.fing.tse.carga.ejb.seguridad.IdentidadGubUy;
+import uy.edu.fing.tse.carga.ejb.seguridad.ClienteOidcGubUy;
+import uy.edu.fing.tse.carga.ejb.seguridad.ConfiguracionGubUy;
+import uy.edu.fing.tse.carga.ejb.seguridad.GubUyException;
 import uy.edu.fing.tse.carga.ejb.seguridad.TokenService;
 
 import java.time.LocalDate;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -139,5 +145,38 @@ class IngresoGubUyBeanTest {
     void rechazaUnaCedulaInvalida() {
         assertThrows(NegocioException.class, () -> ingresar("12345678", "X", null));
         assertThrows(NegocioException.class, () -> ingresar(null, "X", null));
+    }
+
+    @Test
+    void siFallaUserInfoNoRegistraPersonaNiConsultaPdiNiEmiteSesion() {
+        tokens = new Falsos.TokensFalsos() {
+            @Override
+            public Optional<Map<String, String>> leerTransaccion(String transaccion) {
+                return Optional.of(Map.of("state", "estado-1", "nonce", "nonce-1",
+                        "verifier", "verifier-1", "destino", "web"));
+            }
+        };
+        servicio.tokens = tokens;
+        servicio.config = new ConfiguracionGubUy() {
+            @Override
+            public Optional<String> urlDestino(String destino) {
+                return Optional.of("http://localhost:3000/ingreso");
+            }
+        };
+        servicio.cliente = new ClienteOidcGubUy() {
+            @Override
+            public IdentidadGubUy canjearCodigo(String codigo, String verifier, String nonce) {
+                throw new GubUyException("UserInfo no disponible");
+            }
+        };
+
+        RedireccionDTO resultado = servicio.completar("codigo-1", "estado-1", null, "transaccion-sintetica");
+
+        assertTrue(resultado.getUrl().startsWith("http://localhost:3000/ingreso#error="));
+        assertFalse(resultado.getUrl().contains("#token="));
+        assertNull(resultado.getTransaccion());
+        assertTrue(usuarios.usuarios.isEmpty());
+        assertEquals(0, consultasPdi.get());
+        assertNull(tokens.ultimosRoles);
     }
 }

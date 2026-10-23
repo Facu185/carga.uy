@@ -7,7 +7,8 @@ import java.util.Optional;
 
 /**
  * Configuracion de la integracion con gub.uy (ID Uruguay), toda por variables de entorno.
- * Cambiar del simulador al ambiente de testing real de ID Uruguay es solo cambiar el .env.
+ * Compose base usa simulador; docker-compose.gubuy-testing.yml prepara ID Uruguay testing
+ * con secreto obligatorio en .env. La conexion real requiere validacion integrada.
  */
 @ApplicationScoped
 public class ConfiguracionGubUy {
