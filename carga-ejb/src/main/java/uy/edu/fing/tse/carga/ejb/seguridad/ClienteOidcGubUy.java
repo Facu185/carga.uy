@@ -48,11 +48,15 @@ public class ClienteOidcGubUy {
     @Inject
     ConfiguracionGubUy config;
 
-    private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    private final HttpClient http = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .followRedirects(HttpClient.Redirect.NEVER)
+            .build();
 
     private volatile Metadatos metadatos;
 
-    private record Metadatos(String authorizationEndpoint, String tokenEndpoint, JWKSource<SecurityContext> claves) {
+    private record Metadatos(String authorizationEndpoint, String tokenEndpoint, String userInfoEndpoint,
+                             JWKSource<SecurityContext> claves) {
     }
 
     // ---------------- paso 1: redirigir a gub.uy ----------------
@@ -82,6 +86,8 @@ public class ClienteOidcGubUy {
                 (enc(config.getClientId()) + ":" + enc(config.getClientSecret())).getBytes(StandardCharsets.UTF_8));
 
         String idToken;
+        String accessToken;
+        String tipoToken;
         // Tramo de cliente de la traza: cuanto tarda gub.uy en canjear el codigo
         try (Traza.Tramo tramo = Traza.iniciar("gub.uy POST /token", Traza.Tipo.CLIENTE)
                 .atributo("peer.service", "gub.uy")) {
@@ -98,20 +104,30 @@ public class ClienteOidcGubUy {
                 tramo.marcarError();
                 throw new GubUyException("gub.uy rechaz\u00f3 el ingreso (c\u00f3digo " + respuesta.statusCode() + ")");
             }
-            idToken = JSONObjectUtils.getString(JSONObjectUtils.parse(respuesta.body()), "id_token");
-        } catch (IOException | ParseException e) {
+            Map<String, Object> tokens = JSONObjectUtils.parse(respuesta.body());
+            idToken = JSONObjectUtils.getString(tokens, "id_token");
+            accessToken = JSONObjectUtils.getString(tokens, "access_token");
+            tipoToken = JSONObjectUtils.getString(tokens, "token_type");
+        } catch (ParseException e) {
+            // La causa de parseo puede contener tokens: no incluirla en los logs del llamador.
+            throw new GubUyException("La respuesta de tokens de gub.uy no es v\u00e1lida");
+        } catch (IOException e) {
             throw new GubUyException("gub.uy no est\u00e1 disponible en este momento", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new GubUyException("Se interrumpi\u00f3 el ingreso con gub.uy", e);
         }
-        if (idToken == null) {
+        if (idToken == null || idToken.isBlank()) {
             throw new GubUyException("gub.uy no devolvi\u00f3 un id_token");
         }
-        return validarIdToken(idToken, nonceEsperado, m);
+        String subject = validarIdToken(idToken, nonceEsperado, m);
+        if (accessToken == null || accessToken.isBlank() || !"Bearer".equalsIgnoreCase(tipoToken)) {
+            throw new GubUyException("gub.uy no devolvi\u00f3 un access_token de tipo Bearer");
+        }
+        return consultarUserInfo(accessToken, subject, m);
     }
 
-    private IdentidadGubUy validarIdToken(String idToken, String nonceEsperado, Metadatos m) {
+    private String validarIdToken(String idToken, String nonceEsperado, Metadatos m) {
         DefaultJWTProcessor<SecurityContext> procesador = new DefaultJWTProcessor<>();
         procesador.setJWSKeySelector(new JWSVerificationKeySelector<>(JWSAlgorithm.RS256, m.claves()));
         // Verifica firma, iss, aud (= nuestro client_id), exp y que el nonce sea el que mandamos
@@ -121,13 +137,53 @@ public class ClienteOidcGubUy {
                 Set.of("sub", "iat", "exp")));
         try {
             JWTClaimsSet claims = procesador.process(idToken, null);
-            return new IdentidadGubUy(
-                    claims.getSubject(),
-                    claims.getStringClaim("numero_documento"),
-                    claims.getStringClaim("email"),
-                    claims.getStringClaim("nombre_completo"));
+            String subject = claims.getSubject();
+            if (subject == null || subject.isBlank()) {
+                throw new GubUyException("La identidad recibida de gub.uy no tiene subject");
+            }
+            return subject;
         } catch (ParseException | BadJOSEException | JOSEException e) {
             throw new GubUyException("La identidad recibida de gub.uy no es v\u00e1lida", e);
+        }
+    }
+
+    private IdentidadGubUy consultarUserInfo(String accessToken, String subject, Metadatos m) {
+        try (Traza.Tramo tramo = Traza.iniciar("gub.uy GET /userinfo", Traza.Tipo.CLIENTE)
+                .atributo("peer.service", "gub.uy")) {
+            HttpRequest pedido = HttpRequest.newBuilder(URI.create(m.userInfoEndpoint()))
+                    .timeout(TIMEOUT)
+                    .header("Accept", "application/json")
+                    .header("Authorization", "Bearer " + accessToken)
+                    .header(Traza.HEADER, tramo.traceparent())
+                    .GET()
+                    .build();
+            HttpResponse<String> respuesta = http.send(pedido, HttpResponse.BodyHandlers.ofString());
+            tramo.atributo("http.status_code", respuesta.statusCode());
+            if (respuesta.statusCode() != 200) {
+                tramo.marcarError();
+                throw new GubUyException("No se pudieron obtener los datos de gub.uy (c\u00f3digo "
+                        + respuesta.statusCode() + ")");
+            }
+            Map<String, Object> datos = JSONObjectUtils.parse(respuesta.body());
+            // No basta una respuesta HTTP exitosa: los datos deben pertenecer al ID token validado.
+            if (!subject.equals(JSONObjectUtils.getString(datos, "sub"))) {
+                throw new GubUyException("Los datos de gub.uy no corresponden a la identidad autenticada");
+            }
+            String documento = JSONObjectUtils.getString(datos, "numero_documento");
+            if (documento == null || documento.isBlank()) {
+                throw new GubUyException("gub.uy no devolvi\u00f3 el documento de la persona");
+            }
+            return new IdentidadGubUy(subject, documento,
+                    JSONObjectUtils.getString(datos, "email"),
+                    JSONObjectUtils.getString(datos, "nombre_completo"));
+        } catch (ParseException | IllegalArgumentException e) {
+            // No propagar el cuerpo ni valores personales que pudiera incluir el error de parseo.
+            throw new GubUyException("La respuesta de UserInfo de gub.uy no es v\u00e1lida");
+        } catch (IOException e) {
+            throw new GubUyException("No se pudieron consultar los datos de gub.uy en este momento", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new GubUyException("Se interrumpi\u00f3 la consulta de datos de gub.uy", e);
         }
     }
 
@@ -160,17 +216,34 @@ public class ClienteOidcGubUy {
             String autorizacion = config.getAuthorizationEndpoint()
                     .orElse(JSONObjectUtils.getString(doc, "authorization_endpoint"));
             String token = JSONObjectUtils.getString(doc, "token_endpoint");
+            String userInfo = endpointUserInfo(doc);
             String jwks = JSONObjectUtils.getString(doc, "jwks_uri");
             JWKSource<SecurityContext> claves = JWKSourceBuilder
                     .create(URI.create(jwks).toURL(), new DefaultResourceRetriever(TIMEOUT_JWKS_MS, TIMEOUT_JWKS_MS))
                     .build();
-            return new Metadatos(autorizacion, token, claves);
+            return new Metadatos(autorizacion, token, userInfo, claves);
         } catch (IOException | ParseException | IllegalArgumentException e) {
             throw new GubUyException("gub.uy no est\u00e1 disponible en este momento", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new GubUyException("Se interrumpi\u00f3 la conexi\u00f3n con gub.uy", e);
         }
+    }
+
+    private String endpointUserInfo(Map<String, Object> doc) throws ParseException {
+        String endpoint = JSONObjectUtils.getString(doc, "userinfo_endpoint");
+        if (endpoint == null || endpoint.isBlank()) {
+            throw new GubUyException("gub.uy no public\u00f3 un endpoint UserInfo");
+        }
+        URI uri = URI.create(endpoint);
+        boolean https = "https".equalsIgnoreCase(uri.getScheme());
+        // HTTP solo conserva el entorno local existente; un issuer HTTPS no puede degradar a HTTP.
+        if (uri.getHost() == null || uri.getUserInfo() != null || uri.getFragment() != null
+                || !(https || "http".equalsIgnoreCase(uri.getScheme()))
+                || (config.getIssuer().startsWith("https://") && !https)) {
+            throw new GubUyException("El endpoint UserInfo de gub.uy no es v\u00e1lido");
+        }
+        return endpoint;
     }
 
     // ---------------- utilidades ----------------

@@ -15,7 +15,7 @@ regla de desvío de ruta, y LDAP se acopla al frente de identidad sin tocar el r
 - Autenticación del frontoffice con Usuario gub.uy (OIDC). **Caso de uso crítico.**
 - Consulta de datos de la persona al servicio de DNIC **por SOAP a través de la PDI**.
 - Flujo alternativo obligatorio: si la PDI no responde, el ingreso se completa igual con los datos
-  mínimos del token.
+  mínimos verificados de UserInfo, vinculado al `id_token` (ADR-0017).
 - Roles y autorización (ciudadano, chofer, funcionario, autoridad, administrador).
 - **Opcional: LDAP** para los usuarios internos del backoffice.
 - Pista de auditoría (tabla `auditoria`, solo se agrega, nunca se modifica).

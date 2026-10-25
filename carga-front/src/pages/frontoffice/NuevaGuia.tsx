@@ -3,8 +3,9 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { api } from '../../api/cliente'
 import { useAuth } from '../../auth/contexto'
 import { EncabezadoSitio } from '../../componentes/EncabezadoSitio'
+import { NavegacionEmpresa } from '../../componentes/NavegacionEmpresa'
 import { PieSitio } from '../../componentes/PieSitio'
-import type { ChoferCatalogo, CrearGuia, Guia, OpcionCatalogo, VehiculoCatalogo } from '../../tipos'
+import { ROLES, type ChoferCatalogo, type CrearGuia, type Guia, type OpcionCatalogo, type VehiculoCatalogo, type VinculoEmpresa } from '../../tipos'
 import { useTituloPagina } from '../../titulo'
 
 type FormularioGuia = Record<keyof CrearGuia, string>
@@ -28,6 +29,27 @@ export function NuevaGuia() {
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [creada, setCreada] = useState<Guia | null>(null)
+  const [tokenResponsable, setTokenResponsable] = useState<string | null>(null)
+  const roles = sesion?.roles ?? (sesion ? [sesion.rol] : [])
+  const esFuncionario = roles.includes(ROLES.FUNCIONARIO)
+
+  // Solo decide la navegación; nunca condiciona los catálogos ni el permiso de crear.
+  useEffect(() => {
+    let vigente = true
+    const token = sesion?.token
+    setTokenResponsable(null)
+    if (!token || esFuncionario) return
+    api<VinculoEmpresa[]>('/solicitudes-empresa/vinculos/mios')
+      .then((vinculos) => {
+        if (vigente && vinculos.some((vinculo) => vinculo.tipo === 'RESPONSABLE' && vinculo.estado === 'ACTIVO')) setTokenResponsable(token)
+      })
+      .catch(() => {
+        // Sin confirmar el vínculo se conserva el retorno a Mi cuenta, no se bloquea el formulario.
+        if (vigente) setTokenResponsable(null)
+      })
+    return () => { vigente = false }
+  }, [sesion?.token, esFuncionario])
+
   const cambiar = (campo: keyof CrearGuia, valor: string) => setFormulario((anterior) => ({ ...anterior, [campo]: valor }))
   useEffect(() => {
     let vigente = true
@@ -52,6 +74,7 @@ export function NuevaGuia() {
 
   return <div className="pagina"><EncabezadoSitio><span className="sitio-usuario">{sesion?.nombre}</span><button type="button" className="boton-secundario boton-chico" onClick={logout}>Salir</button></EncabezadoSitio>
     <main className="pagina-contenido contenido-guia">
+      {!esFuncionario && tokenResponsable === sesion?.token && <NavegacionEmpresa />}
       <a className="volver" href="/mi-cuenta">Volver a Mi cuenta</a>
       <header className="encabezado-guia"><span className="tarjeta-seccion-icono" aria-hidden="true"><ClipboardPenLine size={24} /></span><div><h1>Registrar guía de carga</h1><p>Completá el viaje. El sistema controla la empresa, la vigencia del vehículo y que no se superponga con otra guía.</p></div></header>
       {error && <p className="mensaje-error" role="alert">{error}</p>}

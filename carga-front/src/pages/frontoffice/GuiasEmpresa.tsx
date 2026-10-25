@@ -1,11 +1,11 @@
 import { ClipboardList } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { api } from '../../api/cliente'
 import { useAuth } from '../../auth/contexto'
 import { EncabezadoSitio } from '../../componentes/EncabezadoSitio'
 import { Etiqueta } from '../../componentes/Etiqueta'
 import { FilasCargando } from '../../componentes/FilasCargando'
+import { NavegacionEmpresa } from '../../componentes/NavegacionEmpresa'
 import { PieSitio } from '../../componentes/PieSitio'
 import { formatearMomento } from '../../formato'
 import type { PaginaGuiasEmpresa, VinculoEmpresa } from '../../tipos'
@@ -80,7 +80,7 @@ export function GuiasEmpresa() {
         <button type="button" className="boton-secundario boton-chico" onClick={logout}>Salir</button>
       </EncabezadoSitio>
       <main className="pagina-contenido empresa-contenido">
-        <Link className="volver" to="/mi-cuenta">Volver a Mi cuenta</Link>
+        <NavegacionEmpresa />
         <header className="encabezado-guia">
           <span className="tarjeta-seccion-icono" aria-hidden="true"><ClipboardList size={24} /></span>
           <div>
