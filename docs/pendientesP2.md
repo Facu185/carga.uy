@@ -15,6 +15,10 @@ cinco tests HTTP F11 nuevos y escenarios pendientes. Sin ejecución funcional.
 **Fase 4 / F13:** C13 confirmado por el usuario según
 [ADR-0016](decisiones/0016-consulta-vehicular-funcionario.md); consulta y pantalla
 de solo lectura locales, con [aceptación pendiente](../pruebas/p2-consulta-vehicular.md).
+**Fase 5 / F14 P2 (2026-10-27):** C14 aprobado por el usuario según
+[ADR-0018](decisiones/0018-consulta-viajes-funcionario-p2.md); listado/detalle
+de guías y pantalla Viajes locales, con [aceptación pendiente](../pruebas/p2-consulta-viajes.md).
+Fuentes P3/P4 sin integrar; no se declara F14 cerrado.
 
 ## 1. Alcance y criterio de cierre
 
@@ -233,9 +237,11 @@ equipo si se requiere automatización, sin instalar herramientas por iniciativa 
 **Asignación confirmada:** P2 implementa la pantalla por indicación explícita del usuario.
 
 - [x] Elegir tecnología SPA existente para F12–F14, según ADR-0013.
-- [ ] Acordar navegación y contratos de lectura para el funcionario;
-  la consulta empresarial actual de guías exige vínculo responsable, no habilita
-  por sí sola al funcionario.
+- [x] Aprobar/publicar C14 P2 y consulta separada para funcionario/administrador,
+  sin quitar pertenencia al listado empresarial. Listado paginado, detalle y
+  navegación local F12 → Viajes; veinte pruebas Java y matriz escritas sin ejecución.
+- [ ] Acreditar navegación compartida y ejecutar aceptación C14 P2: roles efectivos,
+  JPQL, filtros temporales, JSON, históricos y navegador.
 - [ ] Coordinar datos de empresa/guía/asignación P2 con estado/historial P3 y
   posiciones/pesajes P4; no rehacer los adaptadores que esos frentes ya tienen.
 - [ ] Implementar e integrar F12–F14 según el [plan por fases](plan-cierre-p2.md).
@@ -259,8 +265,8 @@ se agregan como faltantes obligatorios.
 
 1. Resolver por bloque autorización, interfaz y contratos de P2-05; acordar reparto F15.
 2. Validar F11 ya implementado y registrar su dependencia P3 aún abierta.
-3. Validar F10/F12/F13 implementados localmente; acordar C14 y sus fuentes antes de F14.
-4. Preparar consultas e interfaz F14 desde P2 con contratos P3/P4 acordados.
+3. Validar F10/F12/F13 y C14 P2 implementados localmente; C14 aprobado no cierra F14.
+4. Acordar fuentes C14-E/C14-P e integrar estado/historial y pesajes reales a la interfaz P2.
 5. Integrar estado real, concurrencia inicio/baja y política offline con P3/móvil.
 6. Acreditar CU2/ABM/JSF y los recorridos nuevos en integración; registrar evidencia final.
 

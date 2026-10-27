@@ -56,7 +56,7 @@ tokens, cédulas o respuestas sensibles en la evidencia.
 | Fallo red/5xx/respuesta de guardado inválida | Resultado incierto: no reenvío automático; bloquear escrituras hasta reconsultar. |
 | 401/403 al consultar o mutar | No conservar formulario operativo; 401 usa cierre de sesión existente. |
 | Fallo de auditoría durante baja (entorno con inyección de fallo controlada) | Verificar en transacción nueva rollback de empresa, vínculos y auditoría; revertir mecanismo de fallo del entorno. Un mock NO acredita JTA. |
-| Vehículos / Viajes | Vehículos enlaza a la consulta F13/C13 de solo lectura (ver matriz específica); Viajes sigue deshabilitado, sin consumir C14 ni simular viajes. |
+| Vehículos / Viajes (actualizado fase 5, 2026-10-27) | Vehículos enlaza a F13/C13 y Viajes a la consulta C14 P2 de solo lectura (ver [matriz C14](p2-consulta-viajes.md)); historial y pesajes siguen pendientes de integración, sin simularlos. |
 | Solicitudes de responsables | Reutiliza componente y endpoints P1 existentes; NO es bandeja de altas de empresas. El alta sigue pendiente de coordinación P1. |
 | Título de la bandeja reutilizada | Identifica Área del funcionario en el recorrido nuevo; el backoffice conserva su título y comportamiento anterior. |
 | Teclado, zoom y pantalla estrecha | Etiquetas, mensajes anunciados, tabla desplazable, confirmación con foco; no depender de color. |

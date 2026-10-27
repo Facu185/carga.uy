@@ -25,3 +25,4 @@ Plantilla: [plantilla.md](plantilla.md).
 | [0015](0015-incompatibilidad-funcionario-responsable.md) | Incompatibilidad entre funcionario activo y responsabilidad empresarial activa | Aceptada para cambio confirmado por usuario |
 | [0016](0016-consulta-vehicular-funcionario.md) | Consulta vehicular F13 separada del ABM, con referencia temporal de servidor | Aceptada para C13 confirmado por usuario |
 | [0017](0017-id-uruguay-userinfo-testing.md) | Datos personales por UserInfo y configuración explícita de ID Uruguay testing | Aceptada para alcance confirmado por usuario |
+| [0018](0018-consulta-viajes-funcionario-p2.md) | Consulta C14 de guías y preparación F14 limitada a P2 | Aceptada para C14 y entrega parcial confirmados por usuario |
