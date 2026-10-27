@@ -32,7 +32,7 @@ personales en evidencias. Registrar revisión, fecha, resultado y referencia seg
 | Error de red/5xx/DTO no interpretable y reconsulta | Error explícito sin filas anteriores; reintento exclusivamente de lectura. |
 | URL directa, recarga, atrás/adelante | Misma empresa, filtro y página según URL. ID inválido no consulta. |
 | Teclado, zoom y pantalla estrecha | Etiquetas, foco visible, tabla desplazable, estados no solo por color y resumen anunciado. |
-| Viajes F14 | Sigue deshabilitado; no consumir C14 ni simular viajes/pesajes. |
+| Viajes F14 (actualizado fase 5, 2026-10-27) | Enlace a consulta C14 P2; fuentes P3/P4 pendientes explícitas. Validar por la [matriz C14](p2-consulta-viajes.md), sin simular viajes/pesajes. |
 
 ## Evidencia automatizada escrita y límites
 

@@ -175,15 +175,16 @@ La nueva área reutiliza la bandeja P1 de **vínculos de responsables** bajo
 `/funcionario/solicitudes-responsables`, no un circuito de alta empresarial.
 Alta y aceptación compartida P1/P3 siguen pendientes. Administrador/JSF conservan
 sus recorridos y permisos anteriores; las rutas SPA no autorizan al servidor.
-Vehículos enlaza a la consulta C13 de solo lectura de fase 4; Viajes sigue
-deshabilitado y no consume C14.
+Vehículos enlaza a la consulta C13 de solo lectura de fase 4; Viajes consume
+la consulta C14 de fase 5, limitada a P2, sin fuentes P3/P4 integradas.
 Validación real pendiente en [escenarios F12](../pruebas/p2-funcionario-empresas.md).
 
 La elección de SPA F12–F14 está acotada por [ADR-0013](decisiones/0013-area-funcionario-spa-p2.md).
 El perfil F10/C10 queda aprobado por el usuario y publicado a continuación.
 C13/F13 fue confirmado posteriormente por el usuario en
-[ADR-0016](decisiones/0016-consulta-vehicular-funcionario.md). C14/F14 sigue como
-**borrador no aprobado** en el [registro de fase 0](acuerdos-cierre-p2-fase-0.md).
+[ADR-0016](decisiones/0016-consulta-vehicular-funcionario.md). C14 y la entrega
+parcial P2/F14 fueron aprobados por el usuario en
+[ADR-0018](decisiones/0018-consulta-viajes-funcionario-p2.md); C14-E/C14-P siguen pendientes.
 
 ### Consulta vehicular F13 / C13
 
@@ -300,6 +301,55 @@ El total corresponde a esa empresa, no a todas las empresas del usuario.
 El nombre y la matrícula reflejan los registros relacionados actuales; no son
 instantáneas históricas. La consulta no modifica estados ni deduce finalización
 por la fecha prevista del viaje.
+
+### Consulta de viajes F14 / C14 (parte P2)
+
+Contrato aprobado por el usuario el 2026-10-27, según
+[ADR-0018](decisiones/0018-consulta-viajes-funcionario-p2.md). No acredita aceptación
+externa, ejecución ni integración de fuentes P3/P4.
+
+`ConsultaGuiasLocal.consultar(Long empresaId, String desde, String hasta,
+String estado, Integer pagina, Integer tamano)` devuelve `PaginaConsultaGuiasDTO`.
+`detalle(Long empresaId, Long guiaId)` devuelve `ConsultaGuiaDTO`.
+
+- GET `/carga/api/guias/consulta` y GET `/carga/api/guias/consulta/{id}`:
+  FUNCIONARIO/ADMINISTRADOR, solo lectura sin vínculo empresarial. Autorizar
+  en el EJB antes de consultar existencia. No ampliar `GuiaServicioBean`.
+- `empresaId` obligatorio y positivo en ambas rutas; `id` de guía positivo en
+  detalle. Incluye empresas inactivas e históricos sin vehículo/chofer asignado.
+  La guía del detalle debe pertenecer a la empresa seleccionada.
+- Listado: `desde`/`hasta` opcionales como par de instantes ISO-8601 con offset
+  o Z, `desde < hasta`. Se busca solapamiento del **período previsto** con
+  `[desde, hasta)`: `inicio < hasta AND fin > desde`. Coincidir solo en un extremo
+  no cuenta. Ambos ausentes no filtran; un límite ausente, vacío o sin zona es
+  inválido. No usar la columna heredada `fecha` ni la zona del navegador.
+- `estado` opcional, recortado; ausente/blanco no filtra. Valores exactos:
+  `CREADA`, `ASIGNADA`, `EN_CURSO`, `FINALIZADA`. Es el estado persistido, no
+  historial real ni una inferencia por fecha prevista.
+- Página base 0 (predeterminada 0), tamaño 1–100 (predeterminado 20), producto
+  página/tamaño hasta `Integer.MAX_VALUE`; orden `inicio DESC, id DESC`.
+  Página fuera de resultados: registros vacíos con total conservado. Conteo y
+  filas pueden variar ante escrituras concurrentes; no se promete instantánea.
+- Listado 200: `{registros, pagina, tamano, total}`. Cada registro y el detalle
+  200: `{guia: GuiaDTO, nombreEmpresa, matricula, nombreChofer}`. `GuiaDTO`
+  conserva IDs, carga en kg/m³, origen/destino/coordenadas, inicio/fin previstos,
+  estado y creación ISO-8601. Asignaciones y volumen históricos pueden ser
+  nulos/ausentes; no se reconstruyen. El peso histórico cero se conserva.
+  Nombre empresarial, matrícula y nombre de chofer reflejan registros actuales,
+  no una instantánea histórica. No exponer cédula, correo ni entidades JPA.
+- Errores `400 {"error":"mensaje"}` para filtros, IDs o paginación inválidos,
+  números no representables, empresa/guía inexistente o guía de otra empresa;
+  401 sin sesión válida y 403 sin permiso. Conservar correlación y Bearer.
+
+SPA de FUNCIONARIO: `/funcionario/empresas/:id/viajes` y
+`/funcionario/empresas/:id/viajes/:guiaId`, con navegación desde F12, filtros en
+URL, paginación y detalle de solo lectura. ADMINISTRADOR dispone de la API sin
+cambiar su acceso al área SPA. Historial P3 y pesajes P4 indican **pendiente de
+integración**, no listas vacías ni datos ficticios. No se consumen rutas nuevas
+de P3/P4 ni se asocia por matrícula/día en el navegador; `guiaId=null` conserva
+su significado. C14-E/C14-P siguen pendientes. No hay mapas, polling,
+sincronización manual ni mutaciones. Validación en
+[escenarios F14 P2](../pruebas/p2-consulta-viajes.md), pendiente de ejecución.
 
 Tablas compartidas (las toca más de un frente): `empresa`, `vehiculo`, `chofer`, `guia`, `usuario`,
 `rol`, `auditoria`. Cambiarlas requiere aviso.

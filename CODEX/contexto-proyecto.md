@@ -57,7 +57,7 @@ listado/búsqueda, detalle, edición administrativa y baja C12, con entrada por 
 desde Mi cuenta y sesión P1 intacta. Reutiliza bandeja P1 de responsables, NO alta
 empresarial. Aceptación compartida P1/P3, alta P1 y validación real pendientes en
 [escenarios F12](../pruebas/p2-funcionario-empresas.md). El detalle ahora enlaza
-a F13/C13; Viajes continúa deshabilitado, sin consumir C14.
+a F13/C13 y a Viajes/C14 P2 (fase 5), sin fuentes P3/P4 integradas.
 
 **Actualización F13 (2026-10-22):** [ADR-0016](../docs/decisiones/0016-consulta-vehicular-funcionario.md)
 registra C13 confirmado por el usuario. `ConsultaVehiculosLocal`/EJB/REST separado
@@ -66,7 +66,17 @@ incluye empresas inactivas y bajas, matrícula parcial literal y paginación. La
 `/funcionario/empresas/:id/vehiculos` muestra vigencias calculadas con fecha servidor
 America/Montevideo; no altera permisos ABM ni asignaciones CU2. Pruebas y
 [aceptación F13](../pruebas/p2-consulta-vehicular.md) pendientes de ejecución y
-aceptación integrada P1/P3. C14 sigue sin aprobar.
+aceptación integrada P1/P3. C14 P2 se aprobó posteriormente según la actualización siguiente.
+
+**Actualización F14 P2 (2026-10-27):** [ADR-0018](../docs/decisiones/0018-consulta-viajes-funcionario-p2.md)
+registra aprobación explícita C14 y entrega parcial P2. `ConsultaGuiasLocal`/EJB/REST
+separado de CU2 ofrece listado/detalle solo lectura para FUNCIONARIO/ADMINISTRADOR
+sin vínculo, por empresa, con filtros de solapamiento previsto/estado y paginación.
+SPA `/funcionario/empresas/:id/viajes` y `.../viajes/:guiaId`, con asignaciones
+ausentes y volumen histórico nulo preservados. Estado persistido no es historial
+real; C14-E P3 y C14-P P4 siguen pendientes explícitos, sin endpoints supuestos.
+Veinte pruebas Java y [matriz C14 P2](../pruebas/p2-consulta-viajes.md) escritas;
+sin builds, ciclo rojo/verde ni validación funcional ejecutados. No cierra F14 integrado.
 
 **Actualización F10 (2026-10-22):** [ADR-0014](../docs/decisiones/0014-perfil-propio-empresa.md)
 acepta el perfil propio acotado en SPA y C10. Existe contrato local específico,

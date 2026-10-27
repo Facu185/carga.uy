@@ -152,10 +152,10 @@ function DetalleEmpresa({ idTexto }: { idTexto: string }) {
               </div>}
             {incierto && <button type="button" className="boton-secundario" onClick={reconsultar}>Volver a consultar</button>}
             <h3>Consultas relacionadas</h3>
-            <p>Consulta vehicular de solo lectura. Los viajes siguen pendientes de su contrato de consulta.</p>
+            <p>Consultas de solo lectura. Los viajes muestran datos P2; historial y pesajes siguen pendientes de integración.</p>
             <div className="formulario-botones">
               <Link className="boton-enlace" to={`/funcionario/empresas/${empresa.id}/vehiculos`}>Consultar vehículos, permiso e ITV</Link>
-              <button type="button" disabled>Viajes — pendiente fase 5</button>
+              <Link className="boton-enlace" to={`/funcionario/empresas/${empresa.id}/viajes`}>Consultar viajes</Link>
             </div>
           </section>}
     </>
