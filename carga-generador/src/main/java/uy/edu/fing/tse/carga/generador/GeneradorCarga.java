@@ -14,7 +14,6 @@ import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
 
-
 public final class GeneradorCarga {
     private static final long TICK_MS = 100;
     private static final String SERIE_NUEVAS = "carga_tracking_posiciones_total{resultado=\"nueva\"}";
@@ -27,6 +26,7 @@ public final class GeneradorCarga {
     private final Random azar;
     private final Semaphore enVuelo;
     private PrintWriter csv;
+    private ObservadorMonitor monitor;
 
     private GeneradorCarga(Configuracion config) {
         this.config = config;
@@ -53,6 +53,7 @@ public final class GeneradorCarga {
             System.out.println("[generador] ATENCION: NODO_TOKEN vacio, el central va a rechazar todo con 401");
         }
         abrirCsv();
+        iniciarMonitor();
         OptionalDouble nuevasAntes = cliente.leerMetrica(SERIE_NUEVAS);
 
         long inicio = System.currentTimeMillis();
@@ -115,9 +116,28 @@ public final class GeneradorCarga {
             Thread.sleep(TICK_MS);
         }
         reportar(System.currentTimeMillis() - inicio);
+        if (monitor != null) {
+            monitor.detener();
+        }
         resumen(nuevasAntes);
         if (csv != null) {
             csv.close();
+        }
+    }
+
+    private void iniciarMonitor() {
+        if (!config.monitorActivo()) {
+            return;
+        }
+        ObservadorMonitor observador = new ObservadorMonitor(config);
+        try {
+            observador.iniciar();
+            monitor = observador;
+            System.out.println("[generador] funcionario simulado: " + config.monitorUsuario()
+                + " consulta el panel de monitoreo cada " + config.monitorCadaSeg() + " s");
+        } catch (Exception e) {
+            System.out.println("[generador] ATENCION: el funcionario simulado no pudo entrar (" + e.getMessage()
+                + "). La prueba sigue solo con los vehiculos.");
         }
     }
 
@@ -192,18 +212,34 @@ public final class GeneradorCarga {
 
     private void reportar(long transcurridoMs) {
         Estadisticas.Intervalo i = estadisticas.tomarIntervalo(config.reporteSeg());
+        ObservadorMonitor.Intervalo m = monitor != null ? monitor.tomarIntervalo() : null;
         int enBuffer = pendientesEnBuffers();
         long segundo = transcurridoMs / 1000;
+        String lineaMonitor = textoMonitor(m);
         System.out.printf(Locale.ROOT, "[generador] t=%4ds veh=%5d | %6.1f ped/s %7.1f pos/s | 202=%6d 400=%3d"
-                + " 503=%6d err=%4d | p50=%4dms p95=%5dms p99=%5dms | en buffer=%d%n",
+                + " 503=%6d err=%4d | p50=%4dms p95=%5dms p99=%5dms | en buffer=%d%s%n",
             segundo, vehiculos.size(), i.pedidosPorSeg(), i.posicionesPorSeg(), i.aceptadas(), i.rechazadas(),
-            i.saturadas(), i.errores(), i.p50(), i.p95(), i.p99(), enBuffer);
+            i.saturadas(), i.errores(), i.p50(), i.p95(), i.p99(), enBuffer, lineaMonitor);
         if (csv != null) {
-            csv.printf(Locale.ROOT, "%d,%d,%.2f,%.2f,%d,%d,%d,%d,%d,%d,%d,%d%n", segundo, vehiculos.size(),
+            String columnasMonitor = m == null || m.consultas() == 0 ? ","
+                : m.metricasP95() + "," + m.mapaP95();
+            csv.printf(Locale.ROOT, "%d,%d,%.2f,%.2f,%d,%d,%d,%d,%d,%d,%d,%d,%s%n", segundo, vehiculos.size(),
                 i.pedidosPorSeg(), i.posicionesPorSeg(), i.aceptadas(), i.rechazadas(), i.saturadas(),
-                i.errores(), i.p50(), i.p95(), i.p99(), enBuffer);
+                i.errores(), i.p50(), i.p95(), i.p99(), enBuffer, columnasMonitor);
             csv.flush();
         }
+    }
+
+    private static String textoMonitor(ObservadorMonitor.Intervalo m) {
+        if (m == null) {
+            return "";
+        }
+        String errores = m.errores() > 0 ? " (" + m.errores() + " errores)" : "";
+        if (m.consultas() == 0) {
+            return " | monitor: sin respuestas" + errores;
+        }
+        return String.format(Locale.ROOT, " | monitor: metricas p95=%dms mapa p95=%dms%s",
+            m.metricasP95(), m.mapaP95(), errores);
     }
 
     private void resumen(OptionalDouble nuevasAntes) throws InterruptedException {
@@ -221,6 +257,12 @@ public final class GeneradorCarga {
         System.out.printf("Sin enviar al terminar:          %d%n", pendientesEnBuffers());
         System.out.printf("Latencia de la ingesta: p50=%dms p95=%dms p99=%dms max=%dms%n",
             t.p50(), t.p95(), t.p99(), t.maximo());
+        if (monitor != null) {
+            ObservadorMonitor.Total m = monitor.total();
+            System.out.printf("Panel de monitoreo (%d consultas): metricas p50=%dms p95=%dms max=%dms |"
+                    + " mapa p50=%dms p95=%dms max=%dms | errores=%d%n", m.consultas(), m.metricasP50(),
+                m.metricasP95(), m.metricasMax(), m.mapaP50(), m.mapaP95(), m.mapaMax(), m.errores());
+        }
         verificarSinPerdida(nuevasAntes, t);
         if (csv != null) {
             System.out.println("Detalle por intervalo: " + config.archivoCsv());
@@ -268,7 +310,7 @@ public final class GeneradorCarga {
             }
             csv = new PrintWriter(Files.newBufferedWriter(archivo, StandardCharsets.UTF_8));
             csv.println("segundo,vehiculos,pedidos_s,posiciones_s,aceptadas,rechazadas,saturadas,errores,"
-                + "p50_ms,p95_ms,p99_ms,en_buffer");
+                + "p50_ms,p95_ms,p99_ms,en_buffer,monitor_metricas_p95_ms,monitor_mapa_p95_ms");
         } catch (IOException e) {
             System.out.println("[generador] no se pudo crear el CSV (" + e.getMessage() + "): solo consola");
         }

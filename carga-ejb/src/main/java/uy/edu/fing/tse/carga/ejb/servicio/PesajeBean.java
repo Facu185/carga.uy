@@ -6,6 +6,7 @@ import jakarta.ejb.ConcurrencyManagementType;
 import jakarta.ejb.EJB;
 import jakarta.ejb.LocalBean;
 import jakarta.ejb.Singleton;
+import jakarta.ejb.Startup;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.ws.rs.client.Client;
@@ -45,6 +46,7 @@ import java.util.logging.Logger;
  * no uno por cada bean del pool. LocalBean para que salud y monitor lean el estado del circuito.
  */
 @Singleton
+@Startup
 @LocalBean
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
