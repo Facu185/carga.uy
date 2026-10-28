@@ -34,8 +34,8 @@ public class MonitorRecursos {
             () -> ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax());
         for (GarbageCollectorMXBean gc : ManagementFactory.getGarbageCollectorMXBeans()) {
             String nombre = gc.getName().toLowerCase(Locale.ROOT).replace(' ', '_');
-            metricas.registrarMedidor("carga_jvm_gc_colecciones", gc::getCollectionCount, "recolector", nombre);
-            metricas.registrarMedidor("carga_jvm_gc_tiempo_ms", gc::getCollectionTime, "recolector", nombre);
+            metricas.registrarMedidor("carga_jvm_gc_colecciones_total", gc::getCollectionCount, "recolector", nombre);
+            metricas.registrarMedidor("carga_jvm_gc_tiempo_ms_total", gc::getCollectionTime, "recolector", nombre);
         }
         metricas.registrarMedidor("carga_jvm_cpu_proceso",
             () -> atributo("java.lang:type=OperatingSystem", "ProcessCpuLoad"));
@@ -43,7 +43,7 @@ public class MonitorRecursos {
         metricas.registrarMedidor("carga_db_conexiones", () -> atributo(POOL, "AvailableCount"),
             "estado", "disponibles");
         metricas.registrarMedidor("carga_db_conexiones_max_usadas", () -> atributo(POOL, "MaxUsedCount"));
-        metricas.registrarMedidor("carga_db_esperas", () -> atributo(POOL, "WaitCount"));
+        metricas.registrarMedidor("carga_db_esperas_total", () -> atributo(POOL, "WaitCount"));
         metricas.registrarMedidor("carga_db_espera_promedio_ms", () -> atributo(POOL, "AverageBlockingTime"));
     }
 

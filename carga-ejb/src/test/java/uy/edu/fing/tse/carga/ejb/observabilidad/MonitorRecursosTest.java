@@ -16,8 +16,8 @@ class MonitorRecursosTest {
 
         String texto = metricas.exportarPrometheus();
         assertTrue(texto.contains("carga_jvm_memoria_heap_maxima_bytes "));
-        assertTrue(texto.contains("carga_jvm_gc_colecciones{recolector=\""));
-        assertTrue(texto.contains("carga_jvm_gc_tiempo_ms{recolector=\""));
+        assertTrue(texto.contains("carga_jvm_gc_colecciones_total{recolector=\""));
+        assertTrue(texto.contains("carga_jvm_gc_tiempo_ms_total{recolector=\""));
         assertTrue(texto.contains("carga_jvm_cpu_proceso "));
     }
 
@@ -31,7 +31,7 @@ class MonitorRecursosTest {
 
         String texto = metricas.exportarPrometheus();
         assertTrue(texto.contains("carga_db_conexiones{estado=\"en_uso\"} -1"));
-        assertTrue(texto.contains("carga_db_esperas -1"));
+        assertTrue(texto.contains("carga_db_esperas_total -1"));
     }
 
     @Test

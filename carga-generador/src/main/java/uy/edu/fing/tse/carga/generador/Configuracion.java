@@ -26,7 +26,10 @@ public record Configuracion(
     int reporteSeg,
     int drenajeSeg,
     String archivoCsv,
-    long semilla) {
+    long semilla,
+    String monitorUsuario,
+    String monitorPassword,
+    int monitorCadaSeg) {
     public static Configuracion desdeEntorno(Map<String, String> env) {
         String escenario = texto(env, "GEN_ESCENARIO", "constante").toLowerCase(Locale.ROOT);
         if (!escenario.equals("constante") && !escenario.equals("pico") && !escenario.equals("rampa")) {
@@ -55,7 +58,21 @@ public record Configuracion(
             entero(env, "GEN_REPORTE_SEG", 10),
             entero(env, "GEN_DRENAJE_SEG", 180),
             texto(env, "GEN_CSV", "/resultados/carga-" + escenario + "-" + marca + ".csv"),
-            entero(env, "GEN_SEMILLA", 42));
+            entero(env, "GEN_SEMILLA", 42),
+            texto(env, "GEN_MONITOR_USUARIO", "admin"),
+            texto(env, "GEN_MONITOR_PASSWORD", ""),
+            entero(env, "GEN_MONITOR_CADA_SEG", 5));
+    }
+
+    public String urlApi() {
+        String sufijo = "/tracking/posiciones";
+        return urlIngesta.endsWith(sufijo)
+            ? urlIngesta.substring(0, urlIngesta.length() - sufijo.length())
+            : "http://central:8080/carga/api";
+    }
+
+    public boolean monitorActivo() {
+        return !monitorPassword.isEmpty();
     }
 
     public String urlLote() {

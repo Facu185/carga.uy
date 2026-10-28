@@ -216,6 +216,7 @@ Otros escenarios, cambiando parámetros con `-e`:
 ```bash
 docker compose --profile carga run --build --rm -e GEN_ESCENARIO=pico generador
 docker compose --profile carga run --build --rm -e GEN_ESCENARIO=rampa -e GEN_DURACION_SEG=1200 generador
+docker compose --profile carga run --build --rm -e GEN_MONITOR_PASSWORD=<clave del admin> generador
 ```
 
 | Variable | Default | Qué es |
@@ -228,6 +229,7 @@ docker compose --profile carga run --build --rm -e GEN_ESCENARIO=rampa -e GEN_DU
 | `GEN_RAMPA_PASO`, `GEN_RAMPA_CADA_SEG` | `500`, `120` | Escenario rampa: cuántos vehículos se suman y cada cuánto |
 | `GEN_CONCURRENCIA`, `GEN_LOTE_MAX` | `200`, `500` | Pedidos en vuelo como máximo y tamaño máximo de un lote |
 | `GEN_REPORTE_SEG`, `GEN_DRENAJE_SEG` | `10`, `180` | Cada cuánto informa y cuánto espera al final a que se vacíen los buffers |
+| `GEN_MONITOR_PASSWORD`, `GEN_MONITOR_USUARIO`, `GEN_MONITOR_CADA_SEG` | (vacía), `admin`, `5` | Funcionario simulado: si se le pasa la contraseña, además de los vehículos entra al backoffice y consulta el panel de monitoreo cada 5 s, midiendo cuánto tarda. Sin contraseña no se simula |
 
 Cada 10 segundos muestra pedidos y posiciones por segundo, respuestas (202, 400, 503, errores), la
 latencia de la ingesta (p50, p95, p99) y lo que quedó en los buffers. Al final compara las posiciones
