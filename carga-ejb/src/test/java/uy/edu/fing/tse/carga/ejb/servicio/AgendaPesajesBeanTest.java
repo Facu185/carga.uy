@@ -3,6 +3,7 @@ package uy.edu.fing.tse.carga.ejb.servicio;
 import org.junit.jupiter.api.Test;
 import uy.edu.fing.tse.carga.api.contract.service.SincronizacionPesajesLocal;
 import uy.edu.fing.tse.carga.api.dto.nodo.PesadaRegistradaDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.PesajesDeGuiaDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoSincronizacionDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 import uy.edu.fing.tse.carga.ejb.persistencia.PesadaDAO;
@@ -37,6 +38,11 @@ class AgendaPesajesBeanTest {
 
             @Override
             public List<PesadaRegistradaDTO> registradas(String matricula, String fecha) throws NegocioException {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public PesajesDeGuiaDTO registradasDeGuia(Long guiaId) {
                 throw new UnsupportedOperationException();
             }
         };

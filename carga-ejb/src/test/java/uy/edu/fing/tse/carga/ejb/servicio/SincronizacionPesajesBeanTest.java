@@ -5,12 +5,14 @@ import org.junit.jupiter.api.Test;
 import uy.edu.fing.tse.carga.api.contract.service.PesajeLocal;
 import uy.edu.fing.tse.carga.api.dto.comun.PesadaDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.PesadaRegistradaDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.PesajesDeGuiaDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoPesajeDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoSincronizacionDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 import uy.edu.fing.tse.carga.ejb.modelo.Pesada;
 import uy.edu.fing.tse.carga.ejb.observabilidad.Metricas;
 import uy.edu.fing.tse.carga.ejb.persistencia.PesadaDAO;
+import uy.edu.fing.tse.carga.ejb.persistencia.RecorridoDAO;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -30,6 +32,7 @@ class SincronizacionPesajesBeanTest {
 
     private final List<PesadaDTO> delNodo = new ArrayList<>();
     private boolean nodoDisponible;
+    private boolean circuitoCerrado;
     private final List<PesadaRegistradaDTO> avisos = new ArrayList<>();
     private PesadasEnMemoria pesadas;
     private SincronizacionPesajesBean sincronizacion;
@@ -37,14 +40,29 @@ class SincronizacionPesajesBeanTest {
     @BeforeEach
     void preparar() {
         nodoDisponible = true;
+        circuitoCerrado = true;
         pesadas = new PesadasEnMemoria();
         sincronizacion = new SincronizacionPesajesBean() {
             @Override
             void publicar(PesadaRegistradaDTO pesada) {
                 avisos.add(pesada);
             }
+
+            @Override
+            boolean nodoBalanzasDisponible() {
+                return circuitoCerrado;
+            }
         };
         sincronizacion.pesadas = pesadas;
+        sincronizacion.guias = new RecorridoDAO() {
+            @Override
+            public Optional<PeriodoDeGuia> periodoDeGuia(Long guiaId) {
+                return guiaId == 77L
+                        ? Optional.of(new PeriodoDeGuia("STZ1234", Instant.parse("2026-10-07T12:00:00Z"),
+                                Instant.parse("2026-10-09T12:00:00Z")))
+                        : Optional.empty();
+            }
+        };
         sincronizacion.metricas = new Metricas();
         sincronizacion.pesaje = new PesajeLocal() {
             @Override
@@ -133,6 +151,56 @@ class SincronizacionPesajesBeanTest {
         assertThrows(NegocioException.class, () -> sincronizacion.sincronizar("STZ1234", "07/10/2026"));
     }
 
+    @Test
+    void lasPesadasDeUnaGuiaSonLasVinculadasDeTodosLosDiasDelViaje() throws NegocioException {
+        pesadas.guiaEntre(Instant.parse("2026-10-07T12:00:00Z"), Instant.parse("2026-10-09T12:00:00Z"), 77L);
+        delNodo.add(pesada("DIA-1", "2026-10-07T10:15-03:00"));
+        delNodo.add(pesada("ANTES", "2026-10-07T08:00-03:00"));   // sin guia vigente: no es del viaje
+        sincronizacion.sincronizar("STZ1234", "2026-10-07");
+        delNodo.clear();
+        delNodo.add(pesada("DIA-2", "2026-10-08T09:30-03:00"));
+        sincronizacion.sincronizar("STZ1234", "2026-10-08");
+
+        PesajesDeGuiaDTO r = sincronizacion.registradasDeGuia(77L);
+
+        assertEquals(List.of("DIA-1", "DIA-2"), r.getPesadas().stream().map(PesadaRegistradaDTO::getIdPesada).toList());
+        assertEquals(2, r.getCantidad());
+        assertEquals("STZ1234", r.getMatricula());
+        assertEquals("2026-10-07T12:00Z", r.getDesde());
+        assertFalse(r.isTruncado());
+        assertTrue(r.isNodoDisponible());
+    }
+
+    @Test
+    void conElCircuitoAbiertoAvisaQuePuedenFaltarPesadasDeLaGuia() throws NegocioException {
+        circuitoCerrado = false;
+
+        PesajesDeGuiaDTO r = sincronizacion.registradasDeGuia(77L);
+
+        assertTrue(r.getPesadas().isEmpty());
+        assertFalse(r.isNodoDisponible());
+    }
+
+    @Test
+    void truncaLasPesadasDeUnaGuiaAlMaximo() throws NegocioException {
+        for (int i = 0; i <= SincronizacionPesajesBean.PESADAS_POR_GUIA_MAXIMAS; i++) {
+            Pesada p = Pesada.desde(pesada("P-" + i, "2026-10-07T10:15-03:00"), 77L, java.time.OffsetDateTime.now());
+            pesadas.guardarSiEsNueva(p);
+        }
+
+        PesajesDeGuiaDTO r = sincronizacion.registradasDeGuia(77L);
+
+        assertTrue(r.isTruncado());
+        assertEquals(SincronizacionPesajesBean.PESADAS_POR_GUIA_MAXIMAS, r.getCantidad());
+    }
+
+    @Test
+    void rechazaGuiaInexistenteOInvalida() {
+        assertThrows(NegocioException.class, () -> sincronizacion.registradasDeGuia(999L));
+        assertThrows(NegocioException.class, () -> sincronizacion.registradasDeGuia(null));
+        assertThrows(NegocioException.class, () -> sincronizacion.registradasDeGuia(0L));
+    }
+
     static PesadaDTO pesada(String id, String instante) {
         PesadaDTO p = new PesadaDTO();
         p.setIdPesada(id);
@@ -169,6 +237,15 @@ class SincronizacionPesajesBeanTest {
         @Override
         public List<Pesada> buscar(String matricula, LocalDate dia) {
             return new ArrayList<>(guardadas.values());
+        }
+
+        @Override
+        public List<Pesada> buscarDeGuia(Long guiaId, int maximo) {
+            return guardadas.values().stream()
+                    .filter(p -> guiaId.equals(p.getGuiaId()))
+                    .sorted(java.util.Comparator.comparing(Pesada::getInstante))
+                    .limit(maximo)
+                    .toList();
         }
 
         @Override

@@ -6,11 +6,13 @@ import jakarta.ejb.Stateless;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import uy.edu.fing.tse.carga.api.contract.service.SincronizacionPesajesLocal;
 import uy.edu.fing.tse.carga.api.dto.nodo.PesadaRegistradaDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.PesajesDeGuiaDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoSincronizacionDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 import uy.edu.fing.tse.carga.api.security.Roles;
@@ -39,6 +41,13 @@ public class PesajeRecurso {
     public List<PesadaRegistradaDTO> registradas(@QueryParam("matricula") String matricula,
                                                  @QueryParam("fecha") String fecha) throws NegocioException {
         return sincronizacion.registradas(matricula, fecha);
+    }
+
+    /** Pesadas vinculadas a una guia, de todos los dias del viaje (monitoreo de viajes, F14). */
+    @GET
+    @Path("/guia/{id}")
+    public PesajesDeGuiaDTO deGuia(@PathParam("id") Long guiaId) throws NegocioException {
+        return sincronizacion.registradasDeGuia(guiaId);
     }
 
     /** Dispara el caso de uso a mano, sin esperar a la agenda. */

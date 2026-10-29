@@ -61,6 +61,14 @@ public class PesadaDAO {
                 .getResultList();
     }
 
+    /** Pesadas vinculadas a una guia, por orden de la balanza, hasta maximo filas. */
+    public List<Pesada> buscarDeGuia(Long guiaId, int maximo) {
+        return em.createQuery("select p from Pesada p where p.guiaId = :g order by p.instante, p.id", Pesada.class)
+                .setParameter("g", guiaId)
+                .setMaxResults(maximo)
+                .getResultList();
+    }
+
     /**
      * Guia del vehiculo vigente en el instante del pesaje. Los periodos de guia son semiabiertos
      * [inicio, fin), igual que en P2 (ADR-0005). Solo lectura sobre la tabla compartida guia.

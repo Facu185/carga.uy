@@ -2,6 +2,7 @@ package uy.edu.fing.tse.carga.api.contract.service;
 
 import jakarta.ejb.Local;
 import uy.edu.fing.tse.carga.api.dto.nodo.PesadaRegistradaDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.PesajesDeGuiaDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoSincronizacionDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 
@@ -26,4 +27,11 @@ public interface SincronizacionPesajesLocal {
 
     /** Pesadas ya guardadas de una matricula en una fecha, ordenadas por instante. */
     List<PesadaRegistradaDTO> registradas(String matricula, String fecha) throws NegocioException;
+
+    /**
+     * Pesadas ya guardadas y vinculadas a la guia, de todos los dias del viaje (F14, frente P2).
+     *
+     * @throws NegocioException si la guia no existe
+     */
+    PesajesDeGuiaDTO registradasDeGuia(Long guiaId) throws NegocioException;
 }

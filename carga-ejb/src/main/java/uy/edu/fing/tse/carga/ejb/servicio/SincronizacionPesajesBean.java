@@ -14,14 +14,18 @@ import uy.edu.fing.tse.carga.api.contract.service.PesajeLocal;
 import uy.edu.fing.tse.carga.api.contract.service.SincronizacionPesajesLocal;
 import uy.edu.fing.tse.carga.api.dto.comun.PesadaDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.PesadaRegistradaDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.PesajesDeGuiaDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoPesajeDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoSincronizacionDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.ejb.integracion.CircuitBreaker;
 import uy.edu.fing.tse.carga.ejb.modelo.Pesada;
 import uy.edu.fing.tse.carga.ejb.persistencia.PesadaDAO;
+import uy.edu.fing.tse.carga.ejb.persistencia.RecorridoDAO;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.logging.Logger;
@@ -49,11 +53,22 @@ public class SincronizacionPesajesBean implements SincronizacionPesajesLocal {
 
     static final String METRICA_PESADAS = "carga_pesadas_total";
 
+    /** Una guia junta unas pocas pesadas por peaje y dia; el tope solo evita respuestas sin limite. */
+    static final int PESADAS_POR_GUIA_MAXIMAS = 500;
+
     @EJB
     PesajeLocal pesaje;
 
     @EJB
     PesadaDAO pesadas;
+
+    /** Solo para leer el periodo y el vehiculo de la guia, igual que el recorrido. */
+    @EJB
+    RecorridoDAO guias;
+
+    /** Bean concreto (no PesajeLocal) porque el estado del circuito no es parte del contrato. */
+    @EJB
+    PesajeBean balanzas;
 
     @EJB
     MetricasLocal metricas;
@@ -110,6 +125,34 @@ public class SincronizacionPesajesBean implements SincronizacionPesajesLocal {
     @Override
     public List<PesadaRegistradaDTO> registradas(String matricula, String fecha) throws NegocioException {
         return pesadas.buscar(matriculaValida(matricula), diaValido(fecha)).stream().map(Pesada::aDTO).toList();
+    }
+
+    @Override
+    public PesajesDeGuiaDTO registradasDeGuia(Long guiaId) throws NegocioException {
+        if (guiaId == null || guiaId <= 0) {
+            throw new NegocioException("La guia indicada no es valida.");
+        }
+        RecorridoDAO.PeriodoDeGuia guia = guias.periodoDeGuia(guiaId)
+                .orElseThrow(() -> new NegocioException("No existe la guia indicada."));
+        // uno mas que el maximo: si vuelve, es que habia mas y la respuesta esta truncada
+        List<Pesada> encontradas = pesadas.buscarDeGuia(guiaId, PESADAS_POR_GUIA_MAXIMAS + 1);
+        boolean truncado = encontradas.size() > PESADAS_POR_GUIA_MAXIMAS;
+
+        PesajesDeGuiaDTO r = new PesajesDeGuiaDTO();
+        r.setGuiaId(guiaId);
+        r.setMatricula(guia.matricula());
+        r.setDesde(guia.inicio().atOffset(ZoneOffset.UTC).toString());
+        r.setHasta(guia.fin().atOffset(ZoneOffset.UTC).toString());
+        r.setTruncado(truncado);
+        r.setPesadas((truncado ? encontradas.subList(0, PESADAS_POR_GUIA_MAXIMAS) : encontradas).stream()
+                .map(Pesada::aDTO).toList());
+        r.setNodoDisponible(nodoBalanzasDisponible());
+        return r;
+    }
+
+    /** Package-private para fijarlo en las pruebas sin levantar el bean del nodo. */
+    boolean nodoBalanzasDisponible() {
+        return balanzas.estadoCircuito() != CircuitBreaker.Estado.ABIERTO;
     }
 
     /** Aviso a la deteccion de incumplimientos (P5). Package-private para verificarlo en las pruebas. */

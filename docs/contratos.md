@@ -104,6 +104,7 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `GET /carga/api/monitor/nodos` | panel de operación, monitoreo externo |
 | `GET /carga/api/monitor/mapa?puntos=` | panel de operación (mapa de la flota) |
 | `GET /carga/api/pesajes?matricula=&fecha=` | panel de operación, P5 (pesadas ya guardadas) |
+| `GET /carga/api/pesajes/guia/{id}` | **P2, monitoreo de viajes (F14, C14-P):** las pesadas vinculadas a la guía, de todos los días del viaje |
 | `POST /carga/api/pesajes/sincronizar?matricula=&fecha=` | panel de operación (dispara el caso de uso a mano) |
 | `GET /carga/api/recorridos?matricula=&desde=&hasta=` | pantallas de fiscalización (rol administrador o funcionario) |
 | `GET /carga/api/recorridos/guia/{id}` | ídem, el recorrido del período de la guía |
@@ -374,6 +375,24 @@ instante del pesaje**. Es una lectura de la tabla compartida `guia` (P4 no la mo
 cómo se guarda el período o el vehículo de una guía, hay que avisar, porque rompe esta vinculación.
 
 Una pesada sin guía vigente se guarda igual, con `guia_id` null: es la evidencia de "viaje sin guía".
+
+**Pesajes de una guía (C14-P, para F14).** `GET /carga/api/pesajes/guia/{id}` (rol `FUNCIONARIO` o
+`ADMINISTRADOR`; desde el servidor, `SincronizacionPesajesLocal.registradasDeGuia`) devuelve las pesadas
+que la sincronización ya vinculó a esa guía, de **todos** los días del viaje, ordenadas por la hora de la
+balanza. No se vuelve a asociar por matrícula y día, y una pesada con `guiaId` null nunca aparece.
+
+```json
+{ "guiaId": 77, "matricula": "STZ1234", "desde": "2026-10-07T12:00Z", "hasta": "2026-10-09T12:00Z",
+  "pesadas": [ { "idPesada": "...", "peaje": "Peaje Pando", "pesoKg": 28000, "instante": "...", ... } ],
+  "cantidad": 1, "truncado": false, "nodoDisponible": true }
+```
+
+- Sin paginación: una guía junta unas pocas pesadas (una por peaje y día). Tope de 500, con `truncado`.
+- `nodoDisponible: false` = el nodo Balanzas está caído ahora (circuito abierto). La lista puede estar
+  incompleta; mostrarlo como "puede haber pesajes pendientes de obtener", no como "sin pesajes". La
+  agenda los trae cuando el nodo vuelve.
+- Guía inexistente: 400 `{"error": ...}`. Sin sesión 401, sin rol 403.
+- No sincroniza: solo lee lo guardado. La sincronización la disparan la agenda y el fin de viaje (P3).
 
 La cola `pesadas` recibe un mensaje por cada pesada **nueva**, nunca por una que ya estaba. El
 consumidor de P5 igual tiene que tolerar repetidos (deduplicar por `idPesada`), como cualquier cola.

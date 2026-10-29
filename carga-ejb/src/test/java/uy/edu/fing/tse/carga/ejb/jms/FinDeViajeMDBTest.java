@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import uy.edu.fing.tse.carga.api.contract.service.SincronizacionPesajesLocal;
 import uy.edu.fing.tse.carga.api.dto.comun.ViajeFinalizadoDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.PesadaRegistradaDTO;
+import uy.edu.fing.tse.carga.api.dto.nodo.PesajesDeGuiaDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoSincronizacionDTO;
 import uy.edu.fing.tse.carga.ejb.observabilidad.Metricas;
 
@@ -43,6 +44,11 @@ class FinDeViajeMDBTest {
 
             @Override
             public List<PesadaRegistradaDTO> registradas(String matricula, String fecha) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public PesajesDeGuiaDTO registradasDeGuia(Long guiaId) {
                 throw new UnsupportedOperationException();
             }
         };
