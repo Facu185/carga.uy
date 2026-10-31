@@ -16,6 +16,7 @@ grupo antes de mergear: hay código de otra persona que depende.
 | `SincronizacionPesajesLocal` | P4 | Trae las pesadas del nodo, las vincula con la guía vigente y las guarda sin duplicar; avisa cada pesada **nueva** por la cola `pesadas` |
 | `RecorridoLocal` | P4 | **Para P5:** recorrido de un vehículo por fechas o por guía, con la distancia (PostGIS). Sin rol |
 | `AvisoFinDeViajeLocal` | P4 | **Para P3:** llamarlo al registrar el fin de un viaje; dispara la obtención de pesajes |
+| `EventoViajeLocal` | P3 | Registra los eventos del chofer (idempotente por `idEvento`), avanza el estado de la guía y avisa el fin de viaje. Solo `CHOFER` (ADR-0019) |
 | `PdiLocal` | P1 | Devuelve los datos de la persona, o `null` si la PDI no responde |
 | `ServicioDnic` (SOAP) | P1 | Contrato SOAP hacia la PDI |
 | `AuditoriaLocal` | P1 | Registra en la pista de solo agregado, en la misma transacción que la acción. Usuario y rol salen de la sesión. Las acciones de fiscalización exigen fundamento |
@@ -114,11 +115,14 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `/carga/api/usuarios-internos` · `/funcionarios` · `/solicitudes-funcionario` · `/auditoria` | backoffice |
 | `/carga/api/solicitudes-empresa` | frontoffice (solicitante) y backoffice (verificación por funcionario) |
 | `GET /carga/api/mi-perfil` | frontoffice, app móvil |
+| `POST /carga/api/eventos-viaje` · `GET /carga/api/eventos-viaje?guiaId=` | **app móvil** (chofer) — ver "Eventos de viaje P3" |
 | `GET /carga/api/salud` · `GET /carga/api/salud/listo` | health checks (Docker, nube) |
 | `GET /carga/api/metricas` | Prometheus (texto) |
 
 Errores: `{"error": "mensaje"}` con `400` (regla de negocio), `401` (sin sesión o credenciales
-incorrectas), `403` (sin el rol), `429` (cuenta bloqueada) y `503` (sistema externo caído).
+incorrectas), `403` (sin el rol, o `RecursoAjenoException`: el recurso no existe o es de otro),
+`409` (`ConflictoException`: choca con el estado actual), `429` (cuenta bloqueada) y `503` (sistema
+externo caído).
 
 Las rutas nuevas de cada frente cuelgan de `/carga/api/<tema>`. No reutilizar prefijos ajenos.
 
@@ -450,6 +454,47 @@ consulta al nodo Balanzas ocurre después, en `FinDeViajeMDB`, para cada día de
 viaje. P3 no espera al nodo ni falla si el nodo está caído: en ese caso la agenda de pesajes lo
 reintenta dentro de las 24 horas.
 
+## Eventos de viaje P3 (ADR-0019)
+
+`POST /carga/api/eventos-viaje`, solo rol `CHOFER`. El chofer sale del token; nunca del cuerpo.
+
+```json
+{
+  "idEvento": "3f2a9c1e-7b4d-4e8a-9c1b-2d3e4f5a6b7c",
+  "guiaId": 1,
+  "tipo": "INICIO",
+  "instante": "2026-10-20T08:05:00-03:00",
+  "detalle": "opcional; obligatorio en INCIDENTE, hasta 1000 caracteres",
+  "latitud": -34.9011,
+  "longitud": -56.1645,
+  "fotoBase64": "opcional, JPEG en base64"
+}
+```
+
+- `idEvento`: lo genera el dispositivo (8 a 80 caracteres `A-Z a-z 0-9 . _ -`; la app usa UUID).
+- `tipo`: `INICIO`, `FIN`, `CARGA_PARCIAL`, `DESCARGA_PARCIAL` o `INCIDENTE`.
+- `instante`: cuándo ocurrió en el dispositivo, ISO-8601 con zona. Hasta 5 minutos en el futuro (desfase de reloj).
+- `latitud` y `longitud`: opcionales, pero juntas.
+- `fotoBase64`: opcional, JPEG, hasta `EVENTOS_FOTO_MAX_BYTES`.
+
+Respuesta: `{"nuevo": true|false, "estadoGuia": "...", "evento": {...}}` (sin la foto; `tieneFoto` indica si hay).
+
+| Código | Cuándo |
+|---|---|
+| `201` | Evento nuevo |
+| `200` | Ese `idEvento` ya estaba registrado (reenvío): la app lo da por enviado |
+| `400` | Datos inválidos |
+| `403` | La guía no existe o no es del chofer (se responde igual en los dos casos) |
+| `409` | El estado del viaje no admite el evento, o el `idEvento` ya se usó para otro evento |
+
+Estado de la guía: `ASIGNADA --INICIO--> EN_CURSO --(CARGA_PARCIAL | DESCARGA_PARCIAL | INCIDENTE)--> EN_CURSO --FIN--> FINALIZADA`.
+El `FIN` llama a `AvisoFinDeViajeLocal` en la misma transacción (dispara los pesajes del CU4).
+
+`GET /carga/api/eventos-viaje?guiaId=`: eventos de una guía del chofer, en orden cronológico, sin las fotos.
+
+**Tabla `evento_viaje` (P3):** la migración `V10` agrega `latitud`, `longitud` y `geom` (generada).
+**Tabla `guia` (compartida):** P3 cambia `estado` al registrar eventos (`Guia.aplicarEvento`).
+
 ## 6. Variables de entorno
 
 | Variable | Usada por | Default |
@@ -466,6 +511,7 @@ reintenta dentro de las 24 horas.
 | `NODO_TRACKING_TOKEN` | central (valida) y nodo Tracking (lo manda como `NODO_TOKEN`) | `tracking-solo-desarrollo` |
 | `NODO_BALANZAS_TOKEN` | central (lo manda) y nodo Balanzas (valida como `NODO_TOKEN`) | `balanzas-solo-desarrollo` |
 | `PDI_TIMEOUT_MS`, `PDI_REINTENTOS`, `PDI_CIRCUITO_UMBRAL`, `PDI_CIRCUITO_ESPERA_SEG` | `PdiBean` | `3000`, `1`, `3`, `30` |
+| `EVENTOS_FOTO_MAX_BYTES` | `EventoViajeBean` (tope de la foto de un evento) | `2000000` |
 | `JWT_SECRET` (≥ 32 caracteres), `JWT_DURACION_MINUTOS` | central | valor de desarrollo, `30` |
 | `ADMIN_INICIAL_USUARIO`, `ADMIN_INICIAL_PASSWORD` | central (solo si no hay cuentas internas) | `admin` / valor de desarrollo |
 | `AUTENTICACION_INTERNA` y `LDAP_*` | central (backoffice) | `bd`; con `ldap` se usan las `LDAP_*` |

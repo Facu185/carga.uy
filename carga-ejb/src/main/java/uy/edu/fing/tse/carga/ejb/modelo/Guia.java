@@ -75,6 +75,11 @@ public class Guia {
             throw new IllegalArgumentException("El volumen de la carga supera la capacidad del vehiculo.");
     }
 
+    /** P3: avanza el estado del viaje segun el evento del chofer (ver ReglasEventoViaje). */
+    public void aplicarEvento(TipoEventoViaje tipo) {
+        this.estado = ReglasEventoViaje.estadoTrasEvento(estado, tipo);
+    }
+
     public GuiaDTO aDTO() {
         GuiaDTO dto = new GuiaDTO();
         dto.setId(id); dto.setEmpresaId(empresa.getId());
