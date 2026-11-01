@@ -14,12 +14,10 @@ export function momentoViaje(iso: string): string {
   return new Date(iso).toLocaleString('es-UY', { timeZone: 'America/Montevideo', dateStyle: 'short', timeStyle: 'short' })
 }
 
-export function FuentesViajePendientes() {
-  return <section aria-label="Fuentes pendientes de integración">
-    <h2>Información pendiente de integración</h2>
-    <p><strong>Historial real del viaje:</strong> pendiente de contrato e integración con P3.</p>
-    <p><strong>Pesajes asociados a la guía:</strong> pendiente de contrato e integración con P4.</p>
-    <p>Estos mensajes no significan que el viaje carezca de eventos o pesajes ni que un nodo esté caído.
-      Esta entrega muestra únicamente datos registrados de P2, no seguimiento en tiempo real.</p>
+export function HistorialViajePendiente() {
+  return <section aria-label="Historial pendiente de integración">
+    <h2>Historial real del viaje pendiente</h2>
+    <p>La lectura de eventos para el funcionario sigue pendiente de contrato e integración con P3.</p>
+    <p>Esto no significa que el viaje carezca de eventos. El estado persistido no sustituye el historial ni acredita seguimiento en tiempo real.</p>
   </section>
 }

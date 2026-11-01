@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { consultarGuias, esEstadoGuia, ESTADOS_GUIA, identificadorValido, type PaginaConsultaGuias } from '../../api/consultaGuias'
 import { useTituloPagina } from '../../titulo'
-import { EstadoGuiaPersistido, FuentesViajePendientes, momentoViaje, NOMBRES_ESTADO_GUIA } from './DatosViaje'
+import { EstadoGuiaPersistido, HistorialViajePendiente, momentoViaje, NOMBRES_ESTADO_GUIA } from './DatosViaje'
 
 type Carga = { estado: 'cargando' } | { estado: 'error'; mensaje: string }
   | { estado: 'lista'; datos: PaginaConsultaGuias }
@@ -133,6 +133,7 @@ function ConsultaViajes({ empresaId, desde, hasta, estado, pagina, tamano, valid
           </nav>
           <button type="button" className="boton-secundario" onClick={reconsultar}>Actualizar consulta</button>
         </>}
-    <FuentesViajePendientes />
+    <p>La consulta de pesajes asociados está disponible en el detalle de cada viaje con vehículo asignado.</p>
+    <HistorialViajePendiente />
   </>
 }

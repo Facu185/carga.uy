@@ -6,6 +6,8 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.ejb.EJB;
 import jakarta.ejb.SessionContext;
 import jakarta.ejb.Stateless;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
@@ -24,11 +26,13 @@ import uy.edu.fing.tse.carga.ejb.modelo.EventoViaje;
 import uy.edu.fing.tse.carga.ejb.modelo.Guia;
 import uy.edu.fing.tse.carga.ejb.modelo.ReglasEventoViaje;
 import uy.edu.fing.tse.carga.ejb.modelo.TipoEventoViaje;
+import uy.edu.fing.tse.carga.ejb.modelo.Vehiculo;
 import uy.edu.fing.tse.carga.ejb.persistencia.ChoferDAO;
 import uy.edu.fing.tse.carga.ejb.persistencia.EventoViajeDAO;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -68,6 +72,7 @@ public class EventoViajeBean implements EventoViajeLocal {
     SessionContext contexto;
 
     @Override
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public ResultadoEventoDTO registrar(EventoViajeDTO dto) throws NegocioException {
         Optional<String> problema = ReglasEventoViaje.problemaDeFormato(dto, Instant.now());
         if (problema.isPresent()) {
@@ -78,22 +83,18 @@ public class EventoViajeBean implements EventoViajeLocal {
         byte[] foto = foto(dto.getFotoBase64());
         Chofer chofer = choferAutenticado();
 
-        // Bloquear la guia serializa los eventos de un mismo viaje: dos reenvios simultaneos no
-        // pueden registrar el mismo evento dos veces ni pisarse el cambio de estado.
-        Guia guia = guiaBloqueada(dto.getGuiaId());
-        if (guia == null || guia.getChofer() == null || !guia.getChofer().getId().equals(chofer.getId())) {
-            metricas.contar(METRICA, "tipo", tipo.name(), "resultado", "ajena");
-            throw new RecursoAjenoException(GUIA_AJENA);
-        }
+        // El inicio comparte exclusion con DELETE/PUT P2: siempre Vehiculo -> Guia.
+        Guia guia = tipo == TipoEventoViaje.INICIO ? guiaParaInicio(dto.getGuiaId(), chofer, tipo)
+                : guiaBloqueada(dto.getGuiaId());
+        autorizarGuia(guia, chofer, tipo);
+
+        Instant instante = ReglasEventoViaje.instante(dto.getInstante()).orElseThrow();
+        EventoViaje evento = new EventoViaje(guia, dto.getIdEvento(), tipo, instante, dto.getDetalle(),
+                dto.getLatitud(), dto.getLongitud(), foto);
 
         Optional<EventoViaje> previo = eventos.buscarPorIdEvento(dto.getIdEvento());
         if (previo.isPresent()) {
-            EventoViaje evento = previo.get();
-            if (!evento.getGuia().getId().equals(guia.getId()) || !evento.getTipo().equals(tipo.name())) {
-                throw new ConflictoException("Ese idEvento ya se us\u00f3 para otro evento.");
-            }
-            metricas.contar(METRICA, "tipo", tipo.name(), "resultado", "repetido");
-            return new ResultadoEventoDTO(false, guia.getEstado(), evento.aDTO());
+            return reenvio(previo.get(), evento, guia, tipo);
         }
 
         Optional<String> rechazo = ReglasEventoViaje.motivoDeRechazo(guia.getEstado(), tipo);
@@ -102,17 +103,56 @@ public class EventoViajeBean implements EventoViajeLocal {
             throw new ConflictoException(rechazo.get());
         }
 
-        Instant instante = ReglasEventoViaje.instante(dto.getInstante()).orElseThrow();
-        EventoViaje evento = new EventoViaje(guia, dto.getIdEvento(), tipo, instante, dto.getDetalle(),
-                dto.getLatitud(), dto.getLongitud(), foto);
-        eventos.guardar(evento);
+        if (tipo == TipoEventoViaje.INICIO && (guia.getVehiculo() == null || !guia.getVehiculo().isHabilitado())) {
+            throw new ConflictoException("No se puede iniciar el viaje: el vehiculo no esta asignado o esta dado de baja.");
+        }
+        if (!eventos.guardarSiEsNuevo(evento)) {
+            EventoViaje ganador = eventos.buscarPorIdEvento(dto.getIdEvento())
+                    .orElseThrow(() -> new IllegalStateException("No se pudo recuperar el evento ya registrado."));
+            return reenvio(ganador, evento, guia, tipo);
+        }
         guia.aplicarEvento(tipo);
         if (tipo == TipoEventoViaje.FIN) {
-            avisarFinDeViaje(guia, instante);
+            avisarFinDeViaje(guia, evento.getInstante());
         }
         metricas.contar(METRICA, "tipo", tipo.name(), "resultado", "nuevo");
         LOG.info(() -> "Evento de viaje " + tipo + " registrado en la guia " + guia.getId());
         return new ResultadoEventoDTO(true, guia.getEstado(), evento.aDTO());
+    }
+
+    private ResultadoEventoDTO reenvio(EventoViaje registrado, EventoViaje candidato, Guia guia,
+                                       TipoEventoViaje tipo) throws ConflictoException {
+        if (!registrado.mismoContenido(candidato)) {
+            throw new ConflictoException("Ese idEvento ya se uso con otro contenido.");
+        }
+        metricas.contar(METRICA, "tipo", tipo.name(), "resultado", "repetido");
+        return new ResultadoEventoDTO(false, guia.getEstado(), registrado.aDTO());
+    }
+
+    private void autorizarGuia(Guia guia, Chofer chofer, TipoEventoViaje tipo) throws RecursoAjenoException {
+        if (guia == null || guia.getChofer() == null || !guia.getChofer().getId().equals(chofer.getId())) {
+            metricas.contar(METRICA, "tipo", tipo.name(), "resultado", "ajena");
+            throw new RecursoAjenoException(GUIA_AJENA);
+        }
+    }
+
+    private Guia guiaParaInicio(Long guiaId, Chofer chofer, TipoEventoViaje tipo) throws NegocioException {
+        // Esta lectura solo obtiene el ID: la asignacion se verifica de nuevo bajo los locks.
+        Guia referencia = em.find(Guia.class, guiaId);
+        autorizarGuia(referencia, chofer, tipo);
+        Long vehiculoId = referencia.getVehiculo() == null ? null : referencia.getVehiculo().getId();
+        if (vehiculoId != null) {
+            Vehiculo vehiculo = em.find(Vehiculo.class, vehiculoId, LockModeType.PESSIMISTIC_WRITE);
+            if (vehiculo == null) throw new ConflictoException("El vehiculo asignado ya no esta disponible.");
+            em.refresh(vehiculo, LockModeType.PESSIMISTIC_WRITE);
+        }
+        Guia guia = guiaBloqueada(guiaId);
+        autorizarGuia(guia, chofer, tipo);
+        Long asignacionActual = guia.getVehiculo() == null ? null : guia.getVehiculo().getId();
+        if (!Objects.equals(vehiculoId, asignacionActual)) {
+            throw new ConflictoException("Cambio la asignacion del vehiculo; vuelve a consultar la guia.");
+        }
+        return guia;
     }
 
     @Override
@@ -152,7 +192,9 @@ public class EventoViajeBean implements EventoViajeLocal {
 
     /** Package-private para reemplazarlo en las pruebas. */
     Guia guiaBloqueada(Long guiaId) {
-        return em.find(Guia.class, guiaId, LockModeType.PESSIMISTIC_WRITE);
+        Guia guia = em.find(Guia.class, guiaId, LockModeType.PESSIMISTIC_WRITE);
+        if (guia != null) em.refresh(guia, LockModeType.PESSIMISTIC_WRITE);
+        return guia;
     }
 
     private static int entero(String variable, int porDefecto) {

@@ -181,7 +181,8 @@ La nueva área reutiliza la bandeja P1 de **vínculos de responsables** bajo
 Alta y aceptación compartida P1/P3 siguen pendientes. Administrador/JSF conservan
 sus recorridos y permisos anteriores; las rutas SPA no autorizan al servidor.
 Vehículos enlaza a la consulta C13 de solo lectura de fase 4; Viajes consume
-la consulta C14 de fase 5, limitada a P2, sin fuentes P3/P4 integradas.
+la consulta C14 de fase 5 y su consumidor local C14-P en el detalle, sin historial
+P3 para funcionario ni aceptación integrada acreditada.
 Validación real pendiente en [escenarios F12](../pruebas/p2-funcionario-empresas.md).
 
 La elección de SPA F12–F14 está acotada por [ADR-0013](decisiones/0013-area-funcionario-spa-p2.md).
@@ -189,7 +190,9 @@ El perfil F10/C10 queda aprobado por el usuario y publicado a continuación.
 C13/F13 fue confirmado posteriormente por el usuario en
 [ADR-0016](decisiones/0016-consulta-vehicular-funcionario.md). C14 y la entrega
 parcial P2/F14 fueron aprobados por el usuario en
-[ADR-0018](decisiones/0018-consulta-viajes-funcionario-p2.md); C14-E/C14-P siguen pendientes.
+[ADR-0018](decisiones/0018-consulta-viajes-funcionario-p2.md); C14-E para funcionario
+sigue pendiente. C14-P está publicado en [Pesajes P4](#pesajes-p4) y su consumidor
+SPA está implementado localmente, sin validación ejecutada.
 
 ### Consulta vehicular F13 / C13
 
@@ -349,11 +352,20 @@ String estado, Integer pagina, Integer tamano)` devuelve `PaginaConsultaGuiasDTO
 SPA de FUNCIONARIO: `/funcionario/empresas/:id/viajes` y
 `/funcionario/empresas/:id/viajes/:guiaId`, con navegación desde F12, filtros en
 URL, paginación y detalle de solo lectura. ADMINISTRADOR dispone de la API sin
-cambiar su acceso al área SPA. Historial P3 y pesajes P4 indican **pendiente de
-integración**, no listas vacías ni datos ficticios. No se consumen rutas nuevas
-de P3/P4 ni se asocia por matrícula/día en el navegador; `guiaId=null` conserva
-su significado. C14-E/C14-P siguen pendientes. No hay mapas, polling,
-sincronización manual ni mutaciones. Validación en
+cambiar su acceso al área SPA. El historial P3 indica **pendiente de integración**,
+no una lista vacía ni datos ficticios. Desde el 2026-10-31, el detalle válido de
+C14 consume el GET C14-P publicado, solo si hay vehículo asignado; sin asignación
+se indica fuente no consultable, no ausencia de pesajes. Muestra carga, vacío,
+error y advertencias independientes por `truncado` y `nodoDisponible=false`.
+No asocia por matrícula/día ni descarta asociaciones por comparar fechas previstas;
+`guiaId=null` conserva su significado y no se admite como pesada de esa guía.
+La validación del JSON rechaza otra guía, tipos/instantes inválidos, duplicados y
+cantidad incoherente. Muestra instante y obtención de cada pesada en America/Montevideo,
+sin inventar una fecha global de sincronización ni garantizar completitud por
+`nodoDisponible=true`. No hay mapas, polling, sincronización manual ni mutaciones.
+El consumidor reutiliza Bearer/correlación/expiración de sesión, permite reconsultar
+solo lectura y aborta/ignora respuestas obsoletas; la seguridad real sigue en el servidor.
+C14-E para funcionario y la aceptación integrada de C14-P siguen pendientes. Validación en
 [escenarios F14 P2](../pruebas/p2-consulta-viajes.md), pendiente de ejecución.
 
 Tablas compartidas (las toca más de un frente): `empresa`, `vehiculo`, `chofer`, `guia`, `usuario`,
@@ -474,6 +486,7 @@ reintenta dentro de las 24 horas.
 - `idEvento`: lo genera el dispositivo (8 a 80 caracteres `A-Z a-z 0-9 . _ -`; la app usa UUID).
 - `tipo`: `INICIO`, `FIN`, `CARGA_PARCIAL`, `DESCARGA_PARCIAL` o `INCIDENTE`.
 - `instante`: cuándo ocurrió en el dispositivo, ISO-8601 con zona. Hasta 5 minutos en el futuro (desfase de reloj).
+  Registros nuevos normalizan la fracción a microsegundos para su persistencia y comparación.
 - `latitud` y `longitud`: opcionales, pero juntas.
 - `fotoBase64`: opcional, JPEG, hasta `EVENTOS_FOTO_MAX_BYTES`.
 
@@ -482,15 +495,44 @@ Respuesta: `{"nuevo": true|false, "estadoGuia": "...", "evento": {...}}` (sin la
 | Código | Cuándo |
 |---|---|
 | `201` | Evento nuevo |
-| `200` | Ese `idEvento` ya estaba registrado (reenvío): la app lo da por enviado |
+| `200` | Ese `idEvento` ya estaba registrado con el mismo contenido normalizado: sin duplicar efectos |
 | `400` | Datos inválidos |
 | `403` | La guía no existe o no es del chofer (se responde igual en los dos casos) |
-| `409` | El estado del viaje no admite el evento, o el `idEvento` ya se usó para otro evento |
+| `409` | Estado incompatible, INICIO nuevo con vehículo sin asignar/de baja, asignación cambiada durante la espera o `idEvento` reutilizado con otro contenido |
 
 Estado de la guía: `ASIGNADA --INICIO--> EN_CURSO --(CARGA_PARCIAL | DESCARGA_PARCIAL | INCIDENTE)--> EN_CURSO --FIN--> FINALIZADA`.
 El `FIN` llama a `AvisoFinDeViajeLocal` en la misma transacción (dispara los pesajes del CU4).
 
+**Política central aprobada por el usuario (2026-10-31):** se decide sobre el estado
+confirmado al procesar, no se reconstruye habilitación histórica. Un INICIO
+capturado antes de una baja pero recibido después se rechaza con 409. No afecta
+al reenvío idéntico de un evento ya aceptado, que se resuelve antes de comprobar
+estado/baja como una operación nueva. La aprobación y la implementación locales
+no acreditan acuerdo individual de Federico ni ejecución del móvil.
+
+La igualdad comprende guía, tipo, instante normalizado, detalle (blancos como null,
+sin espacios externos), coordenadas y bytes de foto; no compara `recibidoEn` ni
+`tieneFoto`. Offsets del mismo instante son equivalentes. `estadoGuia` refleja el
+estado actual, no una reproducción del estado que tenía al aceptar el evento.
+La unicidad global se conserva con `INSERT ... ON CONFLICT (id_evento) DO NOTHING`;
+solo el insertado cambia estado o emite FIN. Comparar datos antiguos con precisión
+submicrosegundo requiere caracterización de compatibilidad en el entorno de pruebas.
+
+INICIO toma exclusión **Vehículo → Guía** y relee baja/asignación; DELETE y PUT de
+baja toman el mismo vehículo antes de comprobar EN_CURSO. Si cambió la asignación
+se devuelve 409 sin tomar un vehículo distinto fuera de orden. La baja P2 conserva
+su error de negocio 400; no se cambia su contrato a 409. Esta entrega no cambia
+las reglas de permiso/ITV de creación ni define validez histórica de esas vigencias.
+
+El móvil debe conservar el evento y su motivo de conflicto sin pérdida silenciosa
+ni reenvío automático infinito. La cola por guía es ordenada; los fallos temporales
+conservan pendientes y reintentos limitados. Implementación/aceptación del móvil
+pendientes de P3. [Regresiones y aceptación ADR-0019](../pruebas/p2-p3-eventos-conflictos.md)
+pendientes de ejecución: mocks no acreditan locks, SQL/JDBC ni rollback JTA/JMS.
+
 `GET /carga/api/eventos-viaje?guiaId=`: eventos de una guía del chofer, en orden cronológico, sin las fotos.
+La lectura C14-E para funcionario sigue pendiente; esta evolución no amplía roles
+del GET/POST ni cierra F14/fase 5.
 
 **Tabla `evento_viaje` (P3):** la migración `V10` agrega `latitud`, `longitud` y `geom` (generada).
 **Tabla `guia` (compartida):** P3 cambia `estado` al registrar eventos (`Guia.aplicarEvento`).

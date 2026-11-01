@@ -73,7 +73,7 @@ public class VehiculoServicioBean implements VehiculoServicioLocal {
     }
 
     private Vehiculo buscarParaModificar(Long id) throws NegocioException {
-        // Comparte exclusion con la asignacion de guias y las otras mutaciones del ABM.
+        // Comparte exclusion con asignacion P2, inicio P3 (Vehiculo -> Guia) y mutaciones del ABM.
         Vehiculo vehiculo = em.find(Vehiculo.class, id, LockModeType.PESSIMISTIC_WRITE);
         if (vehiculo == null) throw new NegocioException("El vehiculo no existe.");
         return vehiculo;

@@ -12,6 +12,9 @@ import jakarta.persistence.Table;
 import uy.edu.fing.tse.carga.api.dto.viaje.EventoViajeDTO;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Objects;
 
 /** Tabla evento_viaje (frente P3). La columna geom la genera la base a partir de latitud/longitud. */
 @Entity
@@ -56,12 +59,21 @@ public class EventoViaje {
         this.guia = guia;
         this.idEvento = idEvento;
         this.tipo = tipo.name();
-        this.instante = instante;
+        this.instante = instante.truncatedTo(ChronoUnit.MICROS);
         this.detalle = detalle == null || detalle.isBlank() ? null : detalle.trim();
         this.latitud = latitud;
         this.longitud = longitud;
-        this.foto = foto;
-        this.recibidoEn = Instant.now();
+        this.foto = foto == null ? null : foto.clone();
+        this.recibidoEn = Instant.now().truncatedTo(ChronoUnit.MICROS);
+    }
+
+    /** Contenido inmutable del evento, no metadatos de recepcion ni representacion JSON. */
+    public boolean mismoContenido(EventoViaje otro) {
+        return otro != null && Objects.equals(idEvento, otro.idEvento)
+                && Objects.equals(guia.getId(), otro.guia.getId()) && Objects.equals(tipo, otro.tipo)
+                && Objects.equals(instante, otro.instante) && Objects.equals(detalle, otro.detalle)
+                && Objects.equals(latitud, otro.latitud) && Objects.equals(longitud, otro.longitud)
+                && Arrays.equals(foto, otro.foto);
     }
 
     public EventoViajeDTO aDTO() {
@@ -89,4 +101,9 @@ public class EventoViaje {
     public String getIdEvento() { return idEvento; }
     public String getTipo() { return tipo; }
     public Instant getInstante() { return instante; }
+    public String getDetalle() { return detalle; }
+    public Double getLatitud() { return latitud; }
+    public Double getLongitud() { return longitud; }
+    public byte[] getFoto() { return foto == null ? null : foto.clone(); }
+    public Instant getRecibidoEn() { return recibidoEn; }
 }

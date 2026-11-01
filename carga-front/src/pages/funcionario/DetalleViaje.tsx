@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { consultarDetalleGuia, identificadorValido, type ConsultaGuia } from '../../api/consultaGuias'
 import { useTituloPagina } from '../../titulo'
-import { EstadoGuiaPersistido, FuentesViajePendientes, momentoViaje } from './DatosViaje'
+import { EstadoGuiaPersistido, HistorialViajePendiente, momentoViaje } from './DatosViaje'
+import { PesajesViaje } from './PesajesViaje'
 
 type Carga = { estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'lista'; datos: ConsultaGuia }
 
@@ -59,6 +60,7 @@ function DetalleViaje({ empresaTexto, guiaTexto }: { empresaTexto: string; guiaT
           </dl>
           <p>El estado persistido no sustituye el historial de eventos de P3. El período previsto no acredita inicio ni fin reales.</p>
         </section>}
-    <FuentesViajePendientes />
+    {guia && <PesajesViaje key={guia.id} guiaId={guia.id} vehiculoAsignado={guia.vehiculoId != null} />}
+    <HistorialViajePendiente />
   </>
 }

@@ -8,6 +8,7 @@ import uy.edu.fing.tse.carga.ejb.modelo.EventoViaje;
 import uy.edu.fing.tse.carga.ejb.modelo.TipoEventoViaje;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,8 +24,24 @@ public class EventoViajeDAO {
                 .getResultStream().findFirst();
     }
 
-    public void guardar(EventoViaje evento) {
-        em.persist(evento);
+    /** La clave es global: dos guias distintas tambien pueden competir por un idEvento. */
+    public boolean guardarSiEsNuevo(EventoViaje evento) {
+        int insertadas = em.createNativeQuery(
+                        "INSERT INTO evento_viaje (guia_id, id_evento, tipo, instante, detalle, latitud, longitud, foto, recibido_en) "
+                                + "VALUES (?1, ?2, ?3, ?4, CAST(?5 AS text), CAST(?6 AS double precision), "
+                                + "CAST(?7 AS double precision), CAST(?8 AS bytea), ?9) "
+                                + "ON CONFLICT (id_evento) DO NOTHING")
+                .setParameter(1, evento.getGuia().getId())
+                .setParameter(2, evento.getIdEvento())
+                .setParameter(3, evento.getTipo())
+                .setParameter(4, evento.getInstante().atOffset(ZoneOffset.UTC))
+                .setParameter(5, evento.getDetalle())
+                .setParameter(6, evento.getLatitud())
+                .setParameter(7, evento.getLongitud())
+                .setParameter(8, evento.getFoto())
+                .setParameter(9, evento.getRecibidoEn().atOffset(ZoneOffset.UTC))
+                .executeUpdate();
+        return insertadas == 1;
     }
 
     /** Sin los bytes de la foto: el historial solo necesita saber si hay. */

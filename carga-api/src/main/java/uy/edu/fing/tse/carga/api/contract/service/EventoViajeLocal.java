@@ -16,12 +16,15 @@ public interface EventoViajeLocal {
 
     /**
      * Registra el evento y actualiza el estado de la guia. Es idempotente por idEvento: reenviar el
-     * mismo evento devuelve nuevo=false sin duplicarlo. Al registrar un FIN se avisa a P4 para que
+     * mismo contenido normalizado devuelve nuevo=false sin duplicarlo; otro contenido es conflicto.
+     * Un INICIO nuevo no admite vehiculo actualmente dado de baja, aunque se capturo offline antes.
+     * Al registrar un FIN se avisa a P4 para que
      * obtenga los pesajes del viaje (ADR-0010).
      *
      * @throws NegocioException datos invalidos
      * @throws uy.edu.fing.tse.carga.api.exception.RecursoAjenoException la guia no es del chofer
-     * @throws uy.edu.fing.tse.carga.api.exception.ConflictoException el estado del viaje no admite el evento
+     * @throws uy.edu.fing.tse.carga.api.exception.ConflictoException estado/baja incompatibles, asignacion
+     *         modificada durante la espera o idEvento reutilizado con otro contenido
      */
     ResultadoEventoDTO registrar(EventoViajeDTO evento) throws NegocioException;
 

@@ -152,7 +152,7 @@ function DetalleEmpresa({ idTexto }: { idTexto: string }) {
               </div>}
             {incierto && <button type="button" className="boton-secundario" onClick={reconsultar}>Volver a consultar</button>}
             <h3>Consultas relacionadas</h3>
-            <p>Consultas de solo lectura. Los viajes muestran datos P2; historial y pesajes siguen pendientes de integración.</p>
+            <p>Consultas de solo lectura. Los viajes muestran datos P2 y consulta de pesajes P4 en su detalle; el historial de eventos P3 sigue pendiente de integración.</p>
             <div className="formulario-botones">
               <Link className="boton-enlace" to={`/funcionario/empresas/${empresa.id}/vehiculos`}>Consultar vehículos, permiso e ITV</Link>
               <Link className="boton-enlace" to={`/funcionario/empresas/${empresa.id}/viajes`}>Consultar viajes</Link>

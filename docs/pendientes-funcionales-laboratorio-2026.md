@@ -150,47 +150,51 @@ exigido. Tampoco lo sustituyen Grafana ni la descarga CSV de guías del chofer.
 
 ## 4. Eventos y ejecución del viaje: P3
 
-### F07. Recepción y sincronización de eventos en el central — pendiente
+### F07. Recepción y sincronización de eventos en el central — código presente, aceptación pendiente
 
 **Fuente:** letra, pp. 5–6; CU3. **Responsable:** P3.
 
-- [ ] API REST para recibir inicio, fin, carga parcial, descarga parcial e incidente.
-- [ ] Recepción y persistencia de la fotografía asociada al incidente.
-- [ ] Validación de que el chofer puede registrar eventos sobre ese viaje.
-- [ ] Persistencia del evento y deduplicación por el identificador del dispositivo.
+- [x] API REST para recibir inicio, fin, carga parcial, descarga parcial e incidente.
+- [x] Recepción y persistencia de la fotografía asociada al incidente.
+- [x] Validación en código de que el chofer puede registrar eventos sobre ese viaje.
+- [x] Persistencia del evento y deduplicación por identificador global y contenido normalizado.
 - [ ] Manejo de la sincronización diferida según la política de conflictos acordada.
 
-La tabla `evento_viaje` contiene identificador único y campo de foto, pero no se
-encontró su flujo en los servicios, recursos o contratos Java actuales. Es una
-carencia del central de este repositorio, no una afirmación sobre las pantallas móviles.
-Si el otro repositorio incluye también backend, hay que confirmar su integración aquí.
+La entrega P3 incorporó `EventoViajeLocal`/`EventoViajeBean`/REST y V10; ya no se
+considera un flujo ausente del central. El usuario aprobó aplicar la política
+central de [ADR-0019](decisiones/0019-registro-de-eventos-de-viaje.md): implementada
+localmente con regresiones escritas, sin ejecución. Coordinación con Federico,
+conducta del móvil y [aceptación real](../pruebas/p2-p3-eventos-conflictos.md) pendientes.
+`[x]` acredita presencia de código, no seguridad, concurrencia ni sincronización ejecutadas.
 
 ### F08. Estado real e historial de ejecución — pendiente
 
 **Fuente:** letra, p. 6; CU3 y reparto P3. **Responsable:** P3.
 
-- [ ] Actualizar el estado del viaje a partir de eventos válidos.
-- [ ] Consultar el historial de eventos y el estado resultante.
+- [x] Actualizar en código el estado del viaje a partir de eventos válidos.
+- [x] Consultar el historial del chofer sobre su guía y el estado resultante.
+- [ ] Entregar lectura C14-E para funcionario e integrarla en F14 P2.
 - [ ] Mantener coherencia ante reenvíos y sincronización diferida.
 
 [Guia](../carga-ejb/src/main/java/uy/edu/fing/tse/carga/ejb/modelo/Guia.java)
-se crea en estado `ASIGNADA`. Existen consultas de guías del chofer y de la empresa
-en [GuiaServicioBean](../carga-ejb/src/main/java/uy/edu/fing/tse/carga/ejb/servicio/GuiaServicioBean.java),
-pero listar guías, incluso históricas, no equivale al historial de eventos ni a
-registrar que un viaje efectivamente comenzó o terminó.
+se crea en estado `ASIGNADA`; P3 aplica las transiciones mediante eventos y ofrece
+historial en GET `/eventos-viaje?guiaId=` solo para CHOFER y guía propia. C14 P2
+consulta el estado persistido, no sustituye ese historial. El funcionario aún no
+tiene una lectura autorizada C14-E; no se amplía el GET/POST por aprobar ADR-0019.
 
 ### F09. Conectar el fin de viaje con la obtención de pesajes — pendiente
 
-**Fuente:** CU3/CU4, contratos y ADR-0010. **Responsable de la llamada faltante:** P3.
+**Fuente:** CU3/CU4, contratos y ADR-0010. **Responsable del emisor:** P3.
 
-- [ ] Al registrar el fin, invocar `AvisoFinDeViajeLocal.avisar(...)` dentro de la
+- [x] Al registrar el fin, invocar en código `AvisoFinDeViajeLocal.avisar(...)` dentro de la
   transacción correspondiente.
 - [ ] Verificar el recorrido completo evento de fin → aviso → consulta de pesajes.
 
 P4 ya proporciona [AvisoFinDeViajeBean](../carga-ejb/src/main/java/uy/edu/fing/tse/carga/ejb/servicio/AvisoFinDeViajeBean.java)
 y [FinDeViajeMDB](../carga-ejb/src/main/java/uy/edu/fing/tse/carga/ejb/jms/FinDeViajeMDB.java).
-No se encontró un emisor P3 conectado. Consultar
-[ADR-0010](decisiones/0010-integraciones-de-p4-con-p3-y-p5.md): no hace falta rehacer el adaptador P4.
+`EventoViajeBean` ya invoca el adaptador al FIN; solo una inserción nueva produce
+efectos. Consultar [ADR-0010](decisiones/0010-integraciones-de-p4-con-p3-y-p5.md):
+no hace falta rehacer P4. Rollback y cadena completa siguen pendientes de acreditar.
 
 ## 5. Funcionalidades de empresa y funcionario: implementación y pendientes
 
@@ -287,12 +291,12 @@ No resolver silenciosamente estas políticas dentro de una implementación:
 
 | Definición pendiente | Frentes involucrados | Motivo |
 | --- | --- | --- |
-| Política de conflictos entre viaje modificado en frontoffice y eventos offline. | P3 y P2; responsable móvil por confirmar. | Exigida por la letra; CU3 la menciona sin resolverla. |
+| Aceptación compartida de política central y entrega móvil ante conflictos offline. | Federico con Roibeth (P3/P2). | ADR-0019 aprobado por el usuario e implementado localmente; conducta móvil y pruebas reales pendientes. No autoriza edición/cancelación de guías. |
 | Plazo de descargo y comportamiento al vencer sin presentación. | P5. | CU6 deja el comportamiento exacto por definir. |
 | Criterio y justificación del desvío de ruta y representación del recorrido esperado. | P5, con datos de P2/P4. | Exigido por la letra; longitud recorrida no lo resuelve. |
 | Canal y condiciones de notificación del caso. | P5; coordinación con portal/móvil cuando corresponda. | Falta concretar el flujo sin imponer un canal no acordado. |
 | Integración de los recorridos de empresa y funcionario (F10/F12/F13). | P1/P2; P3 para portal. | F10/F12/F13 implementados localmente, pendientes de validación compartida; F12 integra entrada Mi cuenta sin cambiar callback. ADR-0013/0014/0016 acotan SPA conservando JSF; ADR-0004 sigue Propuesta. Alta P1 y C14 pendientes en el [registro de fase 0](acuerdos-cierre-p2-fase-0.md). F11 mantiene ADR-0012. |
-| Inicio de viaje concurrente con baja de vehículo. | P3 y P2. | ABM ya rechaza guías EN_CURSO; el emisor de estados P3 debe coordinar bloqueo y habilitación, sin inferir estado por fechas. |
+| Validación de inicio de viaje concurrente con baja de vehículo. | P3 y P2. | Inicio local ya toma Vehículo → Guía y revalida baja actual; DELETE/PUT comparten el vehículo. Ejecutar carreras y rollback reales; no inferir estado por fechas. |
 | Contratos e integración de la pantalla operativa del funcionario, ya asignada a P2. | P2/P3/P4, con P1 para acceso; P5 si se acuerda integrar casos. | P2 compone la interfaz; hay que acordar lecturas y disponibilidad de productores sin trasladar sus servicios a P2. |
 
 Las políticas nuevas de negocio o arquitectura deben acordarse y registrarse en
