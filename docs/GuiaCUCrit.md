@@ -115,6 +115,13 @@ Flujos alternativos
 6a. Conflicto de versión: si el viaje fue modificado desde el frontoffice mientras el dispositivo
 estaba offline, se aplica la política de resolución de conflictos definida por el grupo.
 
+Política central aprobada por el usuario en [ADR-0019](decisiones/0019-registro-de-eventos-de-viaje.md):
+el estado confirmado del central decide al procesar; mismo ID/contenido normalizado
+no repite efectos y otro contenido es conflicto. Un INICIO nuevo con baja actual
+se rechaza aunque se capturó offline antes de la baja. La app conserva el conflicto
+visible sin descarte ni reintento automático infinito. Coordinación con P3, conducta
+móvil y concurrencia/rollback reales pendientes de acreditar; no se declara aceptación del grupo.
+
 Post-condiciones
 El evento queda registrado sin duplicados, se haya sincronizado de inmediato o en diferido.
 El estado del viaje refleja el último evento válido procesado.

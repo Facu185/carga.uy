@@ -18,7 +18,10 @@ de solo lectura locales, con [aceptación pendiente](../pruebas/p2-consulta-vehi
 **Fase 5 / F14 P2 (2026-10-27):** C14 aprobado por el usuario según
 [ADR-0018](decisiones/0018-consulta-viajes-funcionario-p2.md); listado/detalle
 de guías y pantalla Viajes locales, con [aceptación pendiente](../pruebas/p2-consulta-viajes.md).
-Fuentes P3/P4 sin integrar; no se declara F14 cerrado.
+**Actualización 2026-10-31:** consumidor C14-P local en detalle de viaje, con
+contrato P4 existente, carga/vacío/error y advertencias de datos parciales;
+escenarios definidos antes del código sin runner frontend ni validación ejecutada.
+C14-E para funcionario sigue pendiente; no se declara F14 cerrado.
 
 ## 1. Alcance y criterio de cierre
 
@@ -223,10 +226,13 @@ equipo si se requiere automatización, sin instalar herramientas por iniciativa 
 
 ### P2-06 — Conflictos con eventos offline (F07/F08)
 
-- [ ] Acordar con P3 y el responsable móvil la política ante un viaje cambiado en
-  frontoffice y eventos registrados sin conexión: identidad de evento, reglas de
-  aceptación/rechazo y resolución del conflicto.
-- [ ] Registrar el acuerdo en ADR/contratos y derivar pruebas en ambos extremos.
+- [x] Aplicar la política central aprobada por el usuario en ADR-0019: estado al
+  procesar, contenido idempotente normalizado, INICIO con baja actual rechazado y
+  exclusión Vehículo → Guía compartida con baja P2. Implementación local, sin ejecución.
+- [x] Registrar alcance en ADR/contratos y escribir primero regresiones Java;
+  ver [aceptación pendiente](../pruebas/p2-p3-eventos-conflictos.md).
+- [ ] Coordinar aceptación con Federico y entrega móvil: cola ordenada, conflictos
+  visibles sin pérdida y reintentos limitados. Probar ambos extremos y carreras reales.
 - [ ] Mantener P3 como dueño de recepción, fotos, deduplicación, estado e historial;
   P2 aporta reglas/asignaciones y coordinación transaccional sobre sus entidades.
 - [ ] Conservar los contratos de períodos/asignaciones consumidos por P4 para
@@ -242,6 +248,9 @@ equipo si se requiere automatización, sin instalar herramientas por iniciativa 
   navegación local F12 → Viajes; veinte pruebas Java y matriz escritas sin ejecución.
 - [ ] Acreditar navegación compartida y ejecutar aceptación C14 P2: roles efectivos,
   JPQL, filtros temporales, JSON, históricos y navegador.
+- [x] Consumir pesajes por guía C14-P en detalle usando el contrato P4 vigente,
+  con límite de 500, truncamiento/disponibilidad y datos guardados sin sincronizar.
+  Validación y aceptación compartida pendientes, no fase 5 cerrada.
 - [ ] Coordinar datos de empresa/guía/asignación P2 con estado/historial P3 y
   posiciones/pesajes P4; no rehacer los adaptadores que esos frentes ya tienen.
 - [ ] Implementar e integrar F12–F14 según el [plan por fases](plan-cierre-p2.md).
@@ -266,7 +275,7 @@ se agregan como faltantes obligatorios.
 1. Resolver por bloque autorización, interfaz y contratos de P2-05; acordar reparto F15.
 2. Validar F11 ya implementado y registrar su dependencia P3 aún abierta.
 3. Validar F10/F12/F13 y C14 P2 implementados localmente; C14 aprobado no cierra F14.
-4. Acordar fuentes C14-E/C14-P e integrar estado/historial y pesajes reales a la interfaz P2.
+4. Validar el consumidor C14-P local y acordar/entregar C14-E para integrar el historial del funcionario.
 5. Integrar estado real, concurrencia inicio/baja y política offline con P3/móvil.
 6. Acreditar CU2/ABM/JSF y los recorridos nuevos en integración; registrar evidencia final.
 

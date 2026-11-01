@@ -59,3 +59,16 @@ explícitamente el contrato siguiente, sin atribuir aprobación a otros frentes.
 No se agregan edición/cancelación, mapas, polling ni sincronización manual.
 No se aprueba la política offline ni C14-E/C14-P. Pruebas primero; no ejecutar
 builds. Seguridad efectiva, JPQL, JSON y navegador requieren validación posterior.
+
+## Evolución de la entrega — 2026-10-31
+
+Tras la entrega y publicación de C14-P por P4, el usuario solicitó aplicar la
+recomendación de integrar primero los pesajes. El detalle SPA consume ahora
+GET `/carga/api/pesajes/guia/{id}` con el contrato existente: hasta 500 registros,
+sin paginación, con `truncado` y `nodoDisponible`. Se mantiene la decisión original
+de no consumir rutas supuestas; no se modifican API, asociaciones ni sincronización.
+Los pesajes sustituyen su mensaje pendiente por carga/vacío/error y advertencias
+de información parcial. El historial de funcionario C14-E continúa pendiente.
+Esta evolución no aprueba ADR-0019 ni acredita aceptación de otros frentes o
+validación ejecutada. Escenarios frontend definidos antes del consumidor, sin
+runner ni ciclo rojo/verde verificado; véase la [matriz C14-P](../../pruebas/p2-consulta-viajes.md).

@@ -57,7 +57,8 @@ listado/búsqueda, detalle, edición administrativa y baja C12, con entrada por 
 desde Mi cuenta y sesión P1 intacta. Reutiliza bandeja P1 de responsables, NO alta
 empresarial. Aceptación compartida P1/P3, alta P1 y validación real pendientes en
 [escenarios F12](../pruebas/p2-funcionario-empresas.md). El detalle ahora enlaza
-a F13/C13 y a Viajes/C14 P2 (fase 5), sin fuentes P3/P4 integradas.
+a F13/C13 y a Viajes/C14 P2 (fase 5), cuyo detalle incorpora consumidor C14-P local;
+el historial P3 para funcionario y la aceptación integrada siguen pendientes.
 
 **Actualización F13 (2026-10-22):** [ADR-0016](../docs/decisiones/0016-consulta-vehicular-funcionario.md)
 registra C13 confirmado por el usuario. `ConsultaVehiculosLocal`/EJB/REST separado
@@ -74,9 +75,19 @@ separado de CU2 ofrece listado/detalle solo lectura para FUNCIONARIO/ADMINISTRAD
 sin vínculo, por empresa, con filtros de solapamiento previsto/estado y paginación.
 SPA `/funcionario/empresas/:id/viajes` y `.../viajes/:guiaId`, con asignaciones
 ausentes y volumen histórico nulo preservados. Estado persistido no es historial
-real; C14-E P3 y C14-P P4 siguen pendientes explícitos, sin endpoints supuestos.
+real; la lectura C14-E P3 para funcionario sigue pendiente explícita.
 Veinte pruebas Java y [matriz C14 P2](../pruebas/p2-consulta-viajes.md) escritas;
 sin builds, ciclo rojo/verde ni validación funcional ejecutados. No cierra F14 integrado.
+
+**Actualización C14-P (2026-10-31):** tras solicitud del usuario de aplicar la
+recomendación, el detalle C14 consume GET `/pesajes/guia/{id}` ya publicado por P4:
+hasta 500 registros, sin paginación, `truncado` y `nodoDisponible`. Valida el JSON y
+las asociaciones de guía sin reconstruirlas en el navegador; muestra estados
+independientes y advertencias de parcialidad, peaje ausente y fechas de cada pesada.
+Solo consulta tras detalle C14 válido y con vehículo asignado; no sincroniza, no
+inventa última actualización global ni garantiza salud/completitud por el circuito.
+Backend, roles e historial P3 intactos. Escenarios previos al código en la matriz
+C14; sin runner frontend, ciclo rojo/verde ni ejecución funcional acreditados.
 
 **Actualización F10 (2026-10-22):** [ADR-0014](../docs/decisiones/0014-perfil-propio-empresa.md)
 acepta el perfil propio acotado en SPA y C10. Existe contrato local específico,
@@ -88,3 +99,15 @@ según [pruebas del perfil](../pruebas/p2-perfil-empresa.md), sin builds ejecuta
 - [ADR-0010](../docs/decisiones/0010-integraciones-de-p4-con-p3-y-p5.md) y contratos describen el enlace de P3 al aviso de fin de viaje y el consumo futuro de pesadas por P5. En el código inspeccionado existen los adaptadores P4 (`AvisoFinDeViajeBean`, `FinDeViajeMDB`), no un flujo completo P3/P5 acreditado.
 - El panel JSF sin inicio de sesión figura como limitación conocida en [contratos](../docs/contratos.md) y [ADR-0007](../docs/decisiones/0007-seguridad-de-nodos-y-endpoints-p4.md); no usarlo como patrón seguro para nuevas pantallas.
 - El objetivo ~80 % de cobertura, la latencia p95 y el volumen de Tracking son requisitos/objetivos, no resultados medidos en esta preparación. No se ejecutaron app, builds ni pruebas.
+
+**Actualización ADR-0019 (2026-10-31):** el usuario aprobó aplicar la recomendación
+de política central e inicio/baja; no se atribuye aceptación individual a Federico.
+INICIO toma Vehículo → Guía, refresca estado/asignación y rechaza una baja actual
+aunque el evento offline sea anterior. Reenvíos idénticos se resuelven antes de
+revalidar el estado como nuevos; otro contenido es 409. El modelo compara contenido
+normalizado y el DAO inserta atómicamente por `id_evento` global; solo una inserción
+nueva cambia estado o emite FIN dentro de la JTA existente. Registros nuevos usan
+microsegundos; caracterizar compatibilidad de históricos con fracción más precisa.
+Pruebas escritas primero, no ejecutadas; aceptación móvil, SQL/JDBC, carreras reales
+y rollback aún pendientes en [matriz ADR-0019](../pruebas/p2-p3-eventos-conflictos.md).
+No cambia roles del historial C14-E, edición de guías ni política temporal de permiso/ITV.
