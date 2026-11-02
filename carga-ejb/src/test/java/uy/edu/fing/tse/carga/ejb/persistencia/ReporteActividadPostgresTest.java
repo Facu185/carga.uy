@@ -78,7 +78,8 @@ class ReporteActividadPostgresTest {
     private static void fixture(Connection c) throws Exception {
         try (var s = c.createStatement()) {
             s.execute("SET TIME ZONE 'Asia/Tokyo'");
-            s.execute("SET DateStyle TO 'SQL, DMY'");
+            // pgJDBC exige formato ISO; DMY y la zona ajena al negocio siguen siendo explicitos.
+            s.execute("SET DateStyle TO 'ISO, DMY'");
             s.execute("CREATE TEMP TABLE rubro (id bigint, nombre text)");
             s.execute("CREATE TEMP TABLE guia (empresa_id bigint, rubro_id bigint, estado text, creada_en timestamptz, inicio timestamptz)");
         }
