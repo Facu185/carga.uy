@@ -16,6 +16,8 @@ import javax.management.ObjectName;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 @Singleton
@@ -24,6 +26,13 @@ import java.util.Locale;
 @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
 public class MonitorRecursos {
     static final String POOL = "jboss.as:subsystem=datasources,data-source=CargaDS,statistics=pool";
+
+    /**
+     * Nombre exacto de cada atributo, resuelto una sola vez. getMBeanInfo sobre un MBean de WildFly
+     * reconstruye su modelo de administracion entero: hacerlo en cada lectura costaba ~7 % de la CPU
+     * del central durante la prueba de performance (perfil JFR, docs/informe-performance.md).
+     */
+    private static final Map<String, String> NOMBRES = new ConcurrentHashMap<>();
 
     @EJB
     MetricasLocal metricas;
@@ -54,12 +63,17 @@ public class MonitorRecursos {
             if (!servidor.isRegistered(nombre)) {
                 return -1;
             }
-            for (MBeanAttributeInfo info : servidor.getMBeanInfo(nombre).getAttributes()) {
-                if (info.getName().equalsIgnoreCase(atributo)) {
-                    return numero(servidor.getAttribute(nombre, info.getName()));
+            String clave = objeto + '#' + atributo;
+            String exacto = NOMBRES.get(clave);
+            if (exacto == null) {
+                for (MBeanAttributeInfo info : servidor.getMBeanInfo(nombre).getAttributes()) {
+                    if (info.getName().equalsIgnoreCase(atributo)) {
+                        exacto = info.getName();
+                        NOMBRES.put(clave, exacto);
+                    }
                 }
             }
-            return -1;
+            return exacto == null ? -1 : numero(servidor.getAttribute(nombre, exacto));
         } catch (Exception e) {
             return -1;
         }

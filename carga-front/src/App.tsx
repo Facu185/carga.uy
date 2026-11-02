@@ -29,6 +29,8 @@ import { DetalleEmpresaFuncionario } from './pages/funcionario/DetalleEmpresa'
 import { VehiculosFuncionario } from './pages/funcionario/Vehiculos'
 import { ViajesFuncionario } from './pages/funcionario/Viajes'
 import { DetalleViajeFuncionario } from './pages/funcionario/DetalleViaje'
+import { ValidarPermiso } from './pages/publico/ValidarPermiso'
+import { EstadisticasPublicas } from './pages/publico/EstadisticasPublicas'
 import { ROLES } from './tipos'
 
 export default function App() {
@@ -38,6 +40,8 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Inicio />} />
+          <Route path="/validar-permiso" element={<ValidarPermiso />} />
+          <Route path="/estadisticas" element={<EstadisticasPublicas />} />
           <Route path="/ingresar" element={<Ingresar />} />
           <Route path="/ingreso" element={<IngresoCallback />} />
           <Route

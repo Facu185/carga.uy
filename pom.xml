@@ -41,6 +41,7 @@
         <maven.ear.plugin.version>3.3.0</maven.ear.plugin.version>
         <maven.shade.plugin.version>3.6.0</maven.shade.plugin.version>
         <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
+        <jacoco.version>0.8.13</jacoco.version>
         <testcontainers.version>1.21.4</testcontainers.version>
         <!-- Las pruebas de integracion (@Tag("integracion")) levantan contenedores: no corren con
              "mvn verify" sino con "mvn verify -Pintegracion" (y en el job de integracion del CI). -->
@@ -153,6 +154,24 @@
             <properties>
                 <pruebas.excluidas>ninguna</pruebas.excluidas>
             </properties>
+        </profile>
+        <!-- mvn verify -Pcobertura: mide la cobertura de las pruebas con JaCoCo. Cada modulo deja su
+             informe en target/site/jacoco (index.html para leer, jacoco.xml para SonarQube). -->
+        <profile>
+            <id>cobertura</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${jacoco.version}</version>
+                        <executions>
+                            <execution><id>agente</id><goals><goal>prepare-agent</goal></goals></execution>
+                            <execution><id>informe</id><phase>test</phase><goals><goal>report</goal></goals></execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 

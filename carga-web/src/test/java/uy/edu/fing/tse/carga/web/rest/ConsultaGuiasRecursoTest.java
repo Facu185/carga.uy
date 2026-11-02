@@ -21,7 +21,8 @@ class ConsultaGuiasRecursoTest {
                 String.class, String.class, String.class).getAnnotation(GET.class));
         var detalle = ConsultaGuiasRecurso.class.getMethod("detalle", String.class, String.class);
         assertNotNull(detalle.getAnnotation(GET.class)); assertEquals("/{id}", detalle.getAnnotation(Path.class).value());
-        assertEquals(2, ConsultaGuiasRecurso.class.getDeclaredMethods().length);
+        // Sin los metodos sinteticos que agrega JaCoCo al medir la cobertura
+        assertEquals(2, java.util.Arrays.stream(ConsultaGuiasRecurso.class.getDeclaredMethods()).filter(m -> !m.isSynthetic()).count());
         assertEquals("/guias", GuiaRecurso.class.getAnnotation(Path.class).value());
     }
 

@@ -103,9 +103,9 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `GET /carga/api/pdi/personas/{cedula}` | pruebas del frente P1 (atajo al cliente SOAP) |
 | `POST /carga/api/tracking/posiciones` | **nodo Tracking** — responde `202`; `503` + `Retry-After` si la cola está saturada (ADR-0008) |
 | `POST /carga/api/tracking/posiciones/lote` | **nodo Tracking** — hasta 500 posiciones; `202` con aceptadas y rechazadas; `503` + `Retry-After` si está saturada |
-| `GET /carga/api/monitor/metricas` | panel de operación |
+| `GET /carga/api/monitor/metricas` | panel de operación. `vehiculosReportando` cuenta los que mandaron posiciones en los últimos 5 minutos; `posicionesTotales` es exacto hasta 100.000 filas y estimado por Postgres desde ahí |
 | `GET /carga/api/monitor/nodos` | panel de operación, monitoreo externo |
-| `GET /carga/api/monitor/mapa?puntos=` | panel de operación (mapa de la flota) |
+| `GET /carga/api/monitor/mapa?puntos=` | panel de operación (mapa de la flota): vehículos con posiciones en las últimas 6 horas, con sus últimos `puntos` puntos |
 | `GET /carga/api/pesajes?matricula=&fecha=` | panel de operación, P5 (pesadas ya guardadas) |
 | `GET /carga/api/pesajes/guia/{id}` | **P2, monitoreo de viajes (F14, C14-P):** las pesadas vinculadas a la guía, de todos los días del viaje |
 | `POST /carga/api/pesajes/sincronizar?matricula=&fecha=` | panel de operación (dispara el caso de uso a mano) |
@@ -594,6 +594,26 @@ del GET/POST ni cierra F14/fase 5.
 
 **Tabla `evento_viaje` (P3):** la migración `V10` agrega `latitud`, `longitud` y `geom` (generada).
 **Tabla `guia` (compartida):** P3 cambia `estado` al registrar eventos (`Guia.aplicarEvento`).
+
+## Frontoffice público (ADR-0021)
+
+Sin sesión. Servicio `InformacionPublicaLocal` (`@PermitAll`), recurso `/carga/api/publico`.
+
+| Endpoint | Responde |
+|---|---|
+| `GET /publico/permisos/vehiculo?matricula=STZ1234` | `ValidacionVehiculoDTO`: `encontrado`, `vigente`, `vehiculoHabilitado`, `empresaHabilitada`, `estadoPermiso` (`VIGENTE`, `FUTURO`, `VENCIDO`, `SIN_DATOS`), `permisoHasta`, `estadoItv`, `itvVencimiento`, `fechaReferencia`. **No dice la empresa ni el chofer** |
+| `GET /publico/permisos/empresa?numero=1001` | `ValidacionEmpresaDTO`: `encontrada`, `nombre` (público), `habilitada`, `fechaReferencia` |
+| `GET /publico/estadisticas` | `EstadisticasPublicasDTO`: últimos 12 meses, `Cache-Control: max-age=60` |
+
+- La matrícula se compara sin espacios ni guiones y sin importar mayúsculas. Inválida (vacía, más de
+  20 caracteres o con símbolos) o número de empresa no numérico: 400 `{"error": ...}`.
+- Un identificador inexistente no es un error: 200 con `encontrado`/`encontrada` en `false`.
+- `vigente` es `true` solo si el vehículo y su empresa están habilitados y el permiso y la ITV están
+  vigentes. Mismo criterio de vigencia que la consulta del funcionario (`ConsultaVehiculosBean`).
+- En las estadísticas, una cifra se publica solo si reúne **al menos 5 guías de al menos 3 empresas
+  distintas**. Las que no llegan vienen con `reservada: true` y `guias`/`toneladas` en null, o se
+  agrupan en la fila `OTROS`. `empresasHabilitadas`, `vehiculosHabilitados` y `vehiculosAlDia` vienen
+  en null si no cumplen. Detalle y justificación en el ADR-0021.
 
 ## 6. Variables de entorno
 

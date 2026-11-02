@@ -1,4 +1,4 @@
-import { ShieldCheck, Truck } from 'lucide-react'
+import { BadgeCheck, ChartColumn, ShieldCheck, Truck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/contexto'
 import { INGRESO_GUBUY } from '../auth/gubuy'
@@ -93,6 +93,29 @@ export function Inicio() {
           <h2 id="titulo-recorrido">Cómo funciona</h2>
           <p className="portada-recorrido-ayuda">Elegí una etapa para ver qué pasa en cada punto del viaje.</p>
           <Ruta />
+        </section>
+
+        {/* Lo que cualquiera puede consultar sin ingresar */}
+        <section className="portada-puertas" aria-labelledby="titulo-publico">
+          <h2 id="titulo-publico">Sin ingresar</h2>
+          <div className="puertas">
+            <article className="puerta">
+              <span className="puerta-icono" aria-hidden="true">
+                <BadgeCheck size={24} />
+              </span>
+              <h3>Validar un permiso</h3>
+              <p>Comprobá si un vehículo de carga puede circular o si una empresa de transporte está habilitada.</p>
+              <Link className="boton-acceso boton-acceso-secundario" to="/validar-permiso">Validar</Link>
+            </article>
+            <article className="puerta">
+              <span className="puerta-icono" aria-hidden="true">
+                <ChartColumn size={24} />
+              </span>
+              <h3>Cifras del transporte de carga</h3>
+              <p>Empresas, vehículos y viajes registrados, siempre agregados para proteger los datos de cada empresa.</p>
+              <Link className="boton-acceso boton-acceso-secundario" to="/estadisticas">Ver cifras</Link>
+            </article>
+          </div>
         </section>
 
         {/* Dos puertas: cada persona encuentra la suya según quién es */}

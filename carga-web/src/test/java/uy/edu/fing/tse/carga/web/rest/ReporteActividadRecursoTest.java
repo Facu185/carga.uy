@@ -18,7 +18,8 @@ class ReporteActividadRecursoTest {
     @Test void nuevoRecursoSoloExponeGet() throws Exception {
         assertEquals("/reportes/actividad", ReporteActividadRecurso.class.getAnnotation(Path.class).value());
         assertNotNull(ReporteActividadRecurso.class.getMethod("consultar", String.class, String.class).getAnnotation(GET.class));
-        assertEquals(1, ReporteActividadRecurso.class.getDeclaredMethods().length);
+        // Sin los metodos sinteticos que agrega JaCoCo al medir la cobertura
+        assertEquals(1, java.util.Arrays.stream(ReporteActividadRecurso.class.getDeclaredMethods()).filter(m -> !m.isSynthetic()).count());
     }
 
     @Test void delegaFechasSinInventarDefaultsYEvitaCache() throws Exception {

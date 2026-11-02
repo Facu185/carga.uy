@@ -1,0 +1,117 @@
+# CI del GitLab de FING (letra, seccion 4.6, puntos 12 y 13): ante cada cambio compila, corre las
+# pruebas, mide la cobertura y analiza la calidad con SonarQube. Es el mismo recorrido que
+# .github/workflows/ci.yml, mas la cobertura y Sonar.
+#
+# Variables a definir en Settings > CI/CD > Variables (enmascaradas, nunca en el repositorio):
+#   SONAR_HOST_URL   p. ej. https://sonarcloud.io o el SonarQube de la facultad
+#   SONAR_TOKEN      token de analisis del proyecto
+#   SONAR_ORGANIZATION  solo para SonarCloud
+# Sin SONAR_TOKEN el job de calidad no corre (el resto del pipeline sigue igual).
+
+stages:
+  - build
+  - calidad
+  - integracion
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  MAVEN_CLI: "-B -ntp"
+
+.maven:
+  image: maven:3.9-eclipse-temurin-24
+  cache:
+    key: maven-$CI_COMMIT_REF_SLUG
+    paths: [.m2/repository]
+
+# Compila todos los modulos, corre las pruebas unitarias y mide la cobertura con JaCoCo.
+build:
+  extends: .maven
+  stage: build
+  script:
+    - mvn $MAVEN_CLI clean verify -Pcobertura
+  # GitLab muestra el porcentaje en el pipeline y en los merge requests (lo imprime el informe CSV)
+  after_script:
+    - |
+      cat */target/site/jacoco/jacoco.csv 2>/dev/null | awk -F, 'NR>1 && $1!="GROUP" {f+=$4; c+=$5}
+        END {if (f+c>0) printf "Cobertura de instrucciones: %.1f%%\n", 100*c/(f+c)}'
+  coverage: '/Cobertura de instrucciones: (\d+\.\d+)%/'
+  artifacts:
+    when: always
+    paths:
+      - carga-ear/target/carga.ear
+      - "*/target/site/jacoco/"
+    reports:
+      junit: "*/target/surefire-reports/TEST-*.xml"
+    expire_in: 1 week
+
+# Frontend React: TypeScript estricto y linter.
+frontend:
+  stage: build
+  image: node:22
+  cache:
+    key: npm-$CI_COMMIT_REF_SLUG
+    paths: [carga-front/.npm]
+  script:
+    - cd carga-front
+    - npm ci --cache .npm --prefer-offline
+    - npm run lint
+    - npm run build
+
+# Analisis estatico con SonarQube, usando la cobertura medida en build.
+sonar:
+  extends: .maven
+  stage: calidad
+  needs: [build]
+  rules:
+    - if: $SONAR_TOKEN
+  variables:
+    GIT_DEPTH: "0"
+  script:
+    - >
+      mvn $MAVEN_CLI verify -Pcobertura
+      org.sonarsource.scanner.maven:sonar-maven-plugin:5.1.0.4751:sonar
+      -Dsonar.host.url=$SONAR_HOST_URL
+      -Dsonar.token=$SONAR_TOKEN
+      ${SONAR_ORGANIZATION:+-Dsonar.organization=$SONAR_ORGANIZATION}
+      -Dsonar.projectKey=${SONAR_PROJECT_KEY:-carga-uy}
+      -Dsonar.qualitygate.wait=true
+
+# Integracion: necesita un runner con Docker (servicio docker:dind).
+.dind:
+  services:
+    - name: docker:27-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+
+# Migraciones y consultas SQL contra PostgreSQL real (Testcontainers, @Tag("integracion")).
+migraciones:
+  extends: [.maven, .dind]
+  stage: integracion
+  needs: []
+  variables:
+    TESTCONTAINERS_HOST_OVERRIDE: docker
+    TESTCONTAINERS_RYUK_DISABLED: "true"
+  script:
+    - mvn $MAVEN_CLI -Pintegracion -pl carga-ejb -am verify
+
+# El sistema completo levantado con docker compose y recorrido con pedidos HTTP reales.
+punta-a-punta:
+  extends: .dind
+  stage: integracion
+  needs: []
+  image: docker:27
+  variables:
+    # El sistema queda en el contenedor dind, no en localhost
+    API: http://docker:8080/carga/api
+    FRONT: http://docker:3000
+    JAEGER: http://docker:16686
+  before_script:
+    - apk add --no-cache bash curl
+  script:
+    - docker compose up -d --build
+    - ./pruebas/punta-a-punta.sh
+  after_script:
+    - docker compose logs --no-color central | tail -n 200
+    - docker compose down -v

@@ -191,6 +191,18 @@ mvn verify -Pintegracion -pl carga-ejb -am
 docker compose up -d --build
 ./pruebas/punta-a-punta.sh
 ```
+
+### Cobertura y CI de GitLab
+
+```bash
+# Cobertura con JaCoCo: cada módulo deja su informe en target/site/jacoco/index.html
+mvn verify -Pcobertura
+```
+
+El pipeline del GitLab de FING (`.gitlab-ci.yml`) compila, corre las pruebas, mide la cobertura,
+analiza con SonarQube y corre las pruebas de integración. Para Sonar hay que definir `SONAR_HOST_URL`
+y `SONAR_TOKEN` en *Settings → CI/CD → Variables*; sin ellas ese job no corre.
+
 ### Generador de carga
 
 Simula miles de dispositivos GPS contra la ingesta de posiciones, para la prueba de performance
@@ -272,6 +284,11 @@ docker compose exec db psql -U carga -d carga -c "SELECT round(total_exec_time) 
 ```
 
 El consumo de CPU y memoria de cada contenedor se ve con `docker stats`.
+
+Resultados, cuellos de botella y punto de quiebre de la prueba del 02/11:
+[docs/informe-performance.md](docs/informe-performance.md). Para medir el frontoffice al mismo tiempo
+que el generador: `python pruebas/carga-frontoffice.py --usuarios 20 --duracion 300`. Juego de datos
+de demostración (cinco empresas y un año de guías): `docker compose exec -T db psql -U carga -d carga < pruebas/datos-demo.sql`.
 
 ## 8. Cómo sigue cada uno
 

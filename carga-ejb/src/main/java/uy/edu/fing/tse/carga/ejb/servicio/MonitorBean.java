@@ -13,13 +13,14 @@ import uy.edu.fing.tse.carga.ejb.integracion.CircuitBreaker;
 import uy.edu.fing.tse.carga.ejb.modelo.NodoPeriferico;
 import uy.edu.fing.tse.carga.ejb.modelo.TipoNodo;
 import uy.edu.fing.tse.carga.ejb.persistencia.NodoPerifericoDAO;
-import uy.edu.fing.tse.carga.ejb.modelo.PosicionTracking;
 
+import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -35,6 +36,26 @@ public class MonitorBean implements MonitorLocal {
     private static final DateTimeFormatter RELOJ = DateTimeFormatter.ofPattern("dd/MM HH:mm:ss");
     /** Sin posiciones en esta ventana, damos el nodo Tracking por caido. */
     private static final int SILENCIO_TOLERADO_SEGUNDOS = 30;
+    /** El mapa muestra la flota en ruta: vehiculos con posiciones en esta ventana. */
+    static final int VENTANA_MAPA_HORAS = 6;
+    /** Con mas filas que esto, el total de posiciones sale de la estadistica de Postgres y no de un count(*). */
+    static final long TOTAL_EXACTO_HASTA = 100_000;
+
+    /**
+     * Las ultimas posiciones de cada vehiculo en una sola consulta (funcion de ventana sobre el indice
+     * matricula + instante). Antes era una consulta por vehiculo: con 3.000 camiones, 3.001 consultas
+     * cada vez que se abria el panel (prueba de performance, docs/informe-performance.md).
+     */
+    static final String SQL_MAPA = """
+            SELECT matricula, latitud, longitud, instante FROM (
+                SELECT matricula, latitud, longitud, instante,
+                       row_number() OVER (PARTITION BY matricula ORDER BY instante DESC) AS orden
+                FROM posicion_tracking
+                WHERE instante >= ?1
+            ) ultimas
+            WHERE orden <= ?2
+            ORDER BY matricula, instante
+            """;
     private static final String URL_BALANZAS_POR_DEFECTO =
             System.getenv().getOrDefault("NODO_BALANZAS_URL", "http://balanzas:8080/balanzas/api/pesadas");
 
@@ -50,11 +71,16 @@ public class MonitorBean implements MonitorLocal {
     @Override
     public MetricasDTO metricas() {
         MetricasDTO m = new MetricasDTO();
-        m.setPosicionesTotales(contar("select count(p) from PosicionTracking p"));
-        m.setVehiculosReportando(contar("select count(distinct p.matricula) from PosicionTracking p"));
+        OffsetDateTime haceCincoMinutos = OffsetDateTime.now().minusMinutes(5);
+        m.setPosicionesTotales(posicionesTotales());
+        // "Reportando" = con alguna posicion en los ultimos 5 minutos, no en toda la historia
+        m.setVehiculosReportando(em.createQuery(
+                        "select count(distinct p.matricula) from PosicionTracking p where p.recibidoEn > :desde", Long.class)
+                .setParameter("desde", haceCincoMinutos)
+                .getSingleResult());
         m.setPosicionesUltimosCincoMinutos(em.createQuery(
                         "select count(p) from PosicionTracking p where p.recibidoEn > :desde", Long.class)
-                .setParameter("desde", OffsetDateTime.now().minusMinutes(5))
+                .setParameter("desde", haceCincoMinutos)
                 .getSingleResult());
         OffsetDateTime ultima = em.createQuery(
                         "select max(p.recibidoEn) from PosicionTracking p", OffsetDateTime.class)
@@ -86,39 +112,54 @@ public class MonitorBean implements MonitorLocal {
                 : estadoTracking(n.getId(), n.getNombre());
     }
 
+    /** Exacto con pocas filas; con muchas, la estimacion de Postgres (se actualiza con el autovacuum). */
+    private long posicionesTotales() {
+        Number estimado = (Number) em.createNativeQuery(
+                        "SELECT reltuples FROM pg_class WHERE oid = 'posicion_tracking'::regclass")
+                .getSingleResult();
+        long aproximado = estimado == null ? -1 : estimado.longValue();
+        return aproximado > TOTAL_EXACTO_HASTA ? aproximado : contar("select count(p) from PosicionTracking p");
+    }
+
     @Override
     public List<RecorridoDTO> mapaFlota(int puntosPorVehiculo) {
-        List<String> matriculas = em.createQuery(
-                "select distinct p.matricula from PosicionTracking p order by p.matricula", String.class)
+        @SuppressWarnings("unchecked")
+        List<Object[]> filas = em.createNativeQuery(SQL_MAPA)
+                .setParameter(1, OffsetDateTime.now().minusHours(VENTANA_MAPA_HORAS))
+                .setParameter(2, Math.max(1, puntosPorVehiculo))
                 .getResultList();
+        return armarMapa(filas);
+    }
 
+    /** Filas ordenadas por matricula y de la mas antigua a la mas reciente: la ultima es la actual. */
+    static List<RecorridoDTO> armarMapa(List<Object[]> filas) {
         List<RecorridoDTO> flota = new ArrayList<>();
-        for (String matricula : matriculas) {
-            List<PosicionTracking> ultimas = em.createQuery(
-                            "select p from PosicionTracking p where p.matricula = :m order by p.instante desc",
-                            PosicionTracking.class)
-                    .setParameter("m", matricula)
-                    .setMaxResults(Math.max(1, puntosPorVehiculo))
-                    .getResultList();
-            if (ultimas.isEmpty()) {
-                continue;
+        RecorridoDTO r = null;
+        for (Object[] f : filas) {
+            String matricula = (String) f[0];
+            if (r == null || !r.getMatricula().equals(matricula)) {
+                r = new RecorridoDTO();
+                r.setMatricula(matricula);
+                flota.add(r);
             }
-            PosicionTracking actual = ultimas.get(0);
-            RecorridoDTO r = new RecorridoDTO();
-            r.setMatricula(matricula);
-            r.setLatitud(actual.getLatitud());
-            r.setLongitud(actual.getLongitud());
-            r.setInstante(RELOJ.format(actual.getInstante()));
-
-            // la consulta viene del mas reciente al mas antiguo; el mapa dibuja al reves
-            List<PosicionTracking> cronologico = new ArrayList<>(ultimas);
-            Collections.reverse(cronologico);
-            for (PosicionTracking p : cronologico) {
-                r.getPuntos().add(new double[]{p.getLatitud(), p.getLongitud()});
-            }
-            flota.add(r);
+            double latitud = ((Number) f[1]).doubleValue();
+            double longitud = ((Number) f[2]).doubleValue();
+            r.getPuntos().add(new double[]{latitud, longitud});
+            r.setLatitud(latitud);
+            r.setLongitud(longitud);
+            r.setInstante(RELOJ.format(instante(f[3])));
         }
         return flota;
+    }
+
+    private static OffsetDateTime instante(Object valor) {
+        if (valor instanceof OffsetDateTime o) {
+            return o;
+        }
+        if (valor instanceof Instant i) {
+            return i.atOffset(ZoneOffset.UTC);
+        }
+        return ((Timestamp) valor).toInstant().atOffset(ZoneOffset.UTC);
     }
 
     /** Se verifica con una consulta real al nodo, usando el mismo camino que el caso de uso. */
