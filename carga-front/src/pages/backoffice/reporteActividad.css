@@ -36,3 +36,9 @@
   .reporte-indicadores { grid-template-columns: 1fr; }
   .reporte-filtros .campo { max-width: none; }
 }
+
+/* Exportar PDF = imprimir el tablero: sin navegacion, filtros ni botones */
+@media print {
+  .bo-nav, .bo-usuario, .reporte-filtros, .no-imprimir, .sitio-pie { display: none !important; }
+  .reporte-panel, .reporte-indicador { break-inside: avoid; }
+}

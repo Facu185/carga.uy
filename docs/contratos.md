@@ -615,6 +615,30 @@ Sin sesión. Servicio `InformacionPublicaLocal` (`@PermitAll`), recurso `/carga/
   agrupan en la fila `OTROS`. `empresasHabilitadas`, `vehiculosHabilitados` y `vehiculosAlDia` vienen
   en null si no cumplen. Detalle y justificación en el ADR-0021.
 
+## Fiscalización P5 (ADR-0022)
+
+| Endpoint | Quién | Qué hace |
+|---|---|---|
+| `GET /fiscalizacion/casos?estado=&tipo=&pagina=&tamano=` | FUNCIONARIO, ADMINISTRADOR | Bandeja, del más reciente al más antiguo |
+| `GET /fiscalizacion/casos/{id}` | FUNCIONARIO, ADMINISTRADOR | Caso con evidencia, plazo y descargo |
+| `POST /fiscalizacion/casos/{id}/resolucion` | FUNCIONARIO, ADMINISTRADOR | `{"confirmar": true, "fundamento": "..."}`. 409 si el estado no lo admite (confirmar antes de que venza el plazo, o un caso ya resuelto) |
+| `GET /fiscalizacion/reporte?desde=&hasta=` | AUTORIDAD, ADMINISTRADOR | Detectados, confirmados, desestimados y pendientes, por tipo, y tasa de confirmación |
+| `GET /infracciones?empresaId=` | responsable activo de la empresa | Casos de su empresa (403 si no es responsable) |
+| `GET /infracciones/{casoId}?empresaId=` | ídem | Detalle; 403 si el caso es de otra empresa |
+| `POST /infracciones/{casoId}/descargo?empresaId=` | ídem | `{"fundamento": "..."}`. Uno por caso, dentro del plazo; 409 si no corresponde |
+| `GET /parametros-reglas`, `PUT /parametros-reglas/{clave}` | ADMINISTRADOR | `{"valor": "600", "motivo": "..."}`; rige desde la próxima evaluación |
+
+- **Tipos:** `EXCESO_CARGA`, `SIN_HABILITACION`, `VIAJE_SIN_GUIA`, `DESVIO_RUTA`.
+- **Estados:** `DETECTADA → NOTIFICADA → EN_DESCARGO → CONFIRMADA | DESESTIMADA`. Desde `NOTIFICADA` se
+  puede resolver directamente: desestimar en cualquier momento, y confirmar con el plazo vencido.
+- **Fundamentos** (descargo, resolución, motivo de un cambio de parámetro): entre 10 y 4.000 caracteres.
+- **Consumidores:** `DeteccionPesadaMDB` lee la cola `pesadas` (antes no tenía consumidor).
+  `FinDeViajeMDB` evalúa el desvío después de traer los pesajes. `AgendaDeteccionBean` revisa el tracking
+  cada 5 minutos.
+- **Parámetros** (`parametro_regla`): `exceso_carga.tolerancia_kg` (500), `desvio_ruta.tolerancia_m`
+  (5000), `desvio_ruta.tolerancia_relativa_pct` (15), `desvio_ruta.porcentaje_puntos` (20) y
+  `descargo.plazo_dias` (10).
+
 ## 6. Variables de entorno
 
 | Variable | Usada por | Default |
@@ -628,6 +652,7 @@ Sin sesión. Servicio `InformacionPublicaLocal` (`@PermitAll`), recurso `/carga/
 | `TRACKING_COLA_UMBRAL_ALTO`, `TRACKING_COLA_UMBRAL_BAJO`, `TRACKING_REINTENTAR_SEG`, `TRACKING_LOTE_MAX` | central (ingesta de posiciones, ADR-0008) | `18000`, `9000`, `30`, `500` |
 | `BALANZAS_TIMEOUT_MS`, `BALANZAS_REINTENTOS`, `BALANZAS_CIRCUITO_UMBRAL`, `BALANZAS_CIRCUITO_ESPERA_SEG` | `PesajeBean` | `3000`, `1`, `3`, `30` |
 | `PESAJES_AGENDA_ACTIVA` | `AgendaPesajesBean` (sincronización cada 15 min) | `true` |
+| `FISCALIZACION_AGENDA_ACTIVA` | `AgendaDeteccionBean` (revisa el tracking cada 5 min) | `true` |
 | `NODO_TRACKING_TOKEN` | central (valida) y nodo Tracking (lo manda como `NODO_TOKEN`) | `tracking-solo-desarrollo` |
 | `NODO_BALANZAS_TOKEN` | central (lo manda) y nodo Balanzas (valida como `NODO_TOKEN`) | `balanzas-solo-desarrollo` |
 | `PDI_TIMEOUT_MS`, `PDI_REINTENTOS`, `PDI_CIRCUITO_UMBRAL`, `PDI_CIRCUITO_ESPERA_SEG` | `PdiBean` | `3000`, `1`, `3`, `30` |

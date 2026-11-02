@@ -203,6 +203,29 @@ El pipeline del GitLab de FING (`.gitlab-ci.yml`) compila, corre las pruebas, mi
 analiza con SonarQube y corre las pruebas de integración. Para Sonar hay que definir `SONAR_HOST_URL`
 y `SONAR_TOKEN` en *Settings → CI/CD → Variables*; sin ellas ese job no corre.
 
+### Fiscalización (P5): demo de punta a punta
+
+Con el sistema levantado con el simulador de gub.uy:
+
+```bash
+docker compose exec -T db psql -U carga -d carga < pruebas/datos-demo.sql
+python pruebas/demo-fiscalizacion.py
+```
+
+El script registra un viaje como lo haría la app (INICIO y FIN de un chofer que ingresa con gub.uy) con
+un recorrido desviado. El fin de viaje trae los pesajes (P4) y la detección abre un caso de desvío;
+los pesajes del camión DEMO53 abren casos de exceso de carga. Imprime el enlace a la traza en Jaeger
+(celular → central → cola → nodo Balanzas). Después:
+- **Empresa:** ingresar con gub.uy con la cédula `41000019` (responsable de Fletes del Litoral) →
+  *Infracciones* → ver la evidencia y presentar el descargo.
+- **Funcionario:** habilitar una cédula en el backoffice (*Funcionarios*), ingresar con gub.uy →
+  *Casos de fiscalización* → resolver con fundamento.
+- **Administrador:** backoffice → *Reglas de fiscalización*, para cambiar los umbrales sin redesplegar.
+- **Autoridad:** backoffice → *Reportes*: infracciones por tipo, tasa de confirmación y exportación
+  en CSV y PDF.
+
+Criterios y ciclo del caso en el [ADR-0022](docs/decisiones/0022-fiscalizacion-automatica-y-casos.md).
+
 ### Generador de carga
 
 Simula miles de dispositivos GPS contra la ingesta de posiciones, para la prueba de performance

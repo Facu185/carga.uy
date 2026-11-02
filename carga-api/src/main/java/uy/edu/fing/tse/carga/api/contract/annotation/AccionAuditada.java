@@ -9,6 +9,7 @@ public enum AccionAuditada {
     CASO_CREADO(true),
     CASO_CAMBIO_ESTADO(true),
     CASO_RESUELTO(true),
+    PARAMETRO_REGLA_MODIFICADO(true),
     // Administracion (P1)
     USUARIO_INTERNO_CREADO(false),
     USUARIO_INTERNO_ESTADO_CAMBIADO(false),

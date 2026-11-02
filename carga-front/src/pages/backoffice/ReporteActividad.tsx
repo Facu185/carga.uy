@@ -6,6 +6,7 @@ import { EncabezadoSeccion } from '../../componentes/EncabezadoSeccion'
 import { formatearFecha } from '../../formato'
 import { useTituloPagina } from '../../titulo'
 import './reporteActividad.css'
+import { IndicadoresFiscalizacion } from './IndicadoresFiscalizacion'
 
 type Carga = { estado: 'cargando'; consulta: string }
   | { estado: 'lista'; consulta: string; datos: DatosReporte }
@@ -164,7 +165,8 @@ export function ReporteActividad() {
       </div>
       <EvolucionDiaria grupos={datos.porDia} />
       <DistribucionRubros grupos={datos.porRubro} total={datos.totalGuias} />
-      <p className="nota-seccion">Este MVP no calcula cumplimiento ni indicadores de fiscalización. No consulta nodos en vivo ni expone datos personales.</p>
+      <IndicadoresFiscalizacion actividad={datos} />
+      <p className="nota-seccion">No consulta nodos en vivo ni expone datos personales.</p>
     </>}
   </>
 }

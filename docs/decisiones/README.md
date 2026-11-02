@@ -29,3 +29,4 @@ Plantilla: [plantilla.md](plantilla.md).
 | [0019](0019-registro-de-eventos-de-viaje.md) | Registro de eventos de viaje: sincrónico, idempotente y el central decide | Aceptada por el usuario para política central e inicio/baja; implementación local, coordinación P3/móvil y validación real pendientes de acreditar |
 | [0020](0020-tablero-autoridad-actividad.md) | Tablero de autoridad por fecha de creación de guías y días America/Montevideo | Aceptada para MVP confirmado por el usuario; validación integrada pendiente |
 | [0021](0021-frontoffice-publico-y-umbral-de-agregacion.md) | Frontoffice público: validación de permisos y umbral de agregación (5 guías de 3 empresas) | Propuesta |
+| [0022](0022-fiscalizacion-automatica-y-casos.md) | Fiscalización automática: reglas, criterio de desvío, ciclo del caso y parametrización | Propuesta |

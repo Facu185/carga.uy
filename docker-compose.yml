@@ -97,6 +97,8 @@ services:
       BALANZAS_DEMORA_MS: "0"
       BALANZAS_FALLA: "false"
       NODO_TOKEN: ${NODO_BALANZAS_TOKEN:-balanzas-solo-desarrollo}
+      # Exporta su tramo de la traza distribuida a Jaeger (vacio = no exportar)
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT-http://jaeger:4318}
     ports:
       - "8081:8080"
 

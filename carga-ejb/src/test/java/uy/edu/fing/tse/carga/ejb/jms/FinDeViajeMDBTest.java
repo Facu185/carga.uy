@@ -2,6 +2,7 @@ package uy.edu.fing.tse.carga.ejb.jms;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import uy.edu.fing.tse.carga.api.contract.service.DeteccionLocal;
 import uy.edu.fing.tse.carga.api.contract.service.SincronizacionPesajesLocal;
 import uy.edu.fing.tse.carga.api.dto.comun.ViajeFinalizadoDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.PesadaRegistradaDTO;
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class FinDeViajeMDBTest {
 
     private final List<String> sincronizados = new ArrayList<>();
+    private final List<Long> evaluados = new ArrayList<>();
     private RuntimeException falla;
     private boolean deshecho;
     private FinDeViajeMDB mdb;
@@ -32,6 +34,23 @@ class FinDeViajeMDBTest {
             }
         };
         mdb.metricas = new Metricas();
+        mdb.deteccion = new DeteccionLocal() {
+            @Override
+            public int evaluarPesada(PesadaRegistradaDTO pesada) {
+                return 0;
+            }
+
+            @Override
+            public int evaluarFinDeViaje(Long guiaId) {
+                evaluados.add(guiaId);
+                return 0;
+            }
+
+            @Override
+            public int evaluarActividadTracking(int minutos) {
+                return 0;
+            }
+        };
         mdb.sincronizacion = new SincronizacionPesajesLocal() {
             @Override
             public ResultadoSincronizacionDTO sincronizar(String matricula, String fecha) {
@@ -62,6 +81,12 @@ class FinDeViajeMDBTest {
     }
 
     @Test
+    void despuesDeLosPesajesEvaluaElDesvioDeLaGuia() {
+        mdb.procesar(new ViajeFinalizadoDTO(5L, "STZ1234", null, "2026-10-08T03:00:00Z"));
+        assertEquals(List.of(5L), evaluados);
+    }
+
+    @Test
     void sinInicioSoloSincronizaElDiaDelFin() {
         mdb.procesar(new ViajeFinalizadoDTO(5L, "STZ1234", null, "2026-10-08T03:00:00Z"));
         assertEquals(List.of("STZ1234@2026-10-08"), sincronizados);
@@ -73,6 +98,7 @@ class FinDeViajeMDBTest {
         mdb.procesar(new ViajeFinalizadoDTO(5L, " ", null, "2026-10-08T03:00:00Z"));
         mdb.procesar(new ViajeFinalizadoDTO(5L, "STZ1234", "2026-09-01T00:00:00Z", "2026-10-08T03:00:00Z"));
         assertTrue(sincronizados.isEmpty());
+        assertTrue(evaluados.isEmpty());
         assertFalse(deshecho);
     }
 

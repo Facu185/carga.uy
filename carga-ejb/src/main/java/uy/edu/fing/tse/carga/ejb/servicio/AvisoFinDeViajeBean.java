@@ -11,6 +11,7 @@ import uy.edu.fing.tse.carga.api.contract.service.AvisoFinDeViajeLocal;
 import uy.edu.fing.tse.carga.api.dto.comun.ViajeFinalizadoDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 import uy.edu.fing.tse.carga.ejb.jms.FinDeViajeMDB;
+import uy.edu.fing.tse.carga.api.observabilidad.Traza;
 
 import java.time.OffsetDateTime;
 
@@ -44,7 +45,10 @@ public class AvisoFinDeViajeBean implements AvisoFinDeViajeLocal {
     /** Package-private para verificarlo en las pruebas, sin broker ni JSON-B. */
     void publicar(ViajeFinalizadoDTO viaje) {
         try (Jsonb jsonb = JsonbBuilder.create()) {
-            jms.createProducer().send(cola, jsonb.toJson(viaje));
+            // La traza sigue del otro lado de la cola: movil -> central -> cola -> nodo Balanzas
+            var productor = jms.createProducer();
+            Traza.traceparentActual().ifPresent(t -> productor.setProperty(Traza.HEADER, t));
+            productor.send(cola, jsonb.toJson(viaje));
         } catch (Exception e) {
             throw new IllegalStateException("No se pudo encolar el aviso de fin de viaje", e);
         }

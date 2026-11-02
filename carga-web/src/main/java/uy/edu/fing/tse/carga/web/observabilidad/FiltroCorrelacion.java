@@ -58,6 +58,11 @@ public class FiltroCorrelacion implements Filter {
                 Traza.Tipo.SERVIDOR)
                 .atributo("http.method", pedido.getMethod())
                 .atributo("idCorrelacion", id);
+        // La app movil se identifica: en Jaeger se ve que la operacion empezo en el celular (letra 4.4, punto 9)
+        String cliente = pedido.getHeader("X-Cliente");
+        if (cliente != null && cliente.matches("[A-Za-z0-9._-]{1,40}")) {
+            tramo.atributo("cliente", cliente);
+        }
         respuesta.setHeader("X-Trace-Id", tramo.getTraceId());
 
         long inicio = System.nanoTime();

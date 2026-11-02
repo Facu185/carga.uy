@@ -6,17 +6,24 @@
 --
 -- Se puede correr más de una vez: primero borra lo que haya cargado antes (matrículas DEMO y
 -- empresas 7001 a 7005). No toca los datos de desarrollo ni los de otras pruebas.
+-- Los choferes demo ingresan con gub.uy (simulador) con las cedulas 41000019, 41000025, 41000031, 41000047, 41000053 (empresas 7001 a 7005).
 -- Está armado para que en las cifras públicas se vea la regla: "Refrigerada" y "Supermercados"
 -- quedan con menos de 3 empresas y se agrupan en "Otros"; un mes del año tiene un solo viaje y
 -- figura como "Reservado".
 
 BEGIN;
 
+DELETE FROM descargo WHERE caso_id IN (SELECT c.id FROM caso_fiscalizacion c JOIN vehiculo v ON v.id = c.vehiculo_id WHERE v.matricula LIKE 'DEMO%');
+DELETE FROM notificacion_empresa WHERE caso_id IN (SELECT c.id FROM caso_fiscalizacion c JOIN vehiculo v ON v.id = c.vehiculo_id WHERE v.matricula LIKE 'DEMO%');
+DELETE FROM caso_fiscalizacion WHERE vehiculo_id IN (SELECT id FROM vehiculo WHERE matricula LIKE 'DEMO%');
 DELETE FROM pesada WHERE guia_id IN (SELECT g.id FROM guia g JOIN vehiculo v ON v.id = g.vehiculo_id WHERE v.matricula LIKE 'DEMO%');
 DELETE FROM evento_viaje WHERE guia_id IN (SELECT g.id FROM guia g JOIN vehiculo v ON v.id = g.vehiculo_id WHERE v.matricula LIKE 'DEMO%');
 DELETE FROM guia WHERE vehiculo_id IN (SELECT id FROM vehiculo WHERE matricula LIKE 'DEMO%');
+DELETE FROM pesada WHERE matricula LIKE 'DEMO%';
+DELETE FROM posicion_tracking WHERE matricula LIKE 'DEMO%';
 DELETE FROM vehiculo WHERE matricula LIKE 'DEMO%';
-DELETE FROM chofer WHERE cedula LIKE '9900000%';
+DELETE FROM chofer WHERE empresa_id IN (SELECT id FROM empresa WHERE numero_empresa BETWEEN 7001 AND 7005);
+DELETE FROM vinculo_empresa_usuario WHERE empresa_id IN (SELECT id FROM empresa WHERE numero_empresa BETWEEN 7001 AND 7005);
 DELETE FROM empresa WHERE numero_empresa BETWEEN 7001 AND 7005;
 
 INSERT INTO empresa (nombre, razon_social, numero_empresa, rubro_id, fecha_alta) VALUES
@@ -35,9 +42,18 @@ SELECT e.id, 'DEMO' || (e.numero_empresa - 7000) || n, 'Scania', 'R450', 9000, 2
 FROM empresa e CROSS JOIN generate_series(1, 2) AS n
 WHERE e.numero_empresa BETWEEN 7001 AND 7005;
 
+-- Cedulas validas (con digito verificador), para poder ingresar con el simulador de gub.uy como chofer
 INSERT INTO chofer (empresa_id, cedula, nombre)
-SELECT e.id, '9900000' || (e.numero_empresa - 7000), 'Chofer demo ' || (e.numero_empresa - 7000)
+SELECT e.id, (ARRAY['41000019', '41000025', '41000031', '41000047', '41000053'])[e.numero_empresa - 7000],
+       'Chofer demo ' || (e.numero_empresa - 7000)
 FROM empresa e WHERE e.numero_empresa BETWEEN 7001 AND 7005;
+
+-- Un camion con la capacidad declarada baja (9.000 + 12.000 kg): sus pesadas del nodo Balanzas
+-- (entre 24 y 33 t) siempre superan el maximo, y la deteccion abre casos de exceso de carga.
+INSERT INTO vehiculo (empresa_id, matricula, marca, modelo, peso_kg, capacidad_carga_kg,
+                      numero_permiso, permiso_desde, permiso_hasta, itv_vencimiento)
+SELECT id, 'DEMO53', 'Volvo', 'FM', 9000, 12000, 'PNC-7003-3', DATE '2026-01-01', DATE '2027-12-31', DATE '2027-06-30'
+FROM empresa WHERE numero_empresa = 7003;
 
 -- Una guía por empresa, cada 9 días, durante el último año. Tipo de carga y rubro rotan de forma que
 -- los más comunes los usan todas las empresas y los menos comunes, solo una o dos.
@@ -56,11 +72,17 @@ SELECT e.id, v.id, c.id,
        now() - (k * 9 || ' days')::interval + interval '10 hours'
 FROM empresa e
 JOIN vehiculo v ON v.empresa_id = e.id AND v.matricula LIKE 'DEMO%1'
-JOIN chofer c ON c.empresa_id = e.id AND c.cedula LIKE '9900000%'
+JOIN chofer c ON c.empresa_id = e.id AND c.nombre LIKE 'Chofer demo %'
 CROSS JOIN generate_series(0, 39) AS k
 WHERE e.numero_empresa BETWEEN 7001 AND 7005
   -- un mes con un solo viaje: muestra la celda "Reservado" en la serie mensual
   AND NOT (date_trunc('month', now() - (k * 9 || ' days')::interval) = date_trunc('month', now() - interval '6 months')
            AND e.numero_empresa <> 7003);
+
+-- El chofer demo 1 es ademas responsable de su empresa, para mostrar las infracciones y el descargo.
+-- Su usuario se crea al primer ingreso con gub.uy: si todavia no ingreso, volver a correr este script.
+INSERT INTO vinculo_empresa_usuario (usuario_id, empresa_id, tipo, estado, solicitado_en, aprobado_en, aprobado_por)
+SELECT u.id, e.id, 'RESPONSABLE', 'ACTIVO', now(), now(), 'datos-demo'
+FROM usuario u, empresa e WHERE u.cedula = '41000019' AND e.numero_empresa = 7001;
 
 COMMIT;

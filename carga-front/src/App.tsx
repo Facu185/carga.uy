@@ -30,6 +30,10 @@ import { VehiculosFuncionario } from './pages/funcionario/Vehiculos'
 import { ViajesFuncionario } from './pages/funcionario/Viajes'
 import { DetalleViajeFuncionario } from './pages/funcionario/DetalleViaje'
 import { ValidarPermiso } from './pages/publico/ValidarPermiso'
+import { CasosFuncionario } from './pages/funcionario/Casos'
+import { DetalleCasoFuncionario } from './pages/funcionario/DetalleCaso'
+import { Infracciones } from './pages/frontoffice/Infracciones'
+import { ReglasFiscalizacion } from './pages/backoffice/ReglasFiscalizacion'
 import { EstadisticasPublicas } from './pages/publico/EstadisticasPublicas'
 import { ROLES } from './tipos'
 
@@ -100,6 +104,14 @@ export default function App() {
               </RutaProtegida>
             }
           />
+          <Route
+            path="/mi-empresa/infracciones"
+            element={
+              <RutaProtegida roles={[ROLES.CIUDADANO, ROLES.CHOFER]} login="/ingresar">
+                <Infracciones />
+              </RutaProtegida>
+            }
+          />
           <Route path="/funcionario" element={
             <RutaProtegida roles={[ROLES.FUNCIONARIO]} login="/ingresar">
               <LayoutFuncionario />
@@ -112,6 +124,8 @@ export default function App() {
             <Route path="empresas/:id/viajes" element={<ViajesFuncionario />} />
             <Route path="empresas/:id/viajes/:guiaId" element={<DetalleViajeFuncionario />} />
             <Route path="solicitudes-responsables" element={<SolicitudesEmpresa backoffice={false} />} />
+            <Route path="casos" element={<CasosFuncionario />} />
+            <Route path="casos/:id" element={<DetalleCasoFuncionario />} />
           </Route>
           <Route path="/backoffice/login" element={<Login />} />
           <Route
@@ -154,6 +168,14 @@ export default function App() {
               element={
                 <RutaProtegida roles={[ROLES.ADMINISTRADOR]}>
                   <Funcionarios />
+                </RutaProtegida>
+              }
+            />
+            <Route
+              path="reglas"
+              element={
+                <RutaProtegida roles={[ROLES.ADMINISTRADOR]}>
+                  <ReglasFiscalizacion />
                 </RutaProtegida>
               }
             />

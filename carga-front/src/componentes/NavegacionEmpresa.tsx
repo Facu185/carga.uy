@@ -14,6 +14,7 @@ export function NavegacionEmpresa() {
       <NavLink to="/mi-empresa" end>Choferes</NavLink>
       <NavLink to="/mi-empresa/vehiculos">Vehículos</NavLink>
       <NavLink to="/mi-empresa/guias">Guías de viajes</NavLink>
+      <NavLink to="/mi-empresa/infracciones">Infracciones</NavLink>
       {roles.includes(ROLES.CIUDADANO) && !roles.includes(ROLES.FUNCIONARIO)
         && <NavLink to="/guias/nueva">Registrar guía</NavLink>}
     </nav>

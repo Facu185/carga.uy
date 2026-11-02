@@ -10,11 +10,13 @@ import jakarta.jms.Message;
 import jakarta.jms.MessageListener;
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
+import uy.edu.fing.tse.carga.api.contract.service.DeteccionLocal;
 import uy.edu.fing.tse.carga.api.contract.service.MetricasLocal;
 import uy.edu.fing.tse.carga.api.contract.service.SincronizacionPesajesLocal;
 import uy.edu.fing.tse.carga.api.dto.comun.ViajeFinalizadoDTO;
 import uy.edu.fing.tse.carga.api.dto.nodo.ResultadoSincronizacionDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
+import uy.edu.fing.tse.carga.api.observabilidad.Traza;
 import uy.edu.fing.tse.carga.ejb.persistencia.PesadaDAO;
 
 import java.time.LocalDate;
@@ -32,6 +34,10 @@ import java.util.logging.Logger;
  * una falla tecnica se deshace para que el broker lo vuelva a entregar. Volver a procesar es
  * inofensivo porque la sincronizacion no duplica pesadas. Si el nodo Balanzas no responde no es una
  * falla del mensaje: no se guardo nada y la agenda lo vuelve a intentar dentro de las 24 horas.
+ *
+ * Con los pesajes ya obtenidos, evalua el desvio de ruta del viaje (deteccion de P5, ADR-0022). Va
+ * despues de la sincronizacion y en la misma transaccion: si la deteccion falla, el mensaje se
+ * reentrega y las dos cosas se repiten sin duplicar nada.
  */
 @JMSDestinationDefinition(
         name = FinDeViajeMDB.COLA,
@@ -57,20 +63,29 @@ public class FinDeViajeMDB implements MessageListener {
     @EJB
     MetricasLocal metricas;
 
+    @EJB
+    DeteccionLocal deteccion;
+
     @Resource
     private MessageDrivenContext contexto;
 
     @Override
     public void onMessage(Message message) {
         ViajeFinalizadoDTO viaje;
+        String traceparent;
         try {
             viaje = Json.JSONB.fromJson(message.getBody(String.class), ViajeFinalizadoDTO.class);
+            traceparent = message.propertyExists(Traza.HEADER) ? message.getStringProperty(Traza.HEADER) : null;
         } catch (Exception e) {
             metricas.contar(METRICA, "resultado", "descartado");
             LOG.warning("Aviso de fin de viaje descartado: no se pudo leer (" + e.getMessage() + ")");
             return;
         }
-        procesar(viaje);
+        // Continua la traza de quien registro el fin (la app movil): la consulta a Balanzas queda adentro
+        try (Traza.Tramo tramo = Traza.iniciarDesde(traceparent, "JMS viajes-finalizados", Traza.Tipo.SERVIDOR)
+                .atributo("messaging.destination", "cola_viajes_finalizados")) {
+            procesar(viaje);
+        }
     }
 
     void procesar(ViajeFinalizadoDTO viaje) {
@@ -89,6 +104,9 @@ public class FinDeViajeMDB implements MessageListener {
                 nodoDisponible &= r.isNodoDisponible();
             }
             metricas.contar(METRICA, "resultado", nodoDisponible ? "sincronizado" : "nodo_no_disponible");
+            if (viaje.getGuiaId() != null) {
+                deteccion.evaluarFinDeViaje(viaje.getGuiaId());
+            }
         } catch (NegocioException e) {
             metricas.contar(METRICA, "resultado", "descartado");
             LOG.warning("Aviso de fin de viaje descartado (" + e.getMessage() + ")");
