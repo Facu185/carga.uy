@@ -79,6 +79,10 @@ Código de arranque: `PesajeBean`, `MonitorBean`, `IngestaTrackingBean`, `Posici
 - **Opcional: PostGIS** — mapa de la flota, recorrido de un viaje, cálculo de distancia al recorrido
   esperado para la regla de desvío.
 - Reportes y tableros para la autoridad.
+  MVP de actividad solicitado por el usuario en [ADR-0020](decisiones/0020-tablero-autoridad-actividad.md):
+  agregados por creación de guías y días America/Montevideo, en el backoffice SPA
+  existente. No incluye fiscalización ni reasigna P5 a P2; código local y pruebas
+  escritas, aceptación integrada y coordinación externa pendientes.
 
 Tablas: `caso_fiscalizacion`, `descargo`, `parametro_regla`. Las columnas `geometry` ya están
 creadas en la migración V1.

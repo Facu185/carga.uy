@@ -1,0 +1,38 @@
+.reporte-alcance { border-left: 5px solid var(--senal); background: var(--ambar-suave); border-radius: var(--radio); padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+.reporte-alcance p { margin: 0.4rem 0 0; max-width: 100ch; }
+.reporte-filtros { display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.reporte-filtros > p { flex-basis: 100%; margin: 0; }
+.reporte-filtros .campo { flex: 1 1 11rem; max-width: 19rem; margin: 0; }
+.reporte-filtros-acciones { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.reporte-periodo { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem 1rem; margin-bottom: 1rem; }
+.reporte-indicadores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.reporte-indicador, .reporte-panel { background: #fff; border: 1px solid var(--borde); border-radius: 10px; padding: 1.25rem; }
+.reporte-indicador { border-top: 4px solid var(--azul); }
+.reporte-indicador h2, .reporte-panel h2 { font-size: 1.4rem; margin: 0 0 0.5rem; }
+.reporte-indicador p { color: var(--grava); margin: 0.4rem 0 0; }
+.reporte-indicador .reporte-cifra { color: var(--asfalto); font-size: clamp(2rem, 4vw, 3rem); font-weight: 700; font-variant-numeric: tabular-nums; margin: 0.5rem 0; }
+.reporte-estados { margin: 0; }
+.reporte-estados > div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.4rem 0; border-bottom: 1px solid var(--borde); }
+.reporte-estados > div:last-child { border: 0; }
+.reporte-estados dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.reporte-panel { margin-bottom: 1.5rem; }
+.reporte-panel > p { margin-top: 0; color: var(--grava); }
+.reporte-grafico { overflow-x: auto; }
+.reporte-grafico svg { width: 100%; min-width: 380px; display: block; }
+.reporte-grafico text { fill: var(--grava); font-size: 12px; }
+.reporte-guia-grafico { stroke: var(--borde); stroke-dasharray: 4 4; }
+.reporte-linea { fill: none; stroke: var(--azul); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.reporte-punto { fill: var(--azul); }
+.reporte-tabla-diaria summary { cursor: pointer; color: var(--azul); font-weight: 700; margin: 0.75rem 0; }
+.reporte-panel caption { text-align: left; padding: 0.75rem 1rem; color: var(--grava); }
+.reporte-panel tbody th { background: transparent; font-size: 1rem; color: var(--asfalto); vertical-align: top; }
+.reporte-rubros td:last-child { min-width: 8rem; }
+.reporte-rubros th { overflow-wrap: anywhere; }
+.reporte-barra { display: block; height: 0.6rem; border-radius: 4px; background: #edf1f0; margin-top: 0.4rem; }
+.reporte-barra > span { display: block; height: 100%; border-radius: inherit; background: var(--azul); }
+.reporte-vacio { background: #fff; border: 1px solid var(--borde); border-radius: var(--radio); padding: 1rem; }
+.reporte-error { margin: 1rem 0; }
+@media (max-width: 800px) {
+  .reporte-indicadores { grid-template-columns: 1fr; }
+  .reporte-filtros .campo { max-width: none; }
+}

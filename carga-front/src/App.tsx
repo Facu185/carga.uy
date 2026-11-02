@@ -8,6 +8,7 @@ import { LayoutBackoffice } from './pages/backoffice/LayoutBackoffice'
 import { Login } from './pages/backoffice/Login'
 import { CambiarPassword } from './pages/backoffice/CambiarPassword'
 import { PanelBackoffice } from './pages/backoffice/PanelBackoffice'
+import { ReporteActividad } from './pages/backoffice/ReporteActividad'
 import { Usuarios } from './pages/backoffice/Usuarios'
 import { Funcionarios } from './pages/backoffice/Funcionarios'
 import { Nodos } from './pages/backoffice/Nodos'
@@ -126,6 +127,7 @@ export default function App() {
             }
           >
             <Route index element={<PanelBackoffice />} />
+            <Route path="reportes" element={<RutaProtegida roles={[ROLES.AUTORIDAD]}><ReporteActividad /></RutaProtegida>} />
             <Route
               path="usuarios"
               element={

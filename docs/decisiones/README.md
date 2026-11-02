@@ -27,3 +27,4 @@ Plantilla: [plantilla.md](plantilla.md).
 | [0017](0017-id-uruguay-userinfo-testing.md) | Datos personales por UserInfo y configuración explícita de ID Uruguay testing | Aceptada para alcance confirmado por usuario |
 | [0018](0018-consulta-viajes-funcionario-p2.md) | Consulta C14 de guías y preparación F14 limitada a P2 | Aceptada para C14 y entrega parcial confirmados por usuario |
 | [0019](0019-registro-de-eventos-de-viaje.md) | Registro de eventos de viaje: sincrónico, idempotente y el central decide | Aceptada por el usuario para política central e inicio/baja; implementación local, coordinación P3/móvil y validación real pendientes de acreditar |
+| [0020](0020-tablero-autoridad-actividad.md) | Tablero de autoridad por fecha de creación de guías y días America/Montevideo | Aceptada para MVP confirmado por el usuario; validación integrada pendiente |

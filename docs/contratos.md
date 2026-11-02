@@ -9,6 +9,7 @@ grupo antes de mergear: hay código de otra persona que depende.
 |---|---|---|
 | `EmpresaServicio` / `...Local` / `...Remote` | P2 | Alta, modificación, baja lógica y consulta de empresas; mutaciones para funcionario/administrador |
 | `PerfilEmpresaServicioLocal` | P2 | Consulta/edición del perfil propio; CIUDADANO/CHOFER con vínculo RESPONSABLE/ACTIVO y empresa activa |
+| `ReporteActividadLocal` | P5 (bloque solicitado ADR-0020) | Agregados de guías por fecha de creación; solo AUTORIDAD, sin vínculo ni mutaciones |
 | `VehiculoServicio` / `VehiculoServicioLocal` | P2 | ABM vehicular y reactivación; autorización por vínculo responsable activo o administrador |
 | `IngestaTrackingLocal` | P4 | Recibe una posición y la encola; no bloquea |
 | `PesajeLocal` | P4 | `obtenerPesadas` devuelve las pesadas; `consultarPesadas` además informa si el nodo respondió y cuánto tardó |
@@ -90,6 +91,7 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 |---|---|
 | `GET /carga/api/salud` | healthchecks, monitoreo |
 | `GET /carga/api/empresas[?nombre=]` | frontoffice, backoffice |
+| `GET /carga/api/reportes/actividad?desde=YYYY-MM-DD&hasta=YYYY-MM-DD` | Tablero AUTORIDAD; agregados sin detalle individual (ADR-0020) |
 | `POST /carga/api/empresas` | backoffice |
 | `PUT /carga/api/empresas/{id}` | Gestión administrativa existente; `EmpresaDTO`, respuesta 200 con DTO; funcionario/administrador |
 | `DELETE /carga/api/empresas/{id}` | Baja lógica administrativa existente; 204; funcionario/administrador |
@@ -125,6 +127,62 @@ incorrectas), `403` (sin el rol, o `RecursoAjenoException`: el recurso no existe
 externo caído).
 
 Las rutas nuevas de cada frente cuelgan de `/carga/api/<tema>`. No reutilizar prefijos ajenos.
+
+### Reporte de actividad de autoridad — ADR-0020
+
+Contrato aditivo local confirmado por el usuario; no acredita aceptación externa
+P5 ni reasigna sus responsabilidades. [ADR-0020](decisiones/0020-tablero-autoridad-actividad.md).
+
+- `ReporteActividadLocal.consultar(String desde, String hasta)` devuelve
+  `ReporteActividadDTO`. Nuevo GET `/reportes/actividad`, sin operaciones de escritura.
+- Solo AUTORIDAD con principal válido. Sin sesión: 401; otros roles (también
+  ADMINISTRADOR): 403. Se conserva sesión P1, clave temporal y Bearer existentes.
+- Ambos parámetros presentes o ambos ausentes. Ausentes: últimos 30 días,
+  incluido hoy según reloj del servidor en America/Montevideo. Presentes:
+  fechas estrictas YYYY-MM-DD (años 0001–9999), desde <= hasta, máximo 366 días
+  inclusivos. Blanco, fecha imposible, par incompleto o rango mayor: 400 con
+  `{"error":"mensaje"}`. No se aplica un límite silencioso ni paginación.
+- Filtrar `guia.creada_en >= desde 00:00 local` y `< (hasta + 1 día) 00:00 local`.
+  Todos los agregados provienen de una única instantánea SQL. Se incluyen guías
+  sin asignaciones/rubro y empresas actualmente inactivas, sin duplicar por vínculos.
+- Respuesta 200 JSON, también para vacío; `Cache-Control: no-store`:
+
+  ```json
+  {
+    "desde": "2026-11-01", "hasta": "2026-11-02",
+    "zonaHoraria": "America/Montevideo", "criterioTemporal": "CREACION_GUIA",
+    "totalGuias": 1, "empresasConGuias": 1,
+    "porDia": [
+      {"clave":"2026-11-01","etiqueta":"2026-11-01","cantidad":0},
+      {"clave":"2026-11-02","etiqueta":"2026-11-02","cantidad":1}
+    ],
+    "porEstado": [
+      {"clave":"CREADA","etiqueta":"CREADA","cantidad":0},
+      {"clave":"ASIGNADA","etiqueta":"ASIGNADA","cantidad":1},
+      {"clave":"EN_CURSO","etiqueta":"EN_CURSO","cantidad":0},
+      {"clave":"FINALIZADA","etiqueta":"FINALIZADA","cantidad":0}
+    ],
+    "porRubro": [{"clave":"SIN_RUBRO","etiqueta":"Sin rubro","cantidad":1}]
+  }
+  ```
+
+- Cada grupo usa `ConteoActividadDTO {clave, etiqueta, cantidad}`. Cantidades:
+  enteros no negativos (`long`). Días completos en orden ascendente, cuatro
+  estados en el orden del ejemplo; rubros por cantidad descendente y clave como
+  desempate. Rubro presente: clave = ID de catálogo en texto, etiqueta = nombre
+  de catálogo; ausente: `SIN_RUBRO`, sin confundirlo con un rubro de igual nombre.
+  Vacío: totales cero, días/estados con cero y `porRubro: []`.
+- `empresasConGuias` cuenta empresas distintas **con guías creadas en ese rango**,
+  no empresas activas ni todas las empresas registradas. `porEstado` muestra el
+  estado persistido **actual**, no al cierre del rango ni historia de eventos.
+  Cada distribución suma `totalGuias`; el filtro no cambia por estado o rubro.
+  No acredita viajes ejecutados, cumplimiento, salud/completitud de nodos ni
+  fecha global de última actualización. No entrega guías individuales ni PII.
+- Consumidor SPA `/backoffice/reportes`: valida estructura, cantidades seguras,
+  período y coherencia de totales antes de mostrar datos. No convierte fallos
+  en cero ni mezcla resultados de consultas distintas. Sin runner frontend
+  instalado; escenarios y validaciones reales pendientes en
+  [matriz de aceptación](../pruebas/tablero-autoridad.md).
 
 ## 4. Mensajería
 

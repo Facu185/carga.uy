@@ -1,6 +1,6 @@
 import { IdCard, Users, type LucideIcon } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { api } from '../../api/cliente'
 import { useAuth } from '../../auth/contexto'
 import { Etiqueta } from '../../componentes/Etiqueta'
@@ -102,6 +102,12 @@ function ActividadReciente({ actividad, cargando }: { actividad?: RegistroAudito
 }
 
 export function PanelBackoffice() {
+  const { sesion } = useAuth()
+  if (sesion?.rol === ROLES.AUTORIDAD) return <Navigate to="/backoffice/reportes" replace />
+  return <PanelAdministracion />
+}
+
+function PanelAdministracion() {
   useTituloPagina('Inicio', true)
   const { sesion } = useAuth()
   const esAdmin = sesion?.rol === ROLES.ADMINISTRADOR

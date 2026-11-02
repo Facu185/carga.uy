@@ -111,3 +111,17 @@ microsegundos; caracterizar compatibilidad de históricos con fracción más pre
 Pruebas escritas primero, no ejecutadas; aceptación móvil, SQL/JDBC, carreras reales
 y rollback aún pendientes en [matriz ADR-0019](../pruebas/p2-p3-eventos-conflictos.md).
 No cambia roles del historial C14-E, edición de guías ni política temporal de permiso/ITV.
+
+**Actualización autoridad (2026-11-02):** [ADR-0020](../docs/decisiones/0020-tablero-autoridad-actividad.md)
+registra el MVP de tablero solicitado por el usuario, con fecha de creación de
+guías y calendario America/Montevideo confirmados explícitamente. Nueva lectura
+`ReporteActividadLocal`/EJB/REST `/reportes/actividad` exclusiva AUTORIDAD; CTE de
+una sola sentencia agrega guías, empresas distintas, estados actuales, días y
+rubros sin descargar detalle individual. SPA `/backoffice/reportes` es el inicio
+de autoridad; administrador y auditoría existentes se conservan. Fechas inclusivas,
+30 días por defecto del servidor, máximo 366, días/estados vacíos en cero y
+errores separados de vacío. P5 conserva responsabilidad funcional; no incluye
+cumplimiento, mapa ni histórico de estados, ni acepta globalmente ADR-0004.
+Pruebas Java/SQL escritas primero y escenarios frontend definidos, sin runner
+frontend instalado, compilación, ciclo rojo/verde ni validación funcional;
+[aceptación real y compartida pendientes](../pruebas/tablero-autoridad.md).
