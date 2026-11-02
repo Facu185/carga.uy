@@ -36,6 +36,7 @@ Las rutas Java siguientes son relativas a los directorios de paquetes enlazados 
 | Eventos y conflictos P3/P2 | web `rest/EventoViajeRecurso` → API `EventoViajeLocal` → `EventoViajeBean` → `EventoViajeDAO`; FIN → `AvisoFinDeViajeLocal` | ADR-0019 aprobado por usuario: INICIO Vehículo → Guía comparte exclusión con baja P2; lectura actual y cuerpo idempotente normalizado, inserción atómica global. Sin cambios de rol; pruebas escritas sin ejecución, coordinación móvil/aceptación real pendiente |
 | Recorridos | web `rest/RecorridoRecurso` → `RecorridoBean` → `RecorridoDAO`/PostGIS; API local para P5 | ADR-0010: topes, distancia y roles distintos para API externa/proceso interno |
 | Auditoría del producto | `AuditoriaBean` → `RegistroAuditoriaDAO`/`RegistroAuditoria`; lectura por recurso y SPA | Solo agregado; independiente del agente auditor de código |
+| Reporte gerencial de autoridad | SPA `pages/backoffice/ReporteActividad` → `api/reportes` → web `rest/ReporteActividadRecurso` → API `ReporteActividadLocal` → EJB `ReporteActividadBean` → `ReporteActividadDAO` | ADR-0020: solo AUTORIDAD, creación de guías/días Montevideo y agregación en una sentencia, sin detalle individual ni fiscalización. P5 conserva responsabilidad; validación real pendiente |
 
 ## Persistencia, servidor y pruebas
 

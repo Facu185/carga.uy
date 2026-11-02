@@ -19,6 +19,13 @@ F10/C10, F13/C13 y C14 P2 fueron aprobados posteriormente; C14-P ya está public
 y su consumidor SPA implementado localmente. C14-E para funcionario requiere
 acuerdo y entrega; la aceptación integrada F14 permanece pendiente.
 
+**Bloque separado (2026-11-02):** el usuario solicitó el tablero gerencial de
+autoridad y confirmó fecha de creación de guía y días America/Montevideo
+([ADR-0020](decisiones/0020-tablero-autoridad-actividad.md)). Se incorpora como
+MVP local en el backoffice existente, sin reasignar reportes P5 ni ampliar el
+cierre P2. No cierra motor/casos ni aceptación integrada; ver
+[matriz del tablero](../pruebas/tablero-autoridad.md).
+
 | Responsabilidad | Dueño y límite |
 | --- | --- |
 | Perfil empresarial F10, ABM F11, empresas F12, consulta F13, guías/asignaciones CU2 | P2; integrar cambios del portal ciudadano con P3. |
