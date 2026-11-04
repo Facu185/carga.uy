@@ -7,16 +7,33 @@ export interface ConteoActividad {
   cantidad: number
 }
 
+export type CriterioActividad = 'CREACION_GUIA' | 'FIN_VIAJE'
+
 export interface ReporteActividad {
   desde: string
   hasta: string
   zonaHoraria: 'America/Montevideo'
-  criterioTemporal: 'CREACION_GUIA'
+  criterioTemporal: CriterioActividad
+  tipoCargaId: number | null
+  tipoCargaNombre: string | null
   totalGuias: number
   empresasConGuias: number
   porDia: ConteoActividad[]
   porEstado: ConteoActividad[]
   porRubro: ConteoActividad[]
+}
+
+export interface TipoCargaActividad { id: number; nombre: string }
+
+export function errorTipoCargaActividad(id: string | null): string | null {
+  return id === null || (/^[1-9]\d*$/.test(id) && Number.isSafeInteger(Number(id)))
+    ? null : 'Selecciona un tipo de carga válido o Todos los tipos.'
+}
+
+/** Etiqueta derivada de la respuesta aplicada, nunca del borrador o del catálogo pendiente. */
+export function etiquetaCargaActividad(actividad: ReporteActividad): string {
+  return actividad.tipoCargaId === null ? 'Todos los tipos (incluidas guías sin tipo)'
+    : `${actividad.tipoCargaNombre} (ID ${actividad.tipoCargaId})`
 }
 
 function invalido(): never { throw new Error('El servidor devolvió un reporte de actividad no válido. Vuelve a consultar.') }
@@ -64,11 +81,20 @@ function grupos(valor: unknown, total: number): ConteoActividad[] {
 }
 
 /** El genérico de api no valida JSON: comprobar significado antes de graficar. */
-function interpretarReporte(valor: unknown, desde: string | null, hasta: string | null): ReporteActividad {
+function interpretarReporte(valor: unknown, desde: string | null, hasta: string | null, tipoSolicitado: string | null,
+  criterio: CriterioActividad): ReporteActividad {
   const doc = objeto(valor)
+  let tipoCargaId: number | null = null, tipoCargaNombre: string | null = null
+  if (tipoSolicitado === null) {
+    if (doc.tipoCargaId != null || doc.tipoCargaNombre != null) return invalido()
+  } else {
+    if (!cantidad(doc.tipoCargaId) || doc.tipoCargaId === 0 || String(doc.tipoCargaId) !== tipoSolicitado
+        || typeof doc.tipoCargaNombre !== 'string' || !doc.tipoCargaNombre.trim()) return invalido()
+    tipoCargaId = doc.tipoCargaId; tipoCargaNombre = doc.tipoCargaNombre
+  }
   if (!fecha(doc.desde) || !fecha(doc.hasta) || (desde !== null && doc.desde !== desde)
       || (hasta !== null && doc.hasta !== hasta) || doc.zonaHoraria !== 'America/Montevideo'
-      || doc.criterioTemporal !== 'CREACION_GUIA' || !cantidad(doc.totalGuias) || !cantidad(doc.empresasConGuias)
+      || doc.criterioTemporal !== criterio || !cantidad(doc.totalGuias) || !cantidad(doc.empresasConGuias)
       || doc.empresasConGuias > doc.totalGuias || (doc.totalGuias > 0 && doc.empresasConGuias === 0)) return invalido()
   const fechas = diasDelPeriodo(doc.desde, doc.hasta)
   if (desde === null && hasta === null && fechas.length !== 30) return invalido()
@@ -84,14 +110,44 @@ function interpretarReporte(valor: unknown, desde: string | null, hasta: string 
         || (anterior && (anterior.cantidad < actual.cantidad
           || (anterior.cantidad === actual.cantidad && anterior.clave > actual.clave)))) return invalido()
   }
-  return { desde: doc.desde, hasta: doc.hasta, zonaHoraria: doc.zonaHoraria, criterioTemporal: doc.criterioTemporal,
+  return { desde: doc.desde, hasta: doc.hasta, zonaHoraria: doc.zonaHoraria, criterioTemporal: criterio,
+    tipoCargaId, tipoCargaNombre,
     totalGuias: doc.totalGuias, empresasConGuias: doc.empresasConGuias, porDia, porEstado, porRubro }
 }
 
-export async function consultarActividad(desde: string | null, hasta: string | null, signal: AbortSignal): Promise<ReporteActividad> {
+export async function consultarActividad(desde: string | null, hasta: string | null, signal: AbortSignal,
+  tipoCargaId: string | null = null): Promise<ReporteActividad> {
+  return consultarReporte(desde, hasta, signal, tipoCargaId, 'CREACION_GUIA')
+}
+
+export async function consultarViajesFinalizados(desde: string | null, hasta: string | null, signal: AbortSignal,
+  tipoCargaId: string | null = null): Promise<ReporteActividad> {
+  return consultarReporte(desde, hasta, signal, tipoCargaId, 'FIN_VIAJE')
+}
+
+async function consultarReporte(desde: string | null, hasta: string | null, signal: AbortSignal,
+  tipoCargaId: string | null, criterio: CriterioActividad): Promise<ReporteActividad> {
+  const errorTipo = errorTipoCargaActividad(tipoCargaId)
+  if (errorTipo) throw new Error(errorTipo)
   const parametros = new URLSearchParams()
   if (desde !== null) parametros.set('desde', desde)
   if (hasta !== null) parametros.set('hasta', hasta)
-  const doc = await api<unknown>(`/reportes/actividad?${parametros}`, { signal, cache: 'no-store' })
-  return interpretarReporte(doc, desde, hasta)
+  if (tipoCargaId !== null) parametros.set('tipoCargaId', tipoCargaId)
+  const recurso = criterio === 'FIN_VIAJE' ? 'viajes-finalizados' : 'actividad'
+  const doc = await api<unknown>(`/reportes/${recurso}?${parametros}`, { signal, cache: 'no-store' })
+  return interpretarReporte(doc, desde, hasta, tipoCargaId, criterio)
+}
+
+export async function consultarTiposCargaActividad(signal: AbortSignal): Promise<TipoCargaActividad[]> {
+  const doc = await api<unknown>('/reportes/actividad/tipos-carga', { signal, cache: 'no-store' })
+  if (!Array.isArray(doc)) throw new Error('El servidor devolvió un catálogo de tipos de carga no válido.')
+  const vistos = new Set<number>()
+  return doc.map((valor: unknown) => {
+    const tipo = objeto(valor)
+    if (!cantidad(tipo.id) || tipo.id === 0 || vistos.has(tipo.id)
+        || typeof tipo.nombre !== 'string' || !tipo.nombre.trim())
+      throw new Error('El servidor devolvió un catálogo de tipos de carga no válido.')
+    vistos.add(tipo.id)
+    return { id: tipo.id, nombre: tipo.nombre }
+  })
 }

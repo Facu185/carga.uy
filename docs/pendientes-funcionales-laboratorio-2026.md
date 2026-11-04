@@ -144,9 +144,28 @@ de administración ni un motor que los consuma: las semillas no satisfacen el re
   no una elección de formatos acordada por este documento.
 - [ ] Acceso de autoridades a las consultas y reportes correspondientes.
 
-El [PanelBackoffice](../carga-front/src/pages/backoffice/PanelBackoffice.tsx) muestra
-administración de accesos y actividad de auditoría. No es el dashboard gerencial
-exigido. Tampoco lo sustituyen Grafana ni la descarga CSV de guías del chofer.
+**Actualización local (2026-11-03):** existe el tablero
+[ReporteActividad](../carga-front/src/pages/backoffice/ReporteActividad.tsx),
+con actividad agregada por creación de guías y calendario Montevideo (ADR-0020).
+Se añadió por solicitud confirmada el filtro opcional de tipo de carga **solo a
+actividad**; fiscalización mantiene todos los tipos y casos sin guía por período
+de detección, con alcance explícito en pantalla y CSV/PDF. No se equiparan guías
+registradas a viajes realizados ni empresas con guías a empresas habilitadas.
+Es entrega parcial, sin pruebas ejecutadas ni aceptación integrada: no se marcan
+cerrados F06, ubicación, filtros globales o indicadores de habilitación. Ver
+[matriz de aceptación](../pruebas/tablero-autoridad.md) y
+[seguimiento](../odd/tasks/autoridad-filtro-tipo-carga.md). No sustituir el tablero
+por Grafana ni por la descarga de guías del chofer.
+
+**Ampliación local (2026-11-04):** se añadió modo Viajes finalizados por instante
+del evento FIN aceptado, separado del registro por creación (predeterminado),
+con los mismos filtros de período/tipo de carga. Una guía por viaje, sin inferir
+fin de fechas previstas/estado ni usar recepción offline. Los eventos tardíos
+pueden actualizar períodos anteriores. Pantalla/CSV/PDF distinguen fecha aplicada
+y fiscalización general. [ADR-0023](decisiones/0023-reporte-viajes-finalizados-autoridad.md)
+y [seguimiento](../odd/tasks/autoridad-viajes-finalizados.md). Código/pruebas
+presentes sin compilación/ejecución: el requisito de viajes realizados queda
+pendiente de aceptación; no acredita duración ni carga física transportada.
 
 ## 4. Eventos y ejecución del viaje: P3
 

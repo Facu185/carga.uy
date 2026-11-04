@@ -36,6 +36,10 @@ y días calendario de America/Montevideo** para todos sus resultados.
 
 ## Límites y responsabilidad
 
+Ampliación posterior separada: [ADR-0023](0023-reporte-viajes-finalizados-autoridad.md)
+agrega consulta de Viajes finalizados por instante FIN. No cambia este endpoint
+por creación ni convierte sus estados actuales en historia de ejecución.
+
 Los reportes siguen siendo responsabilidad funcional de P5 según `frentes.md`;
 este bloque solicitado no amplía el cierre P2 ni acredita coordinación externa.
 El contrato aditivo se publica en [contratos](../contratos.md#reporte-de-actividad-de-autoridad--adr-0020).
@@ -55,6 +59,26 @@ Los estados son actuales al consultar, NO los estados al cierre del período.
   requiere validación real de SQL/JDBC/Hibernate. No se cambia esquema ni aislamiento.
 
 ## Validación
+
+### Ampliación confirmada: tipo de carga solo para actividad (2026-11-03)
+
+El usuario pidió aplicar la recomendación de menor riesgo tras aclarar el alcance:
+añadir un filtro opcional por el tipo de carga declarado en la guía **solo a la
+actividad**. Todos los tipos conserva guías sin tipo y comportamiento previo.
+Fiscalización conserva su consulta por período de detección, incluidos casos sin
+guía; no se deduce su tipo de carga ni se excluyen por este selector. Pantalla,
+CSV y PDF deben distinguir ambas poblaciones y el filtro efectivamente aplicado.
+Se conserva el criterio de creación/calendario para actividad.
+
+El catálogo de tipos para AUTORIDAD se expone desde el reporte, sin ampliar el
+catálogo operativo de creación de guías ni sus permisos. Se mantienen firma EJB
+previa y ruta REST, agregando una consulta con filtro opcional y metadatos de
+selección. Sin cambios de esquema, ABM, sesión, motor de fiscalización ni escalado.
+
+Alternativa descartada para esta entrega: filtro global, que requiere acordar el
+tratamiento de casos sin guía/tipo de carga. La entrega es parcial y no cierra
+ubicación ni habilitaciones; aceptación externa P5 y ejecución real pendientes.
+Seguimiento: [tareas ODD](../../odd/tasks/autoridad-filtro-tipo-carga.md).
 
 Pruebas escritas primero, sin ejecutar compilación ni ciclo rojo/verde.
 Roles reales, JSON-B, SQL/JDBC/Hibernate y navegador quedan pendientes según

@@ -83,6 +83,14 @@ Código de arranque: `PesajeBean`, `MonitorBean`, `IngestaTrackingBean`, `Posici
   agregados por creación de guías y días America/Montevideo, en el backoffice SPA
   existente. No incluye fiscalización ni reasigna P5 a P2; código local y pruebas
   escritas, aceptación integrada y coordinación externa pendientes.
+  Ampliación confirmada (2026-11-03): filtro opcional de tipo de carga solo para
+  actividad; fiscalización general por período y exportaciones con ámbitos
+  explícitos. No modifica motor/casos, permisos ni propiedad P5; aceptación
+  pendiente en la [matriz](../pruebas/tablero-autoridad.md).
+  [ADR-0023](decisiones/0023-reporte-viajes-finalizados-autoridad.md) añade modo
+  Viajes finalizados por evento FIN aceptado; conserva creación por defecto y
+  fiscalización general. Lectura interna de eventos P3 sin ampliar historial ni
+  modificar productor. Código local/pruebas escritas, validación real pendiente.
 
 Tablas: `caso_fiscalizacion`, `descargo`, `parametro_regla`. Las columnas `geometry` ya están
 creadas en la migración V1.

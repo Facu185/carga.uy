@@ -9,7 +9,7 @@ grupo antes de mergear: hay código de otra persona que depende.
 |---|---|---|
 | `EmpresaServicio` / `...Local` / `...Remote` | P2 | Alta, modificación, baja lógica y consulta de empresas; mutaciones para funcionario/administrador |
 | `PerfilEmpresaServicioLocal` | P2 | Consulta/edición del perfil propio; CIUDADANO/CHOFER con vínculo RESPONSABLE/ACTIVO y empresa activa |
-| `ReporteActividadLocal` | P5 (bloque solicitado ADR-0020) | Agregados de guías por fecha de creación; solo AUTORIDAD, sin vínculo ni mutaciones |
+| `ReporteActividadLocal` | P5 (bloques solicitados ADR-0020/0023) | Agregados por creación de guías o instante FIN; solo AUTORIDAD, sin vínculo ni mutaciones |
 | `VehiculoServicio` / `VehiculoServicioLocal` | P2 | ABM vehicular y reactivación; autorización por vínculo responsable activo o administrador |
 | `IngestaTrackingLocal` | P4 | Recibe una posición y la encola; no bloquea |
 | `PesajeLocal` | P4 | `obtenerPesadas` devuelve las pesadas; `consultarPesadas` además informa si el nodo respondió y cuánto tardó |
@@ -92,6 +92,7 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `GET /carga/api/salud` | healthchecks, monitoreo |
 | `GET /carga/api/empresas[?nombre=]` | frontoffice, backoffice |
 | `GET /carga/api/reportes/actividad?desde=YYYY-MM-DD&hasta=YYYY-MM-DD` | Tablero AUTORIDAD; agregados sin detalle individual (ADR-0020) |
+| `GET /carga/api/reportes/viajes-finalizados?desde=YYYY-MM-DD&hasta=YYYY-MM-DD&tipoCargaId=` | AUTORIDAD; viajes con FIN aceptado por instante del evento, sin detalle individual (ADR-0023) |
 | `POST /carga/api/empresas` | backoffice |
 | `PUT /carga/api/empresas/{id}` | Gestión administrativa existente; `EmpresaDTO`, respuesta 200 con DTO; funcionario/administrador |
 | `DELETE /carga/api/empresas/{id}` | Baja lógica administrativa existente; 204; funcionario/administrador |
@@ -130,11 +131,49 @@ Las rutas nuevas de cada frente cuelgan de `/carga/api/<tema>`. No reutilizar pr
 
 ### Reporte de actividad de autoridad — ADR-0020
 
+El reporte por creación de esta sección se conserva. La consulta adicional de
+viajes finalizados usa [ADR-0023](decisiones/0023-reporte-viajes-finalizados-autoridad.md):
+GET `/reportes/viajes-finalizados?desde=&hasta=&tipoCargaId=` y
+`ReporteActividadLocal.viajesFinalizados(String desde, String hasta, String tipoCargaId)`.
+Solo AUTORIDAD; mismos límites, validación, metadatos de carga, errores y
+`Cache-Control: no-store`. No expone historial ni abre permisos de eventos P3.
+Devuelve `ReporteActividadDTO` con `criterioTemporal: "FIN_VIAJE"`: `totalGuias`
+cuenta guías distintas con FIN aceptado (un viaje por guía), `empresasConGuias`
+sus empresas y `porDia` usa el instante FIN en Montevideo. El primer instante FIN
+por guía se reduce antes del rango, evitando doble conteo aun con filas repetidas.
+No usa estado actual como sustituto de FIN, creación, fechas previstas ni recepción.
+`porEstado` sigue mostrando estados actuales de la población seleccionada.
+Conservar la consulta previa por creación, incluso al omitir todos los parámetros.
+CSV/PDF y pantalla distinguen modo, fecha aplicada y fiscalización general por
+detección; avisar de sincronizaciones tardías que pueden modificar resultados pasados.
+
 Contrato aditivo local confirmado por el usuario; no acredita aceptación externa
 P5 ni reasigna sus responsabilidades. [ADR-0020](decisiones/0020-tablero-autoridad-actividad.md).
 
 - `ReporteActividadLocal.consultar(String desde, String hasta)` devuelve
   `ReporteActividadDTO`. Nuevo GET `/reportes/actividad`, sin operaciones de escritura.
+- Ampliación confirmada del filtro de carga: se conserva la firma anterior
+  (equivale a todos los tipos) y se añade
+  `consultar(String desde, String hasta, String tipoCargaId)`. REST admite
+  `?tipoCargaId=<id>` opcional: ausente incluye todas las guías, también sin tipo;
+  presente exige entero decimal positivo sin espacios/signos/ceros iniciales y
+  representable como `Long`. Blanco, formato inválido o ID inexistente: 400 con
+  `{"error":"mensaje"}`. ID existente sin guías: 200 con ceros.
+  El filtro se aplica a `guia.tipo_carga_id` antes de todos los agregados; no usa
+  rubro ni tipo actual de vehículo/empresa. Fechas ausentes siguen permitidas.
+- GET `/reportes/actividad/tipos-carga`, mediante `ReporteActividadLocal.tiposCarga()`:
+  catálogo completo `{id,nombre}[]`, ordenado por nombre, solo AUTORIDAD y
+  `Cache-Control: no-store`. Sin mutaciones ni cambios de permisos al catálogo
+  operativo `/guias/catalogos/tipos-carga`. Vacío = `[]`, fallo no equivale a vacío.
+- Respuesta de actividad incorpora `tipoCargaId` y `tipoCargaNombre` del filtro
+  aplicado (ID/nombre del catálogo, incluso sin guías). Ausentes o nulos sin
+  filtro; los consumidores anteriores pueden ignorarlos. La SPA exige ambos
+  coherentes con la selección y no presenta como filtrada una respuesta antigua.
+- El tipo de carga filtra **solo actividad**. Fiscalización mantiene fecha de
+  detección, todos los tipos y casos sin guía; no se cambia su endpoint ni motor.
+  Pantalla, CSV y PDF indican esa diferencia y el filtro aplicado a actividad,
+  nunca el borrador del formulario. Entrega parcial: no cierra filtros globales,
+  ubicación ni indicadores de habilitación. Propiedad y aceptación externa P5 intactas.
 - Solo AUTORIDAD con principal válido. Sin sesión: 401; otros roles (también
   ADMINISTRADOR): 403. Se conserva sesión P1, clave temporal y Bearer existentes.
 - Ambos parámetros presentes o ambos ausentes. Ausentes: últimos 30 días,

@@ -6,6 +6,7 @@ import jakarta.ejb.SessionContext;
 import org.junit.jupiter.api.Test;
 import uy.edu.fing.tse.carga.api.dto.reporte.ConteoActividadDTO;
 import uy.edu.fing.tse.carga.api.dto.reporte.ReporteActividadDTO;
+import uy.edu.fing.tse.carga.api.dto.guia.TipoCargaDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 import uy.edu.fing.tse.carga.api.security.Roles;
 import uy.edu.fing.tse.carga.ejb.persistencia.ReporteActividadDAO;
@@ -17,11 +18,115 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Prueba primero. Dobles no prueban roles EJB, SQL ni instantanea de PostgreSQL. */
 class ReporteActividadBeanTest {
+    @Test void finalizadosUsaConsultaSeparadaYMetadatosSinCambiarCreacion() throws Exception {
+        var e = new Escenario(Roles.AUTORIDAD);
+        var r = e.bean.viajesFinalizados("2026-11-04", "2026-11-05", "7");
+        assertEquals("FIN_VIAJE", r.getCriterioTemporal()); assertEquals(7L, r.getTipoCargaId());
+        assertEquals("Granel", r.getTipoCargaNombre());
+        assertEquals(Instant.parse("2026-11-04T03:00:00Z"), e.desde);
+        assertEquals(Instant.parse("2026-11-06T03:00:00Z"), e.hasta);
+        assertEquals(1, e.lecturasFinalizados); assertEquals(0, e.lecturas);
+        assertEquals(List.of(0L, 0L), r.getPorDia().stream().map(ConteoActividadDTO::getCantidad).toList());
+        assertEquals(0, r.getTotalGuias());
+        assertEquals("CREACION_GUIA", e.bean.consultar(null, null, null).getCriterioTemporal());
+        assertEquals(1, e.lecturas); assertEquals(1, e.lecturasFinalizados);
+    }
+
+    @Test void finalizadosMantieneCalendarioDefectoLimitesYVacio() throws Exception {
+        var e = new Escenario(Roles.AUTORIDAD);
+        var r = e.bean.viajesFinalizados(null, null, null);
+        assertEquals("2026-10-03", r.getDesde()); assertEquals("2026-11-01", r.getHasta());
+        assertEquals(30, r.getPorDia().size()); assertEquals(4, r.getPorEstado().size());
+        assertEquals("FIN_VIAJE", r.getCriterioTemporal()); assertNull(r.getTipoCargaId());
+        e.bean.viajesFinalizados("2010-10-03", "2010-10-03", null);
+        assertEquals(Instant.parse("2010-10-03T03:00:00Z"), e.desde);
+        assertEquals(Instant.parse("2010-10-04T02:00:00Z"), e.hasta);
+        assertEquals(366, e.bean.viajesFinalizados("2024-01-01", "2024-12-31", null).getPorDia().size());
+    }
+
+    @Test void finalizadosValidaAntesDeConsultarYNoOcultaFallos() throws Exception {
+        var e = new Escenario(Roles.AUTORIDAD);
+        assertThrows(NegocioException.class, () -> e.bean.viajesFinalizados("2026-11-04", null, null));
+        assertThrows(NegocioException.class, () -> e.bean.viajesFinalizados("2026-11-05", "2026-11-04", null));
+        assertThrows(NegocioException.class, () -> e.bean.viajesFinalizados("2026-01-01", "2027-01-02", null));
+        assertThrows(NegocioException.class, () -> e.bean.viajesFinalizados(null, null, "0"));
+        e.tipoExiste = false;
+        assertThrows(NegocioException.class, () -> e.bean.viajesFinalizados(null, null, "7"));
+        assertEquals(0, e.lecturasFinalizados); assertEquals(0, e.lecturas);
+        e.fallo = new IllegalStateException("fallo sintetico");
+        assertSame(e.fallo, assertThrows(IllegalStateException.class, () -> e.bean.viajesFinalizados(null, null, null)));
+    }
+
+    @Test void finalizadosNoAbreHistorialNiLecturaAOtrosRoles() throws Exception {
+        for (String rol : List.of(Roles.ADMINISTRADOR, Roles.FUNCIONARIO, Roles.CIUDADANO, Roles.CHOFER)) {
+            var e = new Escenario(rol);
+            assertThrows(EJBAccessException.class, () -> e.bean.viajesFinalizados(null, null, "7"));
+            assertEquals(0, e.busquedasTipo); assertEquals(0, e.lecturasFinalizados);
+        }
+        var e = new Escenario(Roles.AUTORIDAD); e.principal = null;
+        assertThrows(EJBAccessException.class, () -> e.bean.viajesFinalizados(null, null, null));
+        assertEquals(Set.of(Roles.CHOFER),
+                Set.of(EventoViajeBean.class.getAnnotation(RolesAllowed.class).value()));
+    }
+
+    @Test void filtroDeCargaSePropagaAntesDeAgregarYDevuelveSuNombreInclusoSinGuias() throws Exception {
+        var e = new Escenario(Roles.AUTORIDAD);
+        var r = e.bean.consultar("2026-11-01", "2026-11-02", "7");
+        assertEquals(7L, e.tipoConsultado); assertEquals(7L, e.tipoFiltrado);
+        assertEquals(7L, r.getTipoCargaId()); assertEquals("Granel", r.getTipoCargaNombre());
+        assertEquals(0, r.getTotalGuias()); assertEquals(2, r.getPorDia().size());
+        assertEquals(1, e.lecturas); assertEquals(1, e.busquedasTipo);
+    }
+
+    @Test void firmaAnteriorYFiltroAusenteConservanTodosSinConsultarCatalogo() throws Exception {
+        var e = new Escenario(Roles.AUTORIDAD);
+        var anterior = e.bean.consultar(null, null);
+        assertNull(anterior.getTipoCargaId()); assertNull(anterior.getTipoCargaNombre());
+        var actual = e.bean.consultar(null, null, null);
+        assertNull(actual.getTipoCargaId()); assertNull(e.tipoFiltrado);
+        assertEquals(2, e.lecturas); assertEquals(0, e.busquedasTipo);
+    }
+
+    @Test void filtroInvalidoNoConsultaCatalogoNiAgregados() throws Exception {
+        var e = new Escenario(Roles.AUTORIDAD);
+        for (String id : List.of("", " ", "0", "-1", "+1", "01", "1.0", "7 ", "texto", "9223372036854775808"))
+            assertThrows(NegocioException.class, () -> e.bean.consultar(null, null, id));
+        assertEquals(0, e.lecturas); assertEquals(0, e.busquedasTipo);
+    }
+
+    @Test void filtroInexistenteNoSeIgnoraNiDevuelveTodasLasGuias() throws Exception {
+        var e = new Escenario(Roles.AUTORIDAD); e.tipoExiste = false;
+        assertThrows(NegocioException.class, () -> e.bean.consultar(null, null, "7"));
+        assertEquals(1, e.busquedasTipo); assertEquals(0, e.lecturas);
+    }
+
+    @Test void consultaCatalogoCompletoSinExigirGuiasYPropagaFallo() throws Exception {
+        var e = new Escenario(Roles.AUTORIDAD);
+        assertEquals("Granel", e.bean.tiposCarga().getFirst().getNombre());
+        assertEquals(0, e.lecturas); assertEquals(1, e.listadosTipo);
+        e.fallo = new IllegalStateException("catalogo sintetico");
+        assertSame(e.fallo, assertThrows(IllegalStateException.class, () -> e.bean.tiposCarga()));
+    }
+
+    @Test void filtroYCatalogoNoAmplianPermisosNiRevelanExistencia() throws Exception {
+        for (var rol : List.of(Roles.ADMINISTRADOR, Roles.FUNCIONARIO, Roles.CIUDADANO, Roles.CHOFER)) {
+            var e = new Escenario(rol);
+            assertThrows(EJBAccessException.class, () -> e.bean.consultar(null, null, "7"));
+            assertThrows(EJBAccessException.class, () -> e.bean.consultar(null, null, "invalido"));
+            assertThrows(EJBAccessException.class, () -> e.bean.tiposCarga());
+            assertEquals(0, e.busquedasTipo); assertEquals(0, e.listadosTipo); assertEquals(0, e.lecturas);
+        }
+        var e = new Escenario(Roles.AUTORIDAD); e.principal = null;
+        assertThrows(EJBAccessException.class, () -> e.bean.consultar(null, null, "7"));
+        assertThrows(EJBAccessException.class, () -> e.bean.tiposCarga());
+    }
+
     @Test void autoridadSinVinculoObtieneAgregadosYMetadatosDelPeriodo() throws Exception {
         var e = new Escenario(Roles.AUTORIDAD);
         e.resultado.setTotalGuias(3); e.resultado.setEmpresasConGuias(2);
@@ -136,8 +241,11 @@ class ReporteActividadBeanTest {
         final ReporteActividadBean bean = new ReporteActividadBean();
         final ReporteActividadDTO resultado = new ReporteActividadDTO();
         Principal principal = () -> "autoridad-sintetica";
-        int lecturas;
+        int lecturas, lecturasFinalizados;
         Instant desde, hasta;
+        Long tipoConsultado, tipoFiltrado;
+        boolean tipoExiste = true;
+        int busquedasTipo, listadosTipo;
         RuntimeException fallo;
 
         Escenario(String rol) throws Exception {
@@ -149,10 +257,27 @@ class ReporteActividadBeanTest {
                         default -> throw new UnsupportedOperationException(m.getName());
                     }));
             campo(bean, "dao", new ReporteActividadDAO() {
-                @Override public ReporteActividadDTO consultar(Instant inicio, Instant fin) {
-                    lecturas++; desde = inicio; hasta = fin;
+                @Override public ReporteActividadDTO consultar(Instant inicio, Instant fin, Long tipoCargaId) {
+                    lecturas++; desde = inicio; hasta = fin; tipoFiltrado = tipoCargaId;
                     if (fallo != null) throw fallo;
                     return resultado;
+                }
+                @Override public ReporteActividadDTO consultarFinalizados(Instant inicio, Instant fin, Long tipoCargaId) {
+                    lecturasFinalizados++; desde = inicio; hasta = fin; tipoFiltrado = tipoCargaId;
+                    if (fallo != null) throw fallo;
+                    return resultado;
+                }
+                @Override public Optional<TipoCargaDTO> tipoCarga(Long id) {
+                    busquedasTipo++; tipoConsultado = id;
+                    return tipoExiste ? Optional.of(tipo()) : Optional.empty();
+                }
+                @Override public List<TipoCargaDTO> tiposCarga() {
+                    listadosTipo++;
+                    if (fallo != null) throw fallo;
+                    return List.of(tipo());
+                }
+                private TipoCargaDTO tipo() {
+                    var t = new TipoCargaDTO(); t.setId(7L); t.setNombre("Granel"); return t;
                 }
             });
         }
