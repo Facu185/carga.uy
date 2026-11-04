@@ -17,28 +17,44 @@ import static org.junit.jupiter.api.Assertions.*;
 class ReporteActividadRecursoTest {
     @Test void nuevoRecursoSoloExponeGet() throws Exception {
         assertEquals("/reportes/actividad", ReporteActividadRecurso.class.getAnnotation(Path.class).value());
-        assertNotNull(ReporteActividadRecurso.class.getMethod("consultar", String.class, String.class).getAnnotation(GET.class));
+        assertNotNull(ReporteActividadRecurso.class.getMethod("consultar", String.class, String.class, String.class).getAnnotation(GET.class));
+        var catalogo = ReporteActividadRecurso.class.getMethod("tiposCarga");
+        assertNotNull(catalogo.getAnnotation(GET.class));
+        assertEquals("/tipos-carga", catalogo.getAnnotation(Path.class).value());
         // Sin los metodos sinteticos que agrega JaCoCo al medir la cobertura
-        assertEquals(1, java.util.Arrays.stream(ReporteActividadRecurso.class.getDeclaredMethods()).filter(m -> !m.isSynthetic()).count());
+        assertEquals(2, java.util.Arrays.stream(ReporteActividadRecurso.class.getDeclaredMethods()).filter(m -> !m.isSynthetic()).count());
     }
 
     @Test void delegaFechasSinInventarDefaultsYEvitaCache() throws Exception {
         var dto = new ReporteActividadDTO();
-        for (String[] periodo : new String[][]{{null, null}, {"2026-11-01", "2026-11-02"}}) {
+        for (String[] periodo : new String[][]{{null, null, null}, {"2026-11-01", "2026-11-02", null},
+                {"2026-11-01", "2026-11-02", "7"}, {null, null, ""}}) {
             var recurso = recurso((p, m, a) -> { assertArrayEquals(periodo, a); return dto; });
             var cabeceras = new java.util.HashMap<String, String>();
             var c = ReporteActividadRecurso.class.getDeclaredField("respuesta"); c.setAccessible(true);
             c.set(recurso, Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{HttpServletResponse.class},
                     (p, m, a) -> { assertEquals("setHeader", m.getName()); cabeceras.put((String) a[0], (String) a[1]); return null; }));
-            assertSame(dto, recurso.consultar(periodo[0], periodo[1]));
+            assertSame(dto, recurso.consultar(periodo[0], periodo[1], periodo[2]));
             assertEquals("no-store", cabeceras.get("Cache-Control"));
         }
+    }
+
+    @Test void catalogoDelegaSoloLecturaYNoPermiteCache() throws Exception {
+        var tipos = java.util.List.of(new uy.edu.fing.tse.carga.api.dto.guia.TipoCargaDTO());
+        var recurso = recurso((p, m, a) -> { assertEquals("tiposCarga", m.getName()); return tipos; });
+        var c = ReporteActividadRecurso.class.getDeclaredField("respuesta"); c.setAccessible(true);
+        var cabeceras = new java.util.HashMap<String, String>();
+        c.set(recurso, Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{HttpServletResponse.class},
+                (p, m, a) -> { cabeceras.put((String) a[0], (String) a[1]); return null; }));
+        assertSame(tipos, recurso.tiposCarga());
+        assertEquals("no-store", cabeceras.get("Cache-Control"));
     }
 
     @Test void propagaErroresDeNegocioYDeAccesoSinDevolverCero() throws Exception {
         for (Exception causa : new Exception[]{new NegocioException("sintetico"), new EJBAccessException("sintetico")}) {
             var recurso = recurso((p, m, a) -> { throw causa; });
-            assertSame(causa, assertThrows(causa.getClass(), () -> recurso.consultar("invalido", null)));
+            assertSame(causa, assertThrows(causa.getClass(), () -> recurso.consultar("invalido", null, "7")));
+            assertSame(causa, assertThrows(causa.getClass(), recurso::tiposCarga));
         }
     }
 

@@ -4,13 +4,15 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Registro de guias, no viajes efectivamente realizados ni fiscalizacion completa. */
+/** Agregados de guias por creacion o por FIN aceptado segun criterioTemporal; no fiscalizacion completa. */
 public class ReporteActividadDTO implements Serializable {
     private static final long serialVersionUID = 1L;
     private String desde;
     private String hasta;
     private String zonaHoraria;
     private String criterioTemporal;
+    private Long tipoCargaId;
+    private String tipoCargaNombre;
     private long totalGuias;
     private long empresasConGuias;
     private List<ConteoActividadDTO> porDia = new ArrayList<>();
@@ -27,6 +29,10 @@ public class ReporteActividadDTO implements Serializable {
     public void setZonaHoraria(String zonaHoraria) { this.zonaHoraria = zonaHoraria; }
     public String getCriterioTemporal() { return criterioTemporal; }
     public void setCriterioTemporal(String criterioTemporal) { this.criterioTemporal = criterioTemporal; }
+    public Long getTipoCargaId() { return tipoCargaId; }
+    public void setTipoCargaId(Long tipoCargaId) { this.tipoCargaId = tipoCargaId; }
+    public String getTipoCargaNombre() { return tipoCargaNombre; }
+    public void setTipoCargaNombre(String tipoCargaNombre) { this.tipoCargaNombre = tipoCargaNombre; }
     public long getTotalGuias() { return totalGuias; }
     public void setTotalGuias(long totalGuias) { this.totalGuias = totalGuias; }
     public long getEmpresasConGuias() { return empresasConGuias; }

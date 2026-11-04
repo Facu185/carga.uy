@@ -125,3 +125,20 @@ cumplimiento, mapa ni histórico de estados, ni acepta globalmente ADR-0004.
 Pruebas Java/SQL escritas primero y escenarios frontend definidos, sin runner
 frontend instalado, compilación, ciclo rojo/verde ni validación funcional;
 [aceptación real y compartida pendientes](../pruebas/tablero-autoridad.md).
+
+**Ampliación autoridad (2026-11-03):** usuario confirmó filtro opcional de tipo de
+carga solo en actividad, conservando fiscalización general por detección del caso.
+Contrato EJB previo conservado; REST admite `tipoCargaId`, devuelve metadatos de
+selección y ofrece catálogo de lectura AUTORIDAD sin ampliar permisos operativos
+de guías. CTE filtra antes de agregar; selector/URL y CSV/PDF explicitan ámbitos.
+No modifica esquema, ABM, motor ni escalado. Pruebas escritas sin ejecución;
+[seguimiento ODD](../odd/tasks/autoridad-filtro-tipo-carga.md) y matriz del tablero.
+
+**Viajes finalizados de autoridad (2026-11-04):**
+[ADR-0023](../docs/decisiones/0023-reporte-viajes-finalizados-autoridad.md) registra
+recomendación confirmada de modo separado por instante FIN aceptado. GET
+`/reportes/viajes-finalizados` y método aditivo en ReporteActividadLocal; DTO
+con criterio FIN_VIAJE, una guía por viaje. Creación por defecto y fiscalización
+por detección intactas; no abre historial P3 ni modifica eventos. Selector/URL,
+tablas/gráficos y CSV/PDF distinguen modos y eventos tardíos. Sin compilación ni
+ejecución real; [tareas ODD](../odd/tasks/autoridad-viajes-finalizados.md).

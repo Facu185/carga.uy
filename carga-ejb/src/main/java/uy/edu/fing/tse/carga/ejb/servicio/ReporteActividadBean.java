@@ -10,6 +10,7 @@ import jakarta.ejb.Stateless;
 import uy.edu.fing.tse.carga.api.contract.service.ReporteActividadLocal;
 import uy.edu.fing.tse.carga.api.dto.reporte.ConteoActividadDTO;
 import uy.edu.fing.tse.carga.api.dto.reporte.ReporteActividadDTO;
+import uy.edu.fing.tse.carga.api.dto.guia.TipoCargaDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 import uy.edu.fing.tse.carga.api.security.Roles;
 import uy.edu.fing.tse.carga.ejb.persistencia.ReporteActividadDAO;
@@ -24,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/** Politica temporal ADR-0020; no modifica estado ni consulta integraciones externas. */
+/** Politicas temporales ADR-0020/0023; no modifica estado ni consulta integraciones externas. */
 @Stateless
 @DeclareRoles(Roles.AUTORIDAD)
 @RolesAllowed(Roles.AUTORIDAD)
@@ -43,6 +44,21 @@ public class ReporteActividadBean implements ReporteActividadLocal {
 
     @Override
     public ReporteActividadDTO consultar(String desde, String hasta) throws NegocioException {
+        return consultar(desde, hasta, null);
+    }
+
+    @Override
+    public ReporteActividadDTO consultar(String desde, String hasta, String tipoCargaId) throws NegocioException {
+        return consultarPeriodo(desde, hasta, tipoCargaId, false);
+    }
+
+    @Override
+    public ReporteActividadDTO viajesFinalizados(String desde, String hasta, String tipoCargaId) throws NegocioException {
+        return consultarPeriodo(desde, hasta, tipoCargaId, true);
+    }
+
+    private ReporteActividadDTO consultarPeriodo(String desde, String hasta, String tipoCargaId, boolean finalizados)
+            throws NegocioException {
         autorizar();
         LocalDate inicio, fin;
         if (desde == null && hasta == null) {
@@ -54,10 +70,17 @@ public class ReporteActividadBean implements ReporteActividadLocal {
         if (diferencia < 0 || diferencia >= MAXIMO_DIAS)
             throw new NegocioException("El periodo debe estar ordenado y abarcar entre 1 y 366 dias inclusivos.");
 
+        Long tipoId = tipoId(tipoCargaId);
+        TipoCargaDTO tipo = tipoId == null ? null : dao.tipoCarga(tipoId)
+                .orElseThrow(() -> new NegocioException("El tipo de carga indicado no existe."));
         // El dia siguiente se calcula en calendario local, nunca sumando 24 horas a un instante.
-        var resultado = dao.consultar(inicio.atStartOfDay(ZONA).toInstant(), fin.plusDays(1).atStartOfDay(ZONA).toInstant());
+        var desdeInstante = inicio.atStartOfDay(ZONA).toInstant();
+        var hastaInstante = fin.plusDays(1).atStartOfDay(ZONA).toInstant();
+        var resultado = finalizados ? dao.consultarFinalizados(desdeInstante, hastaInstante, tipoId)
+                : dao.consultar(desdeInstante, hastaInstante, tipoId);
         resultado.setDesde(inicio.toString()); resultado.setHasta(fin.toString());
-        resultado.setZonaHoraria(ZONA.getId()); resultado.setCriterioTemporal("CREACION_GUIA");
+        resultado.setZonaHoraria(ZONA.getId()); resultado.setCriterioTemporal(finalizados ? "FIN_VIAJE" : "CREACION_GUIA");
+        resultado.setTipoCargaId(tipoId); resultado.setTipoCargaNombre(tipo == null ? null : tipo.getNombre());
         Map<String, Long> dias = cantidades(resultado.getPorDia()), estados = cantidades(resultado.getPorEstado());
         var serie = new ArrayList<ConteoActividadDTO>();
         for (LocalDate dia = inicio; !dia.isAfter(fin); dia = dia.plusDays(1)) {
@@ -68,6 +91,23 @@ public class ReporteActividadBean implements ReporteActividadLocal {
         resultado.setPorEstado(ESTADOS.stream().map(estado ->
                 new ConteoActividadDTO(estado, estado, estados.getOrDefault(estado, 0L))).toList());
         return resultado;
+    }
+
+    @Override
+    public List<TipoCargaDTO> tiposCarga() {
+        autorizar();
+        return dao.tiposCarga();
+    }
+
+    private static Long tipoId(String valor) throws NegocioException {
+        if (valor == null) return null;
+        if (!valor.matches("[1-9][0-9]*"))
+            throw new NegocioException("El tipo de carga debe ser un identificador entero positivo.");
+        try {
+            return Long.valueOf(valor);
+        } catch (NumberFormatException e) {
+            throw new NegocioException("El identificador del tipo de carga es demasiado grande.");
+        }
     }
 
     private void autorizar() {

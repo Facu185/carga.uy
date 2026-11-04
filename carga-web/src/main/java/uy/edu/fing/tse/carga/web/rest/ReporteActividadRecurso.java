@@ -10,7 +10,10 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import uy.edu.fing.tse.carga.api.contract.service.ReporteActividadLocal;
 import uy.edu.fing.tse.carga.api.dto.reporte.ReporteActividadDTO;
+import uy.edu.fing.tse.carga.api.dto.guia.TipoCargaDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
+
+import java.util.List;
 
 /** Transporte del reporte de autoridad; permisos y periodo se resuelven en el EJB. */
 @Path("/reportes/actividad")
@@ -23,9 +26,17 @@ public class ReporteActividadRecurso {
     private HttpServletResponse respuesta;
 
     @GET
-    public ReporteActividadDTO consultar(@QueryParam("desde") String desde, @QueryParam("hasta") String hasta)
+    public ReporteActividadDTO consultar(@QueryParam("desde") String desde, @QueryParam("hasta") String hasta,
+                                        @QueryParam("tipoCargaId") String tipoCargaId)
             throws NegocioException {
         respuesta.setHeader("Cache-Control", "no-store");
-        return servicio.consultar(desde, hasta);
+        return servicio.consultar(desde, hasta, tipoCargaId);
+    }
+
+    @GET
+    @Path("/tipos-carga")
+    public List<TipoCargaDTO> tiposCarga() {
+        respuesta.setHeader("Cache-Control", "no-store");
+        return servicio.tiposCarga();
     }
 }

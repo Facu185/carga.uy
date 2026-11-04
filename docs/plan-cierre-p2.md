@@ -26,6 +26,21 @@ MVP local en el backoffice existente, sin reasignar reportes P5 ni ampliar el
 cierre P2. No cierra motor/casos ni aceptación integrada; ver
 [matriz del tablero](../pruebas/tablero-autoridad.md).
 
+**Ampliación separada (2026-11-03):** filtro opcional por tipo de carga solo en
+actividad de guías, solicitado tras aclarar que fiscalización conserva todos los
+tipos y casos sin guía. Pantalla/CSV/PDF distinguen ámbitos. No cambia propiedad
+P5, no cierra F06 ni amplía cierre P2; ubicación, habilitaciones y escalado fuera
+de alcance. Código local y pruebas escritas sin ejecución; ver
+[tareas ODD](../odd/tasks/autoridad-filtro-tipo-carga.md).
+
+**Viajes finalizados (2026-11-04):** usuario pidió aplicar modo separado por
+instante del FIN aceptado, sin reemplazar Guías registradas por creación.
+[ADR-0023](decisiones/0023-reporte-viajes-finalizados-autoridad.md) y
+[tareas](../odd/tasks/autoridad-viajes-finalizados.md) delimitan entrega agregada,
+solo AUTORIDAD, con filtros de período/carga y exportaciones. No abre historial
+P3 ni altera registro de eventos. Pruebas escritas sin ejecución y aceptación
+compartida pendientes; no cierra F06 completo ni amplía el cierre P2.
+
 | Responsabilidad | Dueño y límite |
 | --- | --- |
 | Perfil empresarial F10, ABM F11, empresas F12, consulta F13, guías/asignaciones CU2 | P2; integrar cambios del portal ciudadano con P3. |

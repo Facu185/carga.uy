@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { descargarCsv, reporteFiscalizacion, TIPOS, type ReporteFiscalizacion } from '../../api/fiscalizacion'
-import type { ReporteActividad } from '../../api/reportes'
+import { etiquetaCargaActividad, type ReporteActividad } from '../../api/reportes'
 
 function numero(valor: number): string { return valor.toLocaleString('es-UY') }
 function porcentaje(valor: number | null | undefined): string {
@@ -14,30 +14,53 @@ function porcentaje(valor: number | null | undefined): string {
  */
 export function IndicadoresFiscalizacion({ actividad }: { actividad: ReporteActividad }) {
   const { desde, hasta } = actividad
+  const finalizados = actividad.criterioTemporal === 'FIN_VIAJE'
+  const unidad = finalizados ? 'Viajes finalizados' : 'Guías registradas'
+  const criterio = finalizados ? 'Instante del evento FIN aceptado por el central' : 'Fecha de creación de la guía'
   const [datos, setDatos] = useState<{ clave: string; reporte: ReporteFiscalizacion } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const clave = `${desde}:${hasta}`
 
   useEffect(() => {
     const controlador = new AbortController()
+    let vigente = true
     setError(null)
     reporteFiscalizacion(desde, hasta, controlador.signal)
-      .then((reporte) => setDatos({ clave, reporte }))
+      .then((reporte) => { if (vigente) setDatos({ clave, reporte }) })
       .catch((causa: unknown) => {
-        if (!controlador.signal.aborted) setError(causa instanceof Error ? causa.message : 'No se pudieron consultar los indicadores de fiscalización.')
+        if (vigente) setError(causa instanceof Error ? causa.message : 'No se pudieron consultar los indicadores de fiscalización.')
       })
-    return () => controlador.abort()
+    return () => { vigente = false; controlador.abort() }
   }, [desde, hasta, clave])
 
   const r = datos?.clave === clave ? datos.reporte : null
 
   function exportarCsv() {
     if (!r) return
-    descargarCsv(`carga-uy-tablero-${desde}-${hasta}.csv`, [
+    descargarCsv(`carga-uy-tablero-${actividad.criterioTemporal}-${desde}-${hasta}-carga-${actividad.tipoCargaId ?? 'todos'}.csv`, [
       ['Indicador', 'Valor'],
       ['Período', `${desde} a ${hasta}`],
-      ['Guías registradas', actividad.totalGuias],
-      ['Empresas con guías', actividad.empresasConGuias],
+      ['Zona horaria', 'America/Montevideo'],
+      ['Sección', unidad],
+      ['Criterio temporal de actividad', criterio],
+      ['Código del criterio', actividad.criterioTemporal],
+      ...(finalizados ? [['Alcance de finalizaciones', 'Una guía por viaje con evento FIN; no constatación física. Eventos tardíos pueden actualizar períodos anteriores.']] : []),
+      ['Tipo de carga (solo actividad)', etiquetaCargaActividad(actividad)],
+      [unidad, actividad.totalGuias],
+      [finalizados ? 'Empresas con viajes finalizados' : 'Empresas con guías', actividad.empresasConGuias],
+      [],
+      ['Estado actual de la guía', `${unidad} (filtros de actividad aplicados)`],
+      ...actividad.porEstado.map((g) => [g.etiqueta, g.cantidad]),
+      [],
+      ['Rubro', `${unidad} (filtros de actividad aplicados)`],
+      ...actividad.porRubro.map((g) => [g.etiqueta, g.cantidad]),
+      [],
+      [finalizados ? 'Día del evento FIN' : 'Día de creación', `${unidad} (filtros de actividad aplicados)`],
+      ...actividad.porDia.map((g) => [g.clave, g.cantidad]),
+      [],
+      ['Sección', 'Fiscalización general'],
+      ['Criterio temporal de fiscalización', 'Fecha de detección del caso'],
+      ['Alcance de fiscalización', 'Todos los tipos de carga y casos sin guía; sin filtro por tipo de carga ni por viajes finalizados'],
       ['Infracciones detectadas', r.detectados],
       ['Infracciones confirmadas', r.confirmados],
       ['Infracciones desestimadas', r.desestimados],
@@ -46,18 +69,15 @@ export function IndicadoresFiscalizacion({ actividad }: { actividad: ReporteActi
       [],
       ['Tipo de infracción', 'Detectadas', 'Confirmadas', 'Desestimadas'],
       ...r.porTipo.map((t) => [TIPOS[t.tipo], t.detectados, t.confirmados, t.desestimados]),
-      [],
-      ['Rubro', 'Guías'],
-      ...actividad.porRubro.map((g) => [g.etiqueta, g.cantidad]),
-      [],
-      ['Día', 'Guías'],
-      ...actividad.porDia.map((g) => [g.clave, g.cantidad]),
     ])
   }
 
   return <section className="reporte-panel" aria-labelledby="titulo-fiscalizacion">
     <h2 id="titulo-fiscalizacion">Fiscalización</h2>
     <p>Casos detectados automáticamente en el período, según su estado actual.</p>
+    <p className="reporte-alcance"><strong>Fiscalización general, sin filtro por tipo de carga.</strong>{' '}
+      Estos indicadores incluyen todos los tipos de carga y los casos sin guía. El período se aplica a la fecha de detección del caso,
+      no a la fecha de creación o finalización del viaje. La consulta de viajes finalizados no filtra estos casos.</p>
     {error && <p className="mensaje-error" role="alert">{error}</p>}
     {!r && !error && <p role="status">Consultando los indicadores de fiscalización…</p>}
     {r && <>
