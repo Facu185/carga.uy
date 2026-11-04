@@ -1,6 +1,7 @@
 package uy.edu.fing.tse.carga.web.rest;
 
 import jakarta.ejb.EJBAccessException;
+import jakarta.persistence.PersistenceException;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -54,6 +55,14 @@ class ReporteActividadRecursoTest {
         for (Exception causa : new Exception[]{new NegocioException("sintetico"), new EJBAccessException("sintetico")}) {
             var recurso = recurso((p, m, a) -> { throw causa; });
             assertSame(causa, assertThrows(causa.getClass(), () -> recurso.consultar("invalido", null, "7")));
+        }
+    }
+
+    @Test void catalogoPropagaErroresDeAccesoYPersistenciaSinDevolverVacio() throws Exception {
+        // El catalogo no declara NegocioException: el doble respeta su contrato.
+        for (RuntimeException causa : new RuntimeException[]{new EJBAccessException("sintetico"),
+                new PersistenceException("sintetico")}) {
+            var recurso = recurso((p, m, a) -> { assertEquals("tiposCarga", m.getName()); throw causa; });
             assertSame(causa, assertThrows(causa.getClass(), recurso::tiposCarga));
         }
     }
