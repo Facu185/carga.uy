@@ -134,7 +134,8 @@ services:
     build:
       context: carga-front
     ports:
-      - "3000:80"
+      # En la nube (Elastic Cloud) FRONTEND_PUERTO=80: el dominio y el SSL del entorno entran por el 80
+      - "${FRONTEND_PUERTO:-3000}:80"
     depends_on:
       - central
 
