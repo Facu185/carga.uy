@@ -31,3 +31,4 @@ Plantilla: [plantilla.md](plantilla.md).
 | [0021](0021-frontoffice-publico-y-umbral-de-agregacion.md) | Frontoffice público: validación de permisos y umbral de agregación (5 guías de 3 empresas) | Propuesta |
 | [0022](0022-fiscalizacion-automatica-y-casos.md) | Fiscalización automática: reglas, criterio de desvío, ciclo del caso y parametrización | Propuesta |
 | [0023](0023-reporte-viajes-finalizados-autoridad.md) | Viajes finalizados de autoridad por instante del evento FIN, separados de guías creadas | Aceptada para recomendación solicitada; validación integrada pendiente |
+| [0024](0024-vista-previa-guias-ide-ors.md) | Vista previa de guías con sugerencias IDE, ruta ORS por peso y mapa Leaflet | Aceptada para flujo solicitado; validación real pendiente |

@@ -56,6 +56,10 @@ services:
       PDI_REINTENTOS: ${PDI_REINTENTOS:-1}
       PDI_CIRCUITO_UMBRAL: ${PDI_CIRCUITO_UMBRAL:-3}
       PDI_CIRCUITO_ESPERA_SEG: ${PDI_CIRCUITO_ESPERA_SEG:-30}
+      # Vista previa de guias: la clave nunca se entrega al contenedor frontend.
+      ORS_API_KEY: ${ORS_API_KEY:-}
+      IDE_DIRECCIONES_URL: ${IDE_DIRECCIONES_URL:-https://direcciones.ide.uy/api/v1/geocode}
+      ORS_RUTAS_URL: ${ORS_RUTAS_URL:-https://api.heigit.org/openrouteservice/v2/directions/driving-hgv/geojson}
       # --- Seguridad (P1). Los default son SOLO para desarrollo: en la nube se sobrescriben. ---
       JWT_SECRET: ${JWT_SECRET:-solo-desarrollo-cambiar-en-la-nube-0123456789}
       JWT_DURACION_MINUTOS: ${JWT_DURACION_MINUTOS:-30}

@@ -26,6 +26,10 @@ Tablas: `usuario`, `rol`, `usuario_rol`, `auditoria`. Código de arranque: `PdiB
 
 - Empresas, vehículos, choferes: altas, bajas, modificaciones y consultas.
 - Guías de viaje de carga: creación, asignación de vehículo y chofer. **Caso de uso crítico.**
+- Vista previa de nueva guía solicitada por el usuario: sugerencias IDE, ruta ORS
+  por peso y mapa Leaflet, acotada por [ADR-0024](decisiones/0024-vista-previa-guias-ide-ors.md).
+  No cambia CU2, portal compartido P3 ni fiscalización/georreferenciación P5; sin
+  trazado persistido y aceptación integrada aún pendiente.
 - Backoffice en JSF + PrimeFaces.
 - Perfil propio F10 en la SPA, alcance acotado aprobado por el usuario en
   [ADR-0014](decisiones/0014-perfil-propio-empresa.md). Conserva Choferes/Vehículos

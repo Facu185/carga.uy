@@ -1,4 +1,4 @@
-﻿import { ClipboardPenLine, MapPin, Truck } from 'lucide-react'
+import { ClipboardPenLine, MapPin, Truck } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { api } from '../../api/cliente'
 import { useAuth } from '../../auth/contexto'
@@ -7,6 +7,9 @@ import { NavegacionEmpresa } from '../../componentes/NavegacionEmpresa'
 import { PieSitio } from '../../componentes/PieSitio'
 import { ROLES, type ChoferCatalogo, type CrearGuia, type Guia, type OpcionCatalogo, type VehiculoCatalogo, type VinculoEmpresa } from '../../tipos'
 import { useTituloPagina } from '../../titulo'
+import { CampoDireccionIde } from '../../componentes/CampoDireccionIde'
+import { VistaPreviaRecorrido } from '../../componentes/VistaPreviaRecorrido'
+import type { DireccionMapa } from '../../api/planificacionGuias'
 
 type FormularioGuia = Record<keyof CrearGuia, string>
 const VACIO: FormularioGuia = { vehiculoId: '', choferId: '', rubroId: '', tipoCargaId: '', pesoKg: '', volumenM3: '', inicio: '', fin: '', origen: '', origenLat: '', origenLon: '', destino: '', destinoLat: '', destinoLon: '' }
@@ -30,6 +33,10 @@ export function NuevaGuia() {
   const [error, setError] = useState<string | null>(null)
   const [creada, setCreada] = useState<Guia | null>(null)
   const [tokenResponsable, setTokenResponsable] = useState<string | null>(null)
+  const [origenIde, setOrigenIde] = useState<DireccionMapa | null>(null)
+  const [destinoIde, setDestinoIde] = useState<DireccionMapa | null>(null)
+  const [revisionRecorrido, setRevisionRecorrido] = useState(0)
+  const [revisionManual, setRevisionManual] = useState({ origen: 0, destino: 0 })
   const roles = sesion?.roles ?? (sesion ? [sesion.rol] : [])
   const esFuncionario = roles.includes(ROLES.FUNCIONARIO)
 
@@ -50,7 +57,31 @@ export function NuevaGuia() {
     return () => { vigente = false }
   }, [sesion?.token, esFuncionario])
 
-  const cambiar = (campo: keyof CrearGuia, valor: string) => setFormulario((anterior) => ({ ...anterior, [campo]: valor }))
+  function cambiar(campo: keyof CrearGuia, valor: string) {
+    setFormulario((anterior) => ({ ...anterior, [campo]: valor }))
+    if (['vehiculoId', 'pesoKg', 'origenLat', 'origenLon', 'destinoLat', 'destinoLon'].includes(campo)) {
+      setRevisionRecorrido((v) => v + 1)
+      if (campo.startsWith('origen')) {
+        setOrigenIde(null); setRevisionManual((v) => ({ ...v, origen: v.origen + 1 }))
+      }
+      if (campo.startsWith('destino')) {
+        setDestinoIde(null); setRevisionManual((v) => ({ ...v, destino: v.destino + 1 }))
+      }
+    }
+  }
+
+  function editarDireccion(extremo: 'origen' | 'destino', texto: string) {
+    setFormulario((anterior) => ({ ...anterior, [extremo]: texto, [`${extremo}Lat`]: '', [`${extremo}Lon`]: '' }))
+    if (extremo === 'origen') setOrigenIde(null); else setDestinoIde(null)
+    setRevisionRecorrido((v) => v + 1)
+  }
+
+  function seleccionarDireccion(extremo: 'origen' | 'destino', direccion: DireccionMapa) {
+    setFormulario((anterior) => ({ ...anterior, [extremo]: direccion.direccion,
+      [`${extremo}Lat`]: String(direccion.punto.latitud), [`${extremo}Lon`]: String(direccion.punto.longitud) }))
+    if (extremo === 'origen') setOrigenIde(direccion); else setDestinoIde(direccion)
+    setRevisionRecorrido((v) => v + 1)
+  }
   useEffect(() => {
     let vigente = true
     Promise.all([api<VehiculoCatalogo[]>('/guias/catalogos/vehiculos'), api<ChoferCatalogo[]>('/guias/catalogos/choferes'), api<OpcionCatalogo[]>('/guias/catalogos/rubros'), api<OpcionCatalogo[]>('/guias/catalogos/tipos-carga')])
@@ -68,7 +99,7 @@ export function NuevaGuia() {
         pesoKg: Number(formulario.pesoKg), volumenM3: Number(formulario.volumenM3), inicio: new Date(formulario.inicio).toISOString(), fin: new Date(formulario.fin).toISOString(),
         origen: formulario.origen.trim(), origenLat: numeroOpcional(formulario.origenLat), origenLon: numeroOpcional(formulario.origenLon), destino: formulario.destino.trim(), destinoLat: numeroOpcional(formulario.destinoLat), destinoLon: numeroOpcional(formulario.destinoLon),
       }) })
-      setCreada(guia); setFormulario(VACIO)
+      setCreada(guia); setFormulario(VACIO); setOrigenIde(null); setDestinoIde(null); setRevisionRecorrido((v) => v + 1)
     } catch (causa) { setError(causa instanceof Error ? causa.message : 'No se pudo registrar la guía.') } finally { setEnviando(false) }
   }
 
@@ -87,7 +118,26 @@ export function NuevaGuia() {
 <label className="campo"><span>Tipo de carga (opcional)</span><select value={formulario.tipoCargaId} onChange={(e) => cambiar('tipoCargaId', e.target.value)} disabled={cargandoCatalogos}><option value="">Sin especificar</option>{tiposCarga.map((tipo) => <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>)}</select></label>
 </div></section>
         <section aria-labelledby="carga"><h2 id="carga">Carga y período</h2><div className="formulario-grilla"><CampoNumerico etiqueta="Peso declarado (kg)" valor={formulario.pesoKg} alCambiar={(valor) => cambiar('pesoKg', valor)} decimal /><CampoNumerico etiqueta="Volumen declarado (m³)" valor={formulario.volumenM3} alCambiar={(valor) => cambiar('volumenM3', valor)} decimal /><label className="campo"><span>Inicio del viaje</span><input type="datetime-local" value={formulario.inicio} onChange={(e) => cambiar('inicio', e.target.value)} required /></label><label className="campo"><span>Fin del viaje</span><input type="datetime-local" value={formulario.fin} onChange={(e) => cambiar('fin', e.target.value)} required /></label></div></section>
-        <section aria-labelledby="recorrido"><h2 id="recorrido" className="titulo-con-icono"><MapPin size={22} aria-hidden="true" />Recorrido</h2><div className="formulario-grilla"><label className="campo"><span>Origen</span><input value={formulario.origen} onChange={(e) => cambiar('origen', e.target.value)} maxLength={200} required /></label><label className="campo"><span>Destino</span><input value={formulario.destino} onChange={(e) => cambiar('destino', e.target.value)} maxLength={200} required /></label><CampoNumerico etiqueta="Latitud de origen (opcional)" valor={formulario.origenLat} alCambiar={(valor) => cambiar('origenLat', valor)} decimal obligatorio={false} min={-90} max={90} /><CampoNumerico etiqueta="Longitud de origen (opcional)" valor={formulario.origenLon} alCambiar={(valor) => cambiar('origenLon', valor)} decimal obligatorio={false} min={-180} max={180} /><CampoNumerico etiqueta="Latitud de destino (opcional)" valor={formulario.destinoLat} alCambiar={(valor) => cambiar('destinoLat', valor)} decimal obligatorio={false} min={-90} max={90} /><CampoNumerico etiqueta="Longitud de destino (opcional)" valor={formulario.destinoLon} alCambiar={(valor) => cambiar('destinoLon', valor)} decimal obligatorio={false} min={-180} max={180} /></div></section>
+        <section aria-labelledby="recorrido"><h2 id="recorrido" className="titulo-con-icono"><MapPin size={22} aria-hidden="true" />Recorrido</h2>
+          <p className="ficha-texto">Busca las direcciones en IDE Uruguay. Al seleccionar una sugerencia, ubicaremos el punto en el mapa.</p>
+          <div className="formulario-grilla">
+            <CampoDireccionIde key={`origen-${creada?.id ?? 'nueva'}`} etiqueta="Origen" valor={formulario.origen} seleccion={origenIde}
+              revisionManual={revisionManual.origen} deshabilitado={enviando} alEditar={(texto) => editarDireccion('origen', texto)} alSeleccionar={(direccion) => seleccionarDireccion('origen', direccion)} />
+            <CampoDireccionIde key={`destino-${creada?.id ?? 'nueva'}`} etiqueta="Destino" valor={formulario.destino} seleccion={destinoIde}
+              revisionManual={revisionManual.destino} deshabilitado={enviando} alEditar={(texto) => editarDireccion('destino', texto)} alSeleccionar={(direccion) => seleccionarDireccion('destino', direccion)} />
+          </div>
+          <details className="recorrido-manual"><summary>Ver o ingresar coordenadas manualmente (opcional)</summary>
+            <div className="formulario-grilla">
+              <CampoNumerico etiqueta="Latitud de origen" valor={formulario.origenLat} alCambiar={(valor) => cambiar('origenLat', valor)} decimal obligatorio={false} min={-90} max={90} />
+              <CampoNumerico etiqueta="Longitud de origen" valor={formulario.origenLon} alCambiar={(valor) => cambiar('origenLon', valor)} decimal obligatorio={false} min={-180} max={180} />
+              <CampoNumerico etiqueta="Latitud de destino" valor={formulario.destinoLat} alCambiar={(valor) => cambiar('destinoLat', valor)} decimal obligatorio={false} min={-90} max={90} />
+              <CampoNumerico etiqueta="Longitud de destino" valor={formulario.destinoLon} alCambiar={(valor) => cambiar('destinoLon', valor)} decimal obligatorio={false} min={-180} max={180} />
+            </div>
+          </details>
+          <VistaPreviaRecorrido vehiculoId={formulario.vehiculoId} cargaKg={formulario.pesoKg}
+            origenLat={formulario.origenLat} origenLon={formulario.origenLon} destinoLat={formulario.destinoLat} destinoLon={formulario.destinoLon}
+            revision={revisionRecorrido} />
+        </section>
         <div className="formulario-botones"><button type="submit" disabled={enviando || cargandoCatalogos || vehiculos.length === 0 || choferes.length === 0 || rubros.length === 0}>{cargandoCatalogos ? 'Cargando catálogos…' : enviando ? 'Registrando…' : 'Registrar guía'}</button></div>
       </form>
     </main><PieSitio /></div>
