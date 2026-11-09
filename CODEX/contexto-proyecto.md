@@ -33,6 +33,19 @@ Estos son contrastes documentales/estáticos, NO una auditoría funcional ni aut
 
 ## Pendientes no resueltos por esta guía
 
+**Vista previa de guías IDE/ORS (2026-11-08/09):** el usuario pidió sugerencias de
+calles IDE, recorrido ORS por peso total y mapa reutilizando Leaflet del panel.
+[ADR-0024](../docs/decisiones/0024-vista-previa-guias-ide-ors.md) acota el flujo a
+vista previa informativa en NuevaGuia: resolución de selección, tara desde DB
+más carga, clave solo backend y autorización de responsable activo. Contrato
+aditivo `/planificacion-guias`, sin cambiar CU2, guardar trazado ni alterar P5.
+No usa dimensiones/ejes, no certifica transitabilidad ni completa datos ausentes.
+Se conservan coordenadas manuales y registro previo si falla la vista previa.
+Pruebas Java escritas y escenarios SPA definidos, SIN compilación ni ejecución.
+Pendientes clave/cuotas reales, WildFly, navegador y aceptación compartida en la
+[matriz](../pruebas/planificacion-guia-ide-ors.md) y
+[tareas ODD](../odd/tasks/planificacion-guia-ide-ors.md).
+
 **Actualización ID Uruguay (2026-10-23):**
 [ADR-0017](../docs/decisiones/0017-id-uruguay-userinfo-testing.md) registra el alcance
 confirmado: validar `id_token`, consultar UserInfo y vincular ambos por `sub` exacto,

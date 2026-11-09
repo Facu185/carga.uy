@@ -237,6 +237,47 @@ listas de clases permitidas en Artemis y ata productor y consumidor a la misma v
 **Idempotencia:** todo mensaje lleva un `idEvento` generado en el origen. El consumidor descarta lo
 que ya procesó. Un mensaje puede llegar más de una vez y eso tiene que ser inofensivo.
 
+## Vista previa de guías: IDE Uruguay y OpenRouteService
+
+Alcance solicitado por el usuario en [ADR-0024](decisiones/0024-vista-previa-guias-ide-ors.md).
+Contrato aditivo `PlanificacionGuiaLocal`, separado de CU2 y de recorridos reales.
+Tres operaciones bajo `/carga/api/planificacion-guias`, sin escrituras y con
+`Cache-Control: no-store`:
+
+- GET `/calles?q=...`: 3–200 caracteres recortados, hasta 5
+  `SugerenciaCalleDTO {direccion,tipo,idCalle,idCalleEsquina,numeroPuerta,letra}`.
+  Tipos CALLE, CALLEyPORTAL, ESQUINA. Vacío real `[]`; fallo nunca equivale a vacío.
+  Sin coordenadas de candidates (puede traer 0,0).
+- POST `/direccion`: recibe la sugerencia seleccionada. Se valida selector y
+  consulta find de IDE. Devuelve `DireccionMapaDTO {direccion,punto,aproximada,detalle}`.
+  `punto={latitud,longitud}`, EPSG:4326. Selección sin punto o ambigua: 400.
+  CALLE sin portal se muestra aproximada, aunque IDE informe state=1.
+- POST `/ruta`: `SolicitudRutaDTO {vehiculoId,cargaKg,origen,destino}` donde ambos
+  extremos son puntos. Carga positiva y dentro de capacidad; tara del vehículo
+  consultada en servidor. ORS driving-hgv usa solo peso en toneladas y
+  vehicle_type=hgv. Devuelve `RutaPreviaDTO {puntos,distanciaMetros,duracionSegundos,
+  pesoTotalKg,advertenciasProveedor}`; puntos en orden del recorrido, sin clave ni
+  respuesta cruda externa. Sin ruta posible: 400, no geometría ficticia.
+
+Solo CIUDADANO con principal, vínculo RESPONSABLE/ACTIVO en empresa activa y
+compatibilidad ADR-0015. Ruta exige vehículo habilitado de empresa responsable;
+ajeno/inexistente no se distingue (403). Sin sesión 401; otros roles 403 por EJB.
+400 para entradas inválidas; 503 para proveedor/cuota/configuración/JSON inválido.
+Sobre `{"error":"mensaje"}` y correlación existentes. No se cambia autorización
+de creación ni catálogos empresariales y no se acepta globalmente D0-04.
+
+Integraciones sin redirecciones/reintentos, conexión 3 s, lectura 10 s, respuesta
+máxima 2 MiB; circuito por proveedor: 3 fallos, 30 s abierto por instancia central.
+Lista IDE hasta 5 y ruta hasta 25000 puntos. URLs HTTPS de configuración solo servidor.
+`ORS_API_KEY` en entorno de central; host actual `api.heigit.org/openrouteservice`.
+
+SPA `/guias/nueva`: sugerencias, resolución, puntos y vista previa orientativa;
+conserva textos y coordenadas opcionales/manuales del POST previo. Fallo de vista
+previa no agrega bloqueo de creación. Se invalida selección al editar texto y
+ruta al cambiar extremos/vehículo/carga. No persiste trazado ni cambia P5/tracking;
+no certifica transitabilidad ni cobertura completa de restricciones en Uruguay.
+Aceptación real pendiente en [matriz](../pruebas/planificacion-guia-ide-ors.md).
+
 ## 5. Esquema de base de datos
 
 ## Empresas P2
