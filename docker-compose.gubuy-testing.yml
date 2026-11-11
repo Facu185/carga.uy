@@ -9,6 +9,6 @@ services:
       GUBUY_AUTHORIZATION_ENDPOINT: ""
       GUBUY_CLIENT_ID: "890192"
       GUBUY_CLIENT_SECRET: ${GUBUY_CLIENT_SECRET:?Definir GUBUY_CLIENT_SECRET en .env con el secreto vigente de testing}
-      # URI registrada exacta, sin barra final; Undertow reenvia la raiz al callback interno.
-      GUBUY_REDIRECT_URI: http://localhost:8080
+      # URI registrada exacta, con la barra final; Undertow reenvia la raiz al callback interno.
+      GUBUY_REDIRECT_URI: http://localhost:8080/
       GUBUY_SCOPES: openid personal_info email document

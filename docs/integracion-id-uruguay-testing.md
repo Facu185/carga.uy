@@ -28,7 +28,7 @@ URIs de testing aportadas por el usuario y [ADR-0017](decisiones/0017-id-uruguay
    | `GUBUY_ISSUER` | `https://auth-testing.iduruguay.gub.uy/oidc/v1` |
    | `GUBUY_AUTHORIZATION_ENDPOINT` | Vacío explícito: usar discovery |
    | `GUBUY_CLIENT_ID` | `890192` |
-   | `GUBUY_REDIRECT_URI` | `http://localhost:8080` **sin barra final ni ruta** |
+   | `GUBUY_REDIRECT_URI` | `http://localhost:8080/` **con la barra final**, igual que la registrada (ID Uruguay la compara carácter por carácter) |
    | `GUBUY_SCOPES` | `openid personal_info email document` |
 
    El secreto no vacío es obligatorio para este override: evita usar por omisión
