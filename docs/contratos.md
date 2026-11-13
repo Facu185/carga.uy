@@ -8,7 +8,7 @@ grupo antes de mergear: hay código de otra persona que depende.
 | Interfaz | Dueño | Qué garantiza |
 |---|---|---|
 | `EmpresaServicio` / `...Local` / `...Remote` | P2 | Alta, modificación, baja lógica y consulta de empresas; mutaciones para funcionario/administrador |
-| `PerfilEmpresaServicioLocal` | P2 | Consulta/edición del perfil propio; CIUDADANO/CHOFER con vínculo RESPONSABLE/ACTIVO y empresa activa |
+| `PerfilEmpresaServicioLocal` | P2 | Consulta/edición del perfil propio; vínculo RESPONSABLE/ACTIVO y empresa activa, sin incompatibilidad ADR-0015/0025 |
 | `ReporteActividadLocal` | P5 (bloques solicitados ADR-0020/0023) | Agregados por creación de guías o instante FIN; solo AUTORIDAD, sin vínculo ni mutaciones |
 | `VehiculoServicio` / `VehiculoServicioLocal` | P2 | ABM vehicular y reactivación; autorización por vínculo responsable activo o administrador |
 | `IngestaTrackingLocal` | P4 | Recibe una posición y la encola; no bloquea |
@@ -67,13 +67,36 @@ empresarial **RESPONSABLE/ACTIVO**, comprobados por identidad en datos persistid
   conservan sus permisos. Resolver mediante baja funcionario o transferencia
   administrativa explícita, no con revocación automática por esta política.
 - No cambia D0-04: crear guías/catálogos sigue admitiendo ACTIVO sin tipo para
-  identidades sin la combinación incompatible. No impone incompatibilidad CHOFER,
-  ni cambia las guías propias del chofer, sus eventos o sus asignaciones.
+  identidades sin la combinación incompatible. La exclusión adicional del chofer
+  activo se define en ADR-0025; no cambia sus guías propias, eventos o asignaciones.
 
 Rutas, DTO, firmas, roles declarativos y `{"error":"mensaje"}` se conservan.
 Es una restricción de negocio acordada, no una migración de datos ni del login.
 Implementación local con pruebas preparadas; seguridad/locks/rollback reales
 **pendientes** en [matriz de integración](../pruebas/incompatibilidad-funcionario-responsable.md).
+
+### Exclusión chofer activo / responsable (ADR-0025)
+
+Según el [alcance confirmado](decisiones/0025-incompatibilidad-chofer-responsable.md),
+un chofer activo por cédula persistida no puede solicitar ni recibir responsabilidad
+por alta empresarial, aprobación de vínculo o transferencia (400). En sentido
+inverso, un RESPONSABLE/ACTIVO no puede registrarse, editarse como activo o
+reactivarse como chofer, tampoco por un administrador (400). Se valida al
+destinatario antes de mutar, no solo sus roles de sesión ni los del actor.
+
+Ambos sentidos comparten advisory lock transaccional PostgreSQL por cédula,
+también sin Usuario previo; la responsabilidad conserva su lock de fila Usuario.
+Las mutaciones de chofer bloquean además su fila antes de leer su identidad/estado.
+No cambia esquema ni aislamiento. SQL/JTA/carreras y rollback reales quedan
+[pendientes de validar](../pruebas/incompatibilidad-chofer-responsable.md).
+
+Combinaciones heredadas: 403 al ejercer responsabilidad desde la guardia compartida,
+sin revocar vínculos, dar bajas ni borrar historial automáticamente. La pantalla
+del chofer omite tarjeta/formulario de solicitud y navegación empresarial;
+mantiene Mi cuenta y Mis guías. Registros inactivos, derechos propios de chofer,
+consultas de estado/historial y permisos oficiales conservan sus condiciones.
+Resolución administrativa explícita por baja de chofer o transferencia de
+responsabilidad. No amplía D0-04 ni modifica rutas, DTO o sobre de error.
 
 ## 2. DTO
 
@@ -241,7 +264,7 @@ que ya procesó. Un mensaje puede llegar más de una vez y eso tiene que ser ino
 
 Alcance solicitado por el usuario en [ADR-0024](decisiones/0024-vista-previa-guias-ide-ors.md).
 Contrato aditivo `PlanificacionGuiaLocal`, separado de CU2 y de recorridos reales.
-Tres operaciones bajo `/carga/api/planificacion-guias`, sin escrituras y con
+Cuatro operaciones bajo `/carga/api/planificacion-guias`, sin escrituras y con
 `Cache-Control: no-store`:
 
 - GET `/calles?q=...`: 3–200 caracteres recortados, hasta 5
@@ -252,6 +275,14 @@ Tres operaciones bajo `/carga/api/planificacion-guias`, sin escrituras y con
   consulta find de IDE. Devuelve `DireccionMapaDTO {direccion,punto,aproximada,detalle}`.
   `punto={latitud,longitud}`, EPSG:4326. Selección sin punto o ambigua: 400.
   CALLE sin portal se muestra aproximada, aunque IDE informe state=1.
+- POST `/direccion/alternativas`: mismo selector, devuelve hasta 50
+  `DireccionMapaDTO` en el orden del proveedor, con coordenadas y advertencias.
+  `[]` indica que IDE no devolvió ubicaciones para la selección, no un fallo
+  técnico. Más de 50 resultados o JSON inválido: 503; coordenadas inválidas: 400,
+  sin lista parcial. Para un portal se descartan respuestas de tipo CALLE: no se
+  sustituye el número de puerta por el centro de la calle. Una ubicación permite
+  la selección habitual; varias requieren elección explícita en la SPA. Se
+  conserva `/direccion` sin cambiar su DTO ni su rechazo de ambigüedad.
 - POST `/ruta`: `SolicitudRutaDTO {vehiculoId,cargaKg,origen,destino}` donde ambos
   extremos son puntos. Carga positiva y dentro de capacidad; tara del vehículo
   consultada en servidor. ORS driving-hgv usa solo peso en toneladas y
@@ -268,13 +299,18 @@ de creación ni catálogos empresariales y no se acepta globalmente D0-04.
 
 Integraciones sin redirecciones/reintentos, conexión 3 s, lectura 10 s, respuesta
 máxima 2 MiB; circuito por proveedor: 3 fallos, 30 s abierto por instancia central.
-Lista IDE hasta 5 y ruta hasta 25000 puntos. URLs HTTPS de configuración solo servidor.
+Sugerencias IDE hasta 5, ubicaciones hasta 50 y ruta hasta 25000 puntos.
+URLs HTTPS de configuración solo servidor.
 `ORS_API_KEY` en entorno de central; host actual `api.heigit.org/openrouteservice`.
 
 SPA `/guias/nueva`: sugerencias, resolución, puntos y vista previa orientativa;
 conserva textos y coordenadas opcionales/manuales del POST previo. Fallo de vista
 previa no agrega bloqueo de creación. Se invalida selección al editar texto y
-ruta al cambiar extremos/vehículo/carga. No persiste trazado ni cambia P5/tracking;
+ruta al cambiar extremos/vehículo/carga. Editar texto o coordenadas manuales
+descarta alternativas anteriores y respuestas pendientes. La falta de portal se
+explica con un aviso persistente y conserva el ingreso manual; errores técnicos
+permiten reintentar explícitamente, sin reemplazarse por sugerencias automáticas.
+No persiste trazado ni cambia P5/tracking;
 no certifica transitabilidad ni cobertura completa de restricciones en Uruguay.
 Aceptación real pendiente en [matriz](../pruebas/planificacion-guia-ide-ors.md).
 
@@ -374,7 +410,8 @@ y remota existente. GET/PUT `/carga/api/empresas/{id}/perfil` devuelven 200 con
 `EmpresaDTO` (incluida la excepción de fechaAlta ya publicada). Sin paginación.
 
 GET y PUT requieren CIUDADANO o CHOFER con vínculo RESPONSABLE/ACTIVO comprobado
-desde el principal en EJB y empresa activa. No hay excepción administrativa en
+desde el principal en EJB y empresa activa. Las anotaciones no habilitan a
+funcionarios/choferes activos incompatibles (ADR-0015/0025). No hay excepción administrativa en
 este contrato: los administradores conservan su ABM anterior. Inexistencia,
 inactividad y falta de pertenencia responden 403 sin distinguir el motivo.
 Sin sesión válida: 401. ID no positivo, payload ausente/inválido o número
@@ -432,7 +469,8 @@ D0-04 en el [registro de fase 0](acuerdos-cierre-p2-fase-0.md).
 `GET /carga/api/guias/empresa?empresaId=1&pagina=0&tamano=20` consulta las guías de
 una empresa para su responsable aprobado. Requiere rol `CIUDADANO` o `CHOFER` y
 vínculo `RESPONSABLE/ACTIVO` del principal con la empresa solicitada, comprobado
-en el EJB. El ID recibido selecciona la empresa, NO acredita autorización.
+en el EJB, sin incompatibilidad ADR-0015/0025. El ID recibido selecciona la empresa,
+NO acredita autorización.
 No filtra por estado de guía ni por actividad actual del chofer/vehículo: incluye
 asignadas y finalizadas, y guías históricas sin asignaciones (`choferId`,
 `vehiculoId`, `nombreChofer` o `matricula` pueden ser nulos). Orden: `inicio DESC, id DESC`.

@@ -11,6 +11,11 @@ ampliar sus roles concedería capacidades ajenas al perfil propio.
 
 ## Decisión
 
+**Actualización 2026-11-13:** [ADR-0025](0025-incompatibilidad-chofer-responsable.md)
+reemplaza la compatibilidad CHOFER/responsable de esta decisión. Las anotaciones
+de roles se conservan, pero un chofer activo no puede ejercer responsabilidad,
+incluso con un vínculo heredado; los demás términos siguen vigentes.
+
 - Publicar GET/PUT `/carga/api/empresas/{id}/perfil`: 200 con `EmpresaDTO`.
   El ID selecciona; el servidor autoriza por principal, rol CIUDADANO/CHOFER,
   vínculo RESPONSABLE/ACTIVO y empresa activa. Sin permiso, empresa inactiva o

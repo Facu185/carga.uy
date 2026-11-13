@@ -61,9 +61,21 @@ export async function sugerirCalles(q: string, signal: AbortSignal): Promise<Sug
 }
 
 export async function resolverDireccion(seleccion: SugerenciaCalle, signal: AbortSignal): Promise<DireccionMapa> {
-  const d = objeto(await api<unknown>('/planificacion-guias/direccion', {
+  return direccionMapa(await api<unknown>('/planificacion-guias/direccion', {
     method: 'POST', body: JSON.stringify(seleccion), signal,
   }))
+}
+
+export async function resolverAlternativas(seleccion: SugerenciaCalle, signal: AbortSignal): Promise<DireccionMapa[]> {
+  const datos = await api<unknown>('/planificacion-guias/direccion/alternativas', {
+    method: 'POST', body: JSON.stringify(seleccion), signal,
+  })
+  if (!Array.isArray(datos) || datos.length > 50) throw new Error('No se pudieron interpretar las ubicaciones de IDE.')
+  return datos.map(direccionMapa)
+}
+
+function direccionMapa(valor: unknown): DireccionMapa {
+  const d = objeto(valor)
   if (!texto(d.direccion, 200) || typeof d.aproximada !== 'boolean' || !texto(d.detalle, 300))
     throw new Error('No se pudo interpretar la dirección localizada.')
   return { direccion: d.direccion, punto: punto(d.punto), aproximada: d.aproximada, detalle: d.detalle }

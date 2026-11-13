@@ -74,15 +74,51 @@ class SolicitudesEmpresaIncompatibilidadTest {
         assertEquals(1, e.auditoria.registros.size());
     }
 
-    @Test void ciudadanoYChoferCompatiblesSiguenPudiendoSolicitar() throws Exception {
-        for (String rol : List.of("CIUDADANO", "CHOFER")) {
+    @Test void ciudadanoCompatibleSiguePudiendoSolicitar() throws Exception {
+        Escenario e = new Escenario();
+        assertEquals("PENDIENTE", e.bean.solicitarVinculo(1L).getEstado());
+        assertEquals("PENDIENTE", e.bean.solicitarAlta(datos()).getEstado());
+        assertEquals(1, e.guardados.size());
+        assertEquals(1, e.altasGuardadas.size());
+    }
+
+    @Test void choferNoSolicitaResponsabilidadInclusoConTokenCiudadanoAnterior() {
+        for (String[] roles : List.of(new String[]{"CIUDADANO"}, new String[]{"CIUDADANO", "CHOFER"})) {
             Escenario e = new Escenario();
-            e.bean.contexto = Falsos.sesion(e.persona.getCedula(), rol);
-            assertEquals("PENDIENTE", e.bean.solicitarVinculo(1L).getEstado());
-            assertEquals("PENDIENTE", e.bean.solicitarAlta(datos()).getEstado());
-            assertEquals(1, e.guardados.size());
-            assertEquals(1, e.altasGuardadas.size());
+            e.compatibilidad.choferesActivos.add(e.persona.getCedula());
+            e.bean.contexto = Falsos.sesion(e.persona.getCedula(), roles);
+            assertThrows(NegocioException.class, () -> e.bean.solicitarVinculo(1L));
+            assertThrows(NegocioException.class, () -> e.bean.solicitarAlta(datos()));
+            assertTrue(e.guardados.isEmpty());
+            assertTrue(e.altasGuardadas.isEmpty());
+            assertTrue(e.auditoria.registros.isEmpty());
         }
+    }
+
+    @Test void choferNoRecibeResponsabilidadPorAltaAprobacionNiTransferencia() {
+        Escenario e = new Escenario(); e.comoAprobador();
+        e.compatibilidad.choferesActivos.add(e.persona.getCedula());
+        assertThrows(NegocioException.class, () -> e.bean.aprobarAlta(1L));
+        assertThrows(NegocioException.class, () -> e.bean.aprobarVinculo(2L));
+        assertThrows(NegocioException.class, () -> e.bean.transferirResponsabilidad(2L, new RechazoDTO("Prueba")));
+        assertEquals(0, e.persistidos);
+        assertEquals(0, e.flushes);
+        assertTrue(e.alta.estaPendiente());
+        assertNull(e.alta.getEmpresa());
+        assertTrue(e.nuevo.estaPendiente());
+        assertNull(e.nuevo.getAprobadoEn());
+        assertTrue(e.anterior.estaActivo());
+        assertNull(e.anterior.getRevocadoEn());
+        assertTrue(e.guardados.isEmpty());
+        assertTrue(e.auditoria.registros.isEmpty());
+    }
+
+    @Test void trasBajaDelChoferSePuedeAprobarSinBorrarHistorial() throws Exception {
+        Escenario e = new Escenario(); e.comoAprobador();
+        e.compatibilidad.choferesActivos.add(e.persona.getCedula());
+        assertThrows(NegocioException.class, () -> e.bean.aprobarVinculo(2L));
+        e.compatibilidad.choferesActivos.clear();
+        assertEquals("ACTIVO", e.bean.aprobarVinculo(2L).getEstado());
     }
 
     @Test void trasBajaDelFuncionarioSePuedeAprobarSinRevocarHistorialImplicitamente() throws Exception {

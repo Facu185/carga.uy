@@ -97,3 +97,32 @@ capturaron todavía encabezados del navegador ni se descartan otros bloqueos OSM
 Estado: pendiente de ejecución real. No hay runner frontend; esta regresión es
 un escenario manual, no un test automatizado ni ciclo rojo/verde verificado.
 Referencia: [opción Leaflet 1.9.4](https://leafletjs.com/reference-1.9.4.html#tilelayer-referrerpolicy).
+
+## Regresión R2 — Portales ambiguos o sin ubicación (2026-11-13)
+
+Escenarios añadidos antes del cambio. Las consultas públicas observadas no son
+fixtures estables: `candidates` ofrece ambos portales, pero `find` devuelve cuatro
+puntos para Camino Carrasco 5286 (idCalle 8071) y ninguno para Avenida 30 Metros 18,
+Marindia (idCalle 57693). JUnit usa respuestas sintéticas, sin red ni credenciales.
+
+1. Elegir una sugerencia cuya resolución devuelve varios puntos: mostrar todas
+   las alternativas con dirección, coordenadas y advertencia de aproximación.
+   No seleccionar ninguna ni calcular la ruta hasta elegir explícitamente.
+   Elegir una alternativa con ratón o Tab/Enter: guardar SOLO ese punto y mostrarlo.
+2. Una única ubicación conserva la selección habitual. Una calle sin portal sigue
+   identificada como aproximada. No retirar las advertencias de IDE.
+3. Portal sin resultados: mantener un aviso específico y el texto ingresado,
+   sin marcador inventado. Usar el control existente de coordenadas manuales.
+   Un centro de calle devuelto para un portal no se ofrece como ese portal.
+4. Un fallo técnico mantiene el mensaje y el reintento explícito: esperar más de
+   350 ms y sacar el foco NO debe sustituirlo por sugerencias o ayuda genérica.
+5. Editar texto o coordenadas manuales elimina alternativas anteriores. Si la
+   respuesta llega después de editar, no restaura opciones ni sobrescribe el punto.
+6. El endpoint anterior `/direccion` conserva su DTO único y el rechazo de cero o
+   múltiples puntos; `/direccion/alternativas` devuelve una lista sin elegir.
+   Permisos y `Cache-Control: no-store` se conservan; errores técnicos no son `[]`.
+
+Estado: pruebas Java escritas y escenarios SPA definidos; ejecución pendiente.
+El runner Java compila y no hay runner SPA: ciclo rojo/verde no ejecutado por
+restricción de builds. El cambio de fuente requiere desplegar central y frontend
+actualizados; reiniciar las imágenes anteriores no incorpora esta corrección.

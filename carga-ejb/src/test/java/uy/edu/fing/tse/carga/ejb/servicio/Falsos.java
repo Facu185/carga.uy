@@ -47,9 +47,13 @@ final class Falsos {
     static class CompatibilidadFalsa extends CompatibilidadFuncionarioEmpresa {
         final Set<String> funcionariosActivos = new HashSet<>();
         final Set<String> responsablesActivos = new HashSet<>();
+        final Set<String> choferesActivos = new HashSet<>();
         final List<String> bloqueadas = new ArrayList<>();
+        final List<String> identidadesChoferBloqueadas = new ArrayList<>();
 
         @Override public void bloquearUsuario(Usuario persona) { bloqueadas.add(persona.getCedula()); }
+        @Override protected void bloquearIdentidadChofer(String cedula) { identidadesChoferBloqueadas.add(cedula); }
+        @Override protected boolean esChoferActivo(String cedula) { return choferesActivos.contains(cedula); }
         @Override protected boolean esFuncionarioActivo(String cedula) { return funcionariosActivos.contains(cedula); }
         @Override protected boolean tieneResponsabilidadActiva(String cedula) { return responsablesActivos.contains(cedula); }
     }
