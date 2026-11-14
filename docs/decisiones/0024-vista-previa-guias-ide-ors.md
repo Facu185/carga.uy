@@ -48,6 +48,18 @@ dimensiones y carga por eje. Dispone de clave ORS; no se accede a su valor.
 
 ## Validación
 
+### Ampliación confirmada el 2026-11-13
+
+El usuario aprobó manejar portales ambiguos o ausentes: si IDE devuelve varias
+ubicaciones, se requiere elección explícita; si no devuelve el portal, se explica
+el motivo y se mantiene el ingreso manual. No se elige el primer punto ni se
+sustituye el portal por el centro de calle. Los errores de resolución permanecen
+visibles hasta editar o reintentar. La operación aditiva `/direccion/alternativas`
+preserva el contrato de dirección única y sus permisos, según
+[contratos](../contratos.md#vista-previa-de-guías-ide-uruguay-y-openrouteservice).
+
+### Evidencia pendiente
+
 Pruebas Java escritas primero, sin builds. HTTP/JSON-B/roles reales, frontend,
 cuotas/clave y recorridos locales pendientes en la
 [matriz](../../pruebas/planificacion-guia-ide-ors.md).

@@ -59,6 +59,12 @@ button:disabled { opacity: 0.6; cursor: default; }
 .direccion-ide-opciones li { padding: 0.65rem; cursor: pointer; border-radius: var(--radio); }
 .direccion-ide-opciones li:hover, .direccion-ide-opciones li[aria-selected='true'] { background: var(--azul-suave); outline: 2px solid var(--azul); outline-offset: -2px; }
 .direccion-ide-opciones small { display: block; color: var(--grava); }
+.direccion-ide-ubicaciones { margin-top: 0.6rem; }
+.direccion-ide-ubicaciones fieldset { min-width: 0; margin: 0; padding: 0.75rem; border: 1px solid var(--borde-campo); border-radius: var(--radio); }
+.direccion-ide-ubicaciones legend { font-weight: 700; }
+.direccion-ide-ubicaciones ul { display: grid; gap: 0.5rem; max-height: 22rem; overflow: auto; margin: 0; padding: 0.2rem; list-style: none; }
+.direccion-ide-ubicaciones button { width: 100%; text-align: left; overflow-wrap: anywhere; }
+.direccion-ide-ubicaciones small { display: block; margin-top: 0.25rem; font-weight: 400; }
 .recorrido-manual { margin: 1rem 0; }
 .recorrido-manual > summary { cursor: pointer; font-weight: 700; color: var(--azul); margin-bottom: 0.75rem; }
 .vista-previa-recorrido { margin-top: 1.5rem; }

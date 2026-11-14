@@ -11,5 +11,6 @@ import java.util.List;
 public interface PlanificacionGuiaLocal {
     List<SugerenciaCalleDTO> sugerir(String texto) throws NegocioException;
     DireccionMapaDTO resolver(SugerenciaCalleDTO seleccion) throws NegocioException;
+    List<DireccionMapaDTO> resolverAlternativas(SugerenciaCalleDTO seleccion) throws NegocioException;
     RutaPreviaDTO calcular(SolicitudRutaDTO solicitud) throws NegocioException;
 }

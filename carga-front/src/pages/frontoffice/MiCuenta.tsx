@@ -75,7 +75,7 @@ export function MiCuenta() {
   }, [puedeVerOpcionesEmpresa])
 
   const verificado = perfil?.verificacionDnic === 'VERIFICADO'
-  const esResponsable = vinculos?.some((vinculo) => vinculo.tipo === 'RESPONSABLE' && vinculo.estado === 'ACTIVO') ?? false
+  const esResponsable = !esChofer && (vinculos?.some((vinculo) => vinculo.tipo === 'RESPONSABLE' && vinculo.estado === 'ACTIVO') ?? false)
   const mostrarAccesos = puedeVerOpcionesEmpresa && !esResponsable && !esChofer
 
   return (
@@ -163,7 +163,7 @@ export function MiCuenta() {
             )}
           </div>
         </div>
-        {puedeVerOpcionesEmpresa && vinculos && !errorVinculos && !esResponsable && <SolicitudResponsable />}
+        {puedeVerOpcionesEmpresa && !esChofer && vinculos && !errorVinculos && !esResponsable && <SolicitudResponsable />}
         {puedeVerOpcionesEmpresa && esCiudadano && <SolicitudAcceso />}
       </main>
 

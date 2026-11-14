@@ -37,6 +37,12 @@ public class PlanificacionGuiaRecurso {
     }
 
     @POST
+    @Path("/direccion/alternativas")
+    public List<DireccionMapaDTO> resolverAlternativas(SugerenciaCalleDTO seleccion) throws NegocioException {
+        sinCache(); return servicio.resolverAlternativas(seleccion);
+    }
+
+    @POST
     @Path("/ruta")
     public RutaPreviaDTO calcular(SolicitudRutaDTO solicitud) throws NegocioException {
         sinCache(); return servicio.calcular(solicitud);

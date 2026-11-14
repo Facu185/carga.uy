@@ -41,6 +41,7 @@ class PlanificacionGuiaBeanTest {
             var e = new Escenario(); e.autorizado = false; e.conPrincipal = principal;
             assertThrows(EJBAccessException.class, () -> e.bean.sugerir("sucre"));
             assertThrows(EJBAccessException.class, () -> e.bean.resolver(new SugerenciaCalleDTO()));
+            assertThrows(EJBAccessException.class, () -> e.bean.resolverAlternativas(new SugerenciaCalleDTO()));
             assertThrows(EJBAccessException.class, () -> e.bean.calcular(solicitud()));
             assertEquals(0, e.llamadasIde + e.llamadasOrs);
         }
@@ -58,7 +59,15 @@ class PlanificacionGuiaBeanTest {
     @Test void incompatibilidadHeredadaRechazaAntesDeConsultarProveedor() {
         var e = new Escenario(); e.incompatible = true;
         assertThrows(EJBAccessException.class, () -> e.bean.sugerir("sucre"));
+        assertThrows(EJBAccessException.class, () -> e.bean.resolverAlternativas(new SugerenciaCalleDTO()));
         assertEquals(0, e.llamadasIde);
+    }
+
+    @Test void alternativasAutorizadasSeDeleganSinElegirNiEscribir() throws Exception {
+        var e = new Escenario();
+        assertSame(e.alternativas, e.bean.resolverAlternativas(new SugerenciaCalleDTO()));
+        assertEquals(1, e.llamadasIde);
+        assertEquals(0, e.llamadasOrs);
     }
 
     @Test void cargaCoordenadasEIdentificadorInvalidosNoCalculanRuta() {
@@ -87,6 +96,7 @@ class PlanificacionGuiaBeanTest {
         boolean autorizado = true, conPrincipal = true, vehiculoVisible = true, incompatible;
         int llamadasIde, llamadasOrs; BigDecimal pesoEnviado; String ultimaConsulta = "";
         Map<String,Object> parametros = new HashMap<>();
+        final List<DireccionMapaDTO> alternativas = List.of(new DireccionMapaDTO(), new DireccionMapaDTO());
 
         Escenario() {
             bean.contexto = (SessionContext) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[]{SessionContext.class},
@@ -114,6 +124,7 @@ class PlanificacionGuiaBeanTest {
             bean.ide = new ClienteDireccionesIde() {
                 @Override public List<SugerenciaCalleDTO> sugerir(String texto) { llamadasIde++; return List.of(); }
                 @Override public DireccionMapaDTO resolver(SugerenciaCalleDTO s) { llamadasIde++; return new DireccionMapaDTO(); }
+                @Override public List<DireccionMapaDTO> resolverAlternativas(SugerenciaCalleDTO s) { llamadasIde++; return alternativas; }
             };
             bean.ors = new ClienteRutasOrs() {
                 @Override public RutaPreviaDTO calcular(PuntoMapaDTO a, PuntoMapaDTO b, BigDecimal kg) {

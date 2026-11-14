@@ -4,6 +4,9 @@
 conservando sesión de P1/P3, consultas y descarga CSV de guías propias.
 No incorpora operaciones de eventos ni modifica permisos o contratos.
 
+**Actualización 2026-11-13:** los escenarios 3 y 5 se ajustan a la exclusión
+confirmada en [ADR-0025](../docs/decisiones/0025-incompatibilidad-chofer-responsable.md).
+
 ## Escenarios definidos antes del cambio
 
 1. Un CHOFER sin responsabilidad empresarial ve Mi cuenta / Mis guías antes
@@ -12,16 +15,16 @@ No incorpora operaciones de eventos ni modifica permisos o contratos.
 2. Mis guías abre `/mis-guias`; aparece la misma barra sobre el encabezado con
    Mis guías como único enlace activo. Mi cuenta vuelve mediante navegación SPA.
    Recarga directa y atrás/adelante conservan sesión y destinos existentes.
-3. Un CHOFER con vínculo RESPONSABLE/ACTIVO ve una sola barra empresarial en
-   Mi cuenta, con Mis guías adicional para no perder el acceso personal. Perfil,
-   Choferes, Vehículos y Guías de viajes conservan su navegación y Mis guías.
-   La consulta empresarial no sustituye las guías asignadas por cédula.
+3. Un CHOFER con vínculo RESPONSABLE/ACTIVO heredado ve la barra Mi cuenta /
+   Mis guías, no la empresarial ni la solicitud de responsabilidad. El servidor
+   deniega sus funciones de responsable; conserva vínculos e historial y el
+   acceso a sus guías propias hasta resolver la incompatibilidad administrativamente.
 4. Un FUNCIONARIO que también sea CHOFER conserva únicamente su barra operativa
    en Mi cuenta. No se modifican rutas, roles acumulativos ni permisos del servidor.
 5. Mientras se consultan vínculos, ante fallo, al reintentar y sin vínculo activo,
-   el chofer no pierde Mis guías. Las solicitudes de responsabilidad (incluido
-   su estado pendiente) y acceso funcionario siguen disponibles según sus
-   condiciones actuales, sin una columna vacía reservada a la tarjeta eliminada.
+   el chofer no pierde Mis guías. No aparece la tarjeta, botón ni formulario de
+   responsabilidad, aunque tenga solicitud pendiente. El acceso funcionario
+   conserva sus condiciones, sin una columna vacía reservada a la tarjeta eliminada.
 6. Un CIUDADANO sin CHOFER mantiene Registrar guía, solicitudes y datos. El
    responsable sin CHOFER conserva la navegación empresarial sin Mis guías.
 7. Mis guías mantiene carga, tabla de datos, vacío, error y descarga de

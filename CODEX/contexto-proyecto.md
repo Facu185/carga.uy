@@ -33,6 +33,17 @@ Estos son contrastes documentales/estáticos, NO una auditoría funcional ni aut
 
 ## Pendientes no resueltos por esta guía
 
+**Exclusión chofer/responsable (2026-11-13):** el usuario confirmó exclusión
+bidireccional y conservación de combinaciones heredadas, bloqueando solo su
+ejercicio como responsable. [ADR-0025](../docs/decisiones/0025-incompatibilidad-chofer-responsable.md)
+reemplaza la compatibilidad anterior: consulta persistida por cédula, no JWT;
+guardia compartida para solicitudes/aprobaciones/transferencias y ABM de chofer.
+Advisory lock por identidad cubre también el registro previo al primer login;
+mutaciones de chofer toman su fila. Mi cuenta omite solicitud y navegación
+empresarial para chofer. Sin revocación, migración ni cambio de derechos propios.
+Pruebas escritas sin ejecución; SQL/JTA, carreras y navegador pendientes en la
+[matriz](../pruebas/incompatibilidad-chofer-responsable.md).
+
 **Vista previa de guías IDE/ORS (2026-11-08/09):** el usuario pidió sugerencias de
 calles IDE, recorrido ORS por peso total y mapa reutilizando Leaflet del panel.
 [ADR-0024](../docs/decisiones/0024-vista-previa-guias-ide-ors.md) acota el flujo a

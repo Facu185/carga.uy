@@ -64,12 +64,72 @@ class PlanificacionGeograficaTest {
         }
     }
 
+    @Test void alternativasConservanTodosLosPortalesSinElegirElPrimero() throws Exception {
+        var http = new Transporte();
+        http.cuerpo = """
+            [{"type":"CALLEyPORTAL","address":"SUCRE 10 B","lat":-34.9,"lng":-56.2,"state":2,"stateMsg":"Aproximado"},
+             {"type":"CALLEyPORTAL","address":"SUCRE 10 C","lat":-34.8,"lng":-56.1,"state":1}]
+            """;
+        var seleccion = calle(); seleccion.setTipo("CALLEyPORTAL"); seleccion.setNumeroPuerta(10);
+        var resultado = ide(http).resolverAlternativas(seleccion);
+        assertEquals(List.of("SUCRE 10 B", "SUCRE 10 C"), resultado.stream().map(d -> d.getDireccion()).toList());
+        assertTrue(resultado.getFirst().isAproximada());
+        assertFalse(resultado.get(1).isAproximada());
+        assertEquals(-34.9, resultado.getFirst().getPunto().getLatitud());
+        assertEquals(-56.1, resultado.get(1).getPunto().getLongitud());
+        assertTrue(http.uri.toString().endsWith("find?type=calle&idcalle=9080&portal=10"));
+        assertEquals(1, http.llamadas);
+        assertNull(http.clave);
+        assertThrows(NegocioException.class, () -> ide(http).resolver(seleccion));
+    }
+
+    @Test void portalAusenteNoSeReemplazaPorElCentroDeLaCalle() throws Exception {
+        for (String cuerpo : List.of("[]",
+                "[{\"type\":\"CALLE\",\"address\":\"SUCRE\",\"lat\":-34.9,\"lng\":-56.2,\"state\":2}]")) {
+            var http = new Transporte(); http.cuerpo = cuerpo;
+            var seleccion = calle(); seleccion.setTipo("CALLEyPORTAL"); seleccion.setNumeroPuerta(10);
+            assertTrue(ide(http).resolverAlternativas(seleccion).isEmpty());
+            assertEquals(1, http.llamadas);
+            assertTrue(http.uri.toString().contains("&portal=10"));
+        }
+    }
+
+    @Test void alternativaUnicaMantieneCoordenadasAproximacionYLetra() throws Exception {
+        var http = new Transporte();
+        http.cuerpo = "[{\"type\":\"CALLEyPORTAL\",\"address\":\"SUCRE 10 B\",\"lat\":-34.9,\"lng\":-56.2,\"state\":1}]";
+        var seleccion = calle(); seleccion.setTipo("CALLEyPORTAL"); seleccion.setNumeroPuerta(10); seleccion.setLetra("B");
+        var alternativas = ide(http).resolverAlternativas(seleccion);
+        assertEquals(1, alternativas.size());
+        assertFalse(alternativas.getFirst().isAproximada());
+        assertTrue(http.uri.toString().endsWith("&portal=10&letra=B"));
+        var unica = ide(http).resolver(seleccion);
+        assertEquals(unica.getDireccion(), alternativas.getFirst().getDireccion());
+        assertEquals(unica.getDetalle(), alternativas.getFirst().getDetalle());
+        assertEquals(unica.getPunto().getLatitud(), alternativas.getFirst().getPunto().getLatitud());
+        assertEquals(unica.getPunto().getLongitud(), alternativas.getFirst().getPunto().getLongitud());
+        http.cuerpo = "[{\"type\":\"CALLE\",\"address\":\"SUCRE\",\"lat\":-34.9,\"lng\":-56.2,\"state\":1}]";
+        assertTrue(ide(http).resolverAlternativas(calle()).getFirst().isAproximada());
+    }
+
+    @Test void alternativasNoConfundenFallosTecnicosNiPuntosInvalidosConPortalAusente() {
+        for (String cuerpo : List.of("{}", "null", "no-json", "[{}]")) {
+            var http = new Transporte(); http.cuerpo = cuerpo;
+            assertThrows(ServicioNoDisponibleException.class, () -> ide(http).resolverAlternativas(calle()));
+        }
+        var falloHttp = new Transporte(); falloHttp.estado = 503;
+        assertThrows(ServicioNoDisponibleException.class, () -> ide(falloHttp).resolverAlternativas(calle()));
+        var puntoInvalido = new Transporte(); puntoInvalido.cuerpo = "[{\"address\":\"SUCRE\",\"lat\":0,\"lng\":0}]";
+        var cliente = ide(puntoInvalido);
+        assertThrows(NegocioException.class, () -> cliente.resolverAlternativas(calle()));
+    }
+
     @Test void entradasInvalidasNoLleganAlProveedor() {
         var http = new Transporte(); var cliente = ide(http);
         for (String texto : new String[]{null, "ab", "x".repeat(201)})
             assertThrows(NegocioException.class, () -> cliente.sugerir(texto));
         var seleccion = calle(); seleccion.setIdCalle(-1L);
         assertThrows(NegocioException.class, () -> cliente.resolver(seleccion));
+        assertThrows(NegocioException.class, () -> cliente.resolverAlternativas(seleccion));
         assertEquals(0, http.llamadas);
     }
 

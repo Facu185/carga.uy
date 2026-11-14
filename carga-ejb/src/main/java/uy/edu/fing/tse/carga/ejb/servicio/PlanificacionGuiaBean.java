@@ -48,6 +48,11 @@ public class PlanificacionGuiaBean implements PlanificacionGuiaLocal {
     }
 
     @Override
+    public List<DireccionMapaDTO> resolverAlternativas(SugerenciaCalleDTO seleccion) throws NegocioException {
+        responsable(); return ide.resolverAlternativas(seleccion);
+    }
+
+    @Override
     public RutaPreviaDTO calcular(SolicitudRutaDTO s) throws NegocioException {
         String cedula = responsable();
         if (s == null || s.getVehiculoId() == null || s.getVehiculoId() <= 0 || s.getCargaKg() == null

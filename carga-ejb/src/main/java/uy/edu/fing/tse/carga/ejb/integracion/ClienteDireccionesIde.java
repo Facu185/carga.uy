@@ -14,6 +14,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /** Consulta y resolucion separadas: candidates no proporciona siempre coordenadas. */
@@ -60,6 +61,14 @@ public class ClienteDireccionesIde {
     }
 
     public DireccionMapaDTO resolver(SugerenciaCalleDTO s) throws NegocioException {
+        return resolver(s, false).getFirst();
+    }
+
+    public List<DireccionMapaDTO> resolverAlternativas(SugerenciaCalleDTO s) throws NegocioException {
+        return resolver(s, true);
+    }
+
+    private List<DireccionMapaDTO> resolver(SugerenciaCalleDTO s, boolean alternativas) throws NegocioException {
         validarSeleccion(s);
         String query = "find?type=" + ("ESQUINA".equals(s.getTipo()) ? "esquina" : "calle") + "&idcalle=" + s.getIdCalle();
         if ("CALLEyPORTAL".equals(s.getTipo())) {
@@ -72,23 +81,34 @@ public class ClienteDireccionesIde {
             var respuesta = http.solicitar(uri(query), "GET", null, null);
             if (respuesta.estado() != 200) throw indisponible();
             var datos = JsonGeografico.leerLista(respuesta.cuerpo());
-            if (datos.size() != 1) {
+            if (!alternativas && datos.size() != 1) {
                 circuito.registrarExito(); throw sinPunto();
             }
-            var item = JsonGeografico.objeto(datos.getFirst());
-            var dto = new DireccionMapaDTO();
-            dto.setDireccion(JsonGeografico.texto(item.get("address"), 200));
-            try { dto.setPunto(JsonGeografico.punto(item.get("lat"), item.get("lng"))); }
-            catch (IllegalArgumentException e) { circuito.registrarExito(); throw sinPunto(); }
-            String mensaje = item.get("stateMsg") instanceof String m ? m.trim() : "";
-            boolean exacta = item.get("state") instanceof Number n && n.doubleValue() == 1;
-            dto.setAproximada("CALLE".equals(s.getTipo()) || !exacta || !mensaje.isEmpty()
-                    || "CALLE".equals(item.get("type")));
-            dto.setDetalle(dto.isAproximada() ? "Ubicacion aproximada de IDE; revise el punto en el mapa." : "Direccion localizada por IDE Uruguay.");
-            circuito.registrarExito(); return dto;
+            if (datos.size() > 50) throw new IllegalArgumentException();
+            var resultado = new ArrayList<DireccionMapaDTO>();
+            for (Object valor : datos) {
+                var item = JsonGeografico.objeto(valor);
+                // Un centro de calle no es una alternativa al portal solicitado.
+                if (alternativas && "CALLEyPORTAL".equals(s.getTipo()) && "CALLE".equals(item.get("type"))) continue;
+                resultado.add(direccion(item, s));
+            }
+            circuito.registrarExito(); return resultado;
         } catch (IllegalArgumentException | ServicioNoDisponibleException e) {
             circuito.registrarFalla(); throw indisponible();
         }
+    }
+
+    private DireccionMapaDTO direccion(Map<?, ?> item, SugerenciaCalleDTO s) throws NegocioException {
+        var dto = new DireccionMapaDTO();
+        dto.setDireccion(JsonGeografico.texto(item.get("address"), 200));
+        try { dto.setPunto(JsonGeografico.punto(item.get("lat"), item.get("lng"))); }
+        catch (IllegalArgumentException e) { circuito.registrarExito(); throw sinPunto(); }
+        String mensaje = item.get("stateMsg") instanceof String m ? m.trim() : "";
+        boolean exacta = item.get("state") instanceof Number n && n.doubleValue() == 1;
+        dto.setAproximada("CALLE".equals(s.getTipo()) || !exacta || !mensaje.isEmpty()
+                || "CALLE".equals(item.get("type")));
+        dto.setDetalle(dto.isAproximada() ? "Ubicacion aproximada de IDE; revise el punto en el mapa." : "Direccion localizada por IDE Uruguay.");
+        return dto;
     }
 
     private static void validarSeleccion(SugerenciaCalleDTO s) throws NegocioException {

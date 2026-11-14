@@ -17,6 +17,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Dobles JPA: verifican consultas y DTO, no ejecutan JPQL ni interceptores de WildFly. */
 class GuiasEmpresaTest {
+    @Test void choferConResponsabilidadHeredadaNoListaGuiasEmpresariales() throws Exception {
+        Escenario e = new Escenario();
+        e.compatibilidad.choferesActivos.add("responsable-prueba");
+        e.compatibilidad.responsablesActivos.add("responsable-prueba");
+        assertThrows(jakarta.ejb.EJBAccessException.class, () -> e.bean.guiasDeLaEmpresaResponsable(1L, 0, 20));
+        assertNull(e.consultaVinculo);
+        assertNull(e.consultaConteo);
+        assertNull(e.consultaGuias);
+    }
+
     @Test void funcionarioConResponsabilidadHeredadaNoListaGuiasEmpresariales() throws Exception {
         Escenario e = new Escenario();
         e.compatibilidad.funcionariosActivos.add("responsable-prueba");

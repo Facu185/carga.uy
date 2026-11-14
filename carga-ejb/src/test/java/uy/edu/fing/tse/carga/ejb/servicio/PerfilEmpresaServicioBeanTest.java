@@ -33,6 +33,17 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Prueba primero: decisiones y efectos con dobles; no acredita roles, JPQL ni rollback JTA. */
 class PerfilEmpresaServicioBeanTest {
+    @Test void choferConResponsabilidadHeredadaNoLeeNiEditaPerfil() throws Exception {
+        Escenario e = new Escenario();
+        e.compatibilidad.choferesActivos.add("persona-sintetica");
+        e.compatibilidad.responsablesActivos.add("persona-sintetica");
+        assertThrows(EJBAccessException.class, () -> e.bean.consultar(1L));
+        assertThrows(EJBAccessException.class, () -> e.bean.modificar(1L, datos()));
+        assertEquals(0, e.busquedas);
+        assertEquals(0, e.flushes);
+        sinCambios(e);
+    }
+
     @Test void funcionarioConResponsabilidadHeredadaNoLeeNiEditaPerfil() throws Exception {
         Escenario e = new Escenario();
         e.compatibilidad.funcionariosActivos.add("persona-sintetica");
