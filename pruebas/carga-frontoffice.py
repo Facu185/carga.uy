@@ -3,21 +3,22 @@
 Usuarios simulados del frontoffice para la prueba de performance (letra 4.3, punto 3a: p95 < 500 ms).
 
 Mientras el generador de carga manda posiciones, N usuarios recorren las consultas del frontoffice
-con pausas de persona real: las públicas (validar un permiso, cifras) y, con sesión de gub.uy del
-simulador, su perfil. Cada minuto imprime p50/p95/p99 y al final un resumen por consulta.
+con pausas de persona real: las públicas (validar un permiso, cifras) y, con sesión de gub.uy
+(Keycloak de desarrollo, ADR-0026), su perfil. Cada minuto imprime p50/p95/p99 y al final un resumen por consulta.
 El detalle de cada pedido queda en resultados-carga/frontoffice-<fecha>.csv.
 
     python pruebas/carga-frontoffice.py --usuarios 20 --duracion 300
 
-Solo usa la biblioteca estándar. Necesita el simulador de gub.uy (compose por defecto).
+Solo usa la biblioteca estándar. Necesita el Keycloak de desarrollo (compose por defecto): las
+personas de la prueba se dan de alta solas en el realm gubuy (pruebas/ingreso_gubuy.py).
 """
 import argparse
 import csv
-import http.cookiejar
 import json
 import os
 import random
 import re
+import sys
 import statistics
 import threading
 import time
@@ -26,42 +27,12 @@ import urllib.parse
 import urllib.request
 from datetime import datetime
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from ingreso_gubuy import asegurar_usuario, cedula_valida, ingresar  # noqa: E402
+
 FRONT = os.environ.get("FRONT", "http://localhost:3000")
 API = FRONT + "/carga/api"
 MATRICULAS = ["STZ1234", "STZ5678", "CUY9012", "DEMO11", "DEMO22", "NOEXISTE1"]
-
-
-class SinRedireccion(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, *a, **k):
-        return None
-
-
-def sesion_ciudadano(cedula):
-    """Ingreso real con gub.uy (simulador): devuelve el token de carga.uy."""
-    jar = http.cookiejar.CookieJar()
-    abrir = urllib.request.build_opener(SinRedireccion, urllib.request.HTTPCookieProcessor(jar)).open
-
-    def pedir(url, datos=None):
-        try:
-            r = abrir(urllib.request.Request(url, data=datos), timeout=30)
-            return r.headers
-        except urllib.error.HTTPError as e:
-            return e.headers
-
-    autorizar = pedir(API + "/auth/gubuy/iniciar?destino=web").get("Location")
-    datos = urllib.parse.urlencode({"username": cedula, "claims": "{}"}).encode()
-    callback = pedir(autorizar, datos).get("Location")
-    final = pedir(callback).get("Location") or ""
-    token = urllib.parse.parse_qs(final.split("#", 1)[-1]).get("token")
-    if not token:
-        raise SystemExit("No se pudo ingresar con el simulador de gub.uy: " + final[:120])
-    return token[0]
-
-
-def cedula_valida(base):
-    digitos = [int(d) for d in f"{base:07d}"]
-    suma = sum(d * p for d, p in zip(digitos, [2, 9, 8, 7, 6, 3, 4]))
-    return f"{base:07d}{(10 - suma % 10) % 10}"
 
 
 def consultas(token):
@@ -82,7 +53,10 @@ def main():
     p.add_argument("--pausa", type=float, default=1.0, help="pausa media entre pedidos de un usuario, en segundos")
     a = p.parse_args()
 
-    tokens = [sesion_ciudadano(cedula_valida(4_000_000 + i)) for i in range(a.usuarios)]
+    cedulas = [cedula_valida(4_000_000 + i) for i in range(a.usuarios)]
+    for i, cedula in enumerate(cedulas):
+        asegurar_usuario(cedula, f"Persona Carga{i + 1}")
+    tokens = [ingresar(cedula) for cedula in cedulas]
     registros = []
     candado = threading.Lock()
     fin = time.time() + a.duracion

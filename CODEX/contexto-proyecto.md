@@ -13,7 +13,7 @@ Los [frentes](../docs/frentes.md) distribuyen responsabilidades: P1 identidad/PD
 - [POM raíz](../pom.xml): reactor de ocho módulos Java, release 24, Jakarta EE 11 y JUnit 5; perfil `integracion` para incluir pruebas etiquetadas. Versiones concretas se consultan allí, no se presuponen por esta guía.
 - [Dockerfile del central](../docker/central/Dockerfile): WildFly 41.0.0.Final con imagen JDK 25; es distinto del release 24 de compilación. No confundir runtime con versión objetivo de bytecode.
 - [carga-front/package.json](../carga-front/package.json): React, TypeScript y Vite; SPA fuera del reactor Maven. El script `build` ejecuta `tsc -b` y Vite; no existe script `test` en ese archivo.
-- [Compose](../docker-compose.yml): central, PostGIS/PostgreSQL, Balanzas, Tracking, frontend y simulador OIDC; perfiles adicionales de LDAP, carga y monitoreo. PDI SOAP simulada forma parte del despliegue definido para el central.
+- [Compose](../docker-compose.yml): central, PostGIS/PostgreSQL, Balanzas, Tracking, frontend y Keycloak como proveedor OIDC en lugar de gub.uy (ADR-0026); perfiles adicionales de LDAP, carga y monitoreo. PDI SOAP simulada forma parte del despliegue definido para el central.
 - Hay pruebas JUnit en varios módulos y un [script de punta a punta](../pruebas/punta-a-punta.sh). Su presencia no acredita resultados ni cobertura.
 
 ## Invariantes que deben conservarse

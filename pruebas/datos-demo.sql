@@ -6,7 +6,7 @@
 --
 -- Se puede correr más de una vez: primero borra lo que haya cargado antes (matrículas DEMO y
 -- empresas 7001 a 7005). No toca los datos de desarrollo ni los de otras pruebas.
--- Los choferes demo ingresan con gub.uy (simulador) con las cedulas 41000019, 41000025, 41000031, 41000047, 41000053 (empresas 7001 a 7005).
+-- Los choferes demo ingresan con gub.uy (Keycloak de desarrollo, clave carga-solo-desarrollo) con las cedulas 41000019, 41000025, 41000031, 41000047, 41000053 (empresas 7001 a 7005).
 -- Está armado para que en las cifras públicas se vea la regla: "Refrigerada" y "Supermercados"
 -- quedan con menos de 3 empresas y se agrupan en "Otros"; un mes del año tiene un solo viaje y
 -- figura como "Reservado".
@@ -42,7 +42,7 @@ SELECT e.id, 'DEMO' || (e.numero_empresa - 7000) || n, 'Scania', 'R450', 9000, 2
 FROM empresa e CROSS JOIN generate_series(1, 2) AS n
 WHERE e.numero_empresa BETWEEN 7001 AND 7005;
 
--- Cedulas validas (con digito verificador), para poder ingresar con el simulador de gub.uy como chofer
+-- Cedulas validas (con digito verificador), para poder ingresar con gub.uy (usuarios del realm gubuy de Keycloak) como chofer
 INSERT INTO chofer (empresa_id, cedula, nombre)
 SELECT e.id, (ARRAY['41000019', '41000025', '41000031', '41000047', '41000053'])[e.numero_empresa - 7000],
        'Chofer demo ' || (e.numero_empresa - 7000)

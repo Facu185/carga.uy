@@ -42,7 +42,7 @@ Cuando termina:
 | Frontend React (frontoffice y backoffice) | http://localhost:3000/ |
 | Backoffice — ingreso | http://localhost:3000/backoffice/login (usuario `admin` / `admin-solo-desarrollo`) |
 | Jaeger (trazas distribuidas) | http://localhost:16686 |
-| Simulador gub.uy | http://localhost:8085/gubuy/.well-known/openid-configuration |
+| gub.uy (Keycloak) — consola de administración | http://localhost:8085/gubuy/admin/ (usuario `admin` / `admin-solo-desarrollo`) |
 | Aplicación (JSF) — `http://localhost:8080/` redirige acá | http://localhost:8080/carga/ |
 | Panel de operación de nodos (P4) | http://localhost:8080/carga/panel.xhtml |
 | REST — salud | http://localhost:8080/carga/api/salud |
@@ -165,12 +165,27 @@ TOKEN=$(curl -s -X POST http://localhost:8080/carga/api/auth/login -H "Content-T
 curl -s http://localhost:8080/carga/api/auth/yo -H "Authorization: Bearer $TOKEN"
 ```
 
-Ingreso con gub.uy: en http://localhost:3000/ingresar, con una cédula del padrón del simulador PDI
-(`1.111.111-1` es válida) para que además se complete la fecha de nacimiento desde DNIC.
+Ingreso con gub.uy: mientras ID Uruguay testing rechaza el cliente del curso, y por pedido del docente,
+gub.uy lo hace un **Keycloak** en Docker ([ADR-0026](docs/decisiones/0026-keycloak-en-lugar-de-gubuy.md)).
+En http://localhost:3000/ingresar → *Ingresar con gub.uy* aparece su pantalla de login. Usuarios
+(cédula como usuario, clave `carga-solo-desarrollo` para todos):
+
+| Cédula | Persona | Para mostrar |
+|---|---|---|
+| `41000019`, `41000025`, `41000031`, `41000047`, `41000053` | Choferes demo 1 a 5 | Rol CHOFER (con `pruebas/datos-demo.sql` cargado) |
+| `11111111`, `22222222`, `33333333` | Ana Perez, Luis Gomez, Marta Silva | Están en el padrón del simulador PDI: se completa la fecha de nacimiento desde DNIC |
+| `31234565` | Funcionaria Demo | Asignarle una empresa desde el backoffice |
+| `12345672` | Ciudadana De Prueba | Ciudadano sin otro rol |
+
+Para agregar personas: en la consola (http://localhost:8085/gubuy/admin/ → realm *gubuy* → *Users* →
+*Add user*, completando los atributos `numero_documento` y `nombre_completo`, y en *Credentials* una
+clave no temporal) o en `docker/keycloak/gubuy-realm.json`, que se importa cuando el
+contenedor se crea (`docker compose up -d --force-recreate keycloak` para aplicar un cambio). Las altas
+hechas en la consola sobreviven a un reinicio, pero se pierden al recrear el contenedor.
 
 Para usar **ID Uruguay real en testing**, consulta la
 [configuración y validación manual](docs/integracion-id-uruguay-testing.md).
-El Compose base conserva el simulador; el override de testing exige un secreto local.
+El Compose base usa Keycloak; el override de testing exige un secreto local.
 La implementación consulta UserInfo después de validar el `id_token`; el cierre de
 sesión sigue siendo local, no cierra la sesión del proveedor.
 
@@ -203,9 +218,15 @@ El pipeline del GitLab de FING (`.gitlab-ci.yml`) compila, corre las pruebas, mi
 analiza con SonarQube y corre las pruebas de integración. Para Sonar hay que definir `SONAR_HOST_URL`
 y `SONAR_TOKEN` en *Settings → CI/CD → Variables*; sin ellas ese job no corre.
 
+### Despliegue en Elastic Cloud (ANTEL)
+
+El central corre en https://env-8268946.web.elasticloud.uy. Paso a paso, con los arreglos que necesita
+el Docker 19.03 de la plataforma (docker-compose v2, seccomp, `platform`) y la configuración de HTTPS:
+[docs/despliegue-elastic-cloud.md](docs/despliegue-elastic-cloud.md).
+
 ### Fiscalización (P5): demo de punta a punta
 
-Con el sistema levantado con el simulador de gub.uy:
+Con el sistema levantado (gub.uy = Keycloak de desarrollo):
 
 ```bash
 docker compose exec -T db psql -U carga -d carga < pruebas/datos-demo.sql

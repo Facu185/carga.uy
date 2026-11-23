@@ -7,8 +7,8 @@ import java.util.Optional;
 
 /**
  * Configuracion de la integracion con gub.uy (ID Uruguay), toda por variables de entorno.
- * Compose base usa simulador; docker-compose.gubuy-testing.yml prepara ID Uruguay testing
- * con secreto obligatorio en .env. La conexion real requiere validacion integrada.
+ * Compose base usa el Keycloak de desarrollo (ADR-0026); docker-compose.gubuy-testing.yml prepara
+ * ID Uruguay testing con secreto obligatorio en .env.
  */
 @ApplicationScoped
 public class ConfiguracionGubUy {
@@ -21,6 +21,7 @@ public class ConfiguracionGubUy {
     private String scopes;
     private String urlWeb;
     private String urlMovil;
+    private String discoveryUrl;
 
     @PostConstruct
     void cargar() {
@@ -29,11 +30,19 @@ public class ConfiguracionGubUy {
                 obligatoria("GUBUY_CLIENT_ID"),
                 obligatoria("GUBUY_CLIENT_SECRET"),
                 obligatoria("GUBUY_REDIRECT_URI"),
-                // Solo para el simulador en Docker: el navegador no resuelve el nombre interno del contenedor
+                // Opcional: reemplaza el endpoint de autorizacion del discovery (con Keycloak no hace falta)
                 opcional("GUBUY_AUTHORIZATION_ENDPOINT", null),
                 opcional("GUBUY_SCOPES", "openid personal_info email document"),
                 obligatoria("FRONTEND_URL_WEB"),
                 opcional("FRONTEND_URL_MOVIL", "cargauy://ingreso"));
+        // Solo si el proveedor tiene una URL publica (el emisor) y otra interna: el Keycloak en Docker firma con
+        // la URL por la que entra el navegador, pero el central lo alcanza por la red de contenedores.
+        usarDiscovery(opcional("GUBUY_DISCOVERY_URL", null));
+    }
+
+    /** null = el estandar: {issuer}/.well-known/openid-configuration. */
+    void usarDiscovery(String url) {
+        this.discoveryUrl = url;
     }
 
     /** Separado de cargar() para poder configurarlo en los tests sin variables de entorno. */
@@ -70,6 +79,11 @@ public class ConfiguracionGubUy {
     public String getRedirectUri() { return redirectUri; }
     public Optional<String> getAuthorizationEndpoint() { return Optional.ofNullable(authorizationEndpoint); }
     public String getScopes() { return scopes; }
+
+    /** De donde se leen los endpoints y las claves. El emisor que se valida en el id_token sigue siendo el issuer. */
+    public String getDiscoveryUrl() {
+        return discoveryUrl != null ? discoveryUrl : issuer + "/.well-known/openid-configuration";
+    }
 
     private static String obligatoria(String nombre) {
         String valor = System.getenv(nombre);

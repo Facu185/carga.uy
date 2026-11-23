@@ -27,7 +27,7 @@ saturación en el [ADR-0008](decisiones/0008-volumen-y-saturacion-de-tracking.md
   idempotencia) y 1 % de pérdidas de cobertura. Incluye un **funcionario simulado** que consulta el
   panel de operación (métricas y mapa de la flota) cada 5 s.
 - **Frontoffice:** `pruebas/carga-frontoffice.py`, **20 usuarios** a la vez, cada uno con su sesión
-  de gub.uy (simulador), con pausas de persona real (1 s de media). Consultan validación de permisos,
+  de gub.uy (Keycloak de desarrollo, ADR-0026), con pausas de persona real (1 s de media). Consultan validación de permisos,
   cifras públicas, su perfil y su sesión.
 - **Datos:** `pruebas/datos-demo.sql` (cinco empresas, 188 guías) más las posiciones generadas.
 - **Observación:** Prometheus cada 5 s y Grafana (tablero "carga.uy - Performance (P4)"),

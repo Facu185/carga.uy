@@ -32,7 +32,7 @@ URIs de testing aportadas por el usuario y [ADR-0017](decisiones/0017-id-uruguay
    | `GUBUY_SCOPES` | `openid personal_info email document` |
 
    El secreto no vacío es obligatorio para este override: evita usar por omisión
-   el secreto del simulador. El operador debe verificar que el valor sea vigente.
+   el secreto de desarrollo de Keycloak. El operador debe verificar que el valor sea vigente.
 
 4. Comprobar sintaxis/interpolación sin mostrar los valores resueltos:
 
@@ -56,7 +56,8 @@ URIs de testing aportadas por el usuario y [ADR-0017](decisiones/0017-id-uruguay
 
 El cliente obtiene authorization/token/JWKS/UserInfo de
 `https://auth-testing.iduruguay.gub.uy/oidc/v1/.well-known/openid-configuration`.
-No establecer manualmente la autorización del simulador en testing. Alternativa:
+No establecer manualmente la autorización de Keycloak en testing, y dejar `GUBUY_DISCOVERY_URL`
+vacía (el override ya lo hace): si no, el central lee el discovery del Keycloak interno. Alternativa:
 definir todas las variables comentadas en `.env.example` sin override; es más
 fácil mezclar ambientes y el Compose base conserva defaults de desarrollo.
 
@@ -78,7 +79,7 @@ sin alternar con `127.0.0.1`. Es un recorrido local HTTP, no una receta de produ
 
 - [ ] Discovery accesible desde el central; endpoints y firma compatibles con el
       proveedor, TLS válido y acceso de red saliente. No desactivar PKCE ni TLS si falla.
-- [ ] Al iniciar desde la SPA se abre ID Uruguay **testing**, nunca el simulador.
+- [ ] Al iniciar desde la SPA se abre ID Uruguay **testing**, nunca Keycloak.
 - [ ] Ingreso con cuenta válida de testing y consentimiento para los scopes requeridos.
 - [ ] Vuelta exacta a raíz, redirección al callback y cookie de transacción disponible;
       no hay bucle, pérdida de `state` ni error de nonce.
@@ -91,7 +92,7 @@ sin alternar con `127.0.0.1`. Es un recorrido local HTTP, no una receta de produ
 - [ ] Cancelación, expiración y errores de identidad no crean una sesión.
 - [ ] Cierre actual borra la sesión local, **no** la sesión de ID Uruguay. Un nuevo
       ingreso puede reutilizar la sesión del proveedor; no se implementa logout federado.
-- [ ] Regresión del simulador local y de destino móvil, sin modificar sus contratos.
+- [ ] Regresión del Keycloak local y de destino móvil, sin modificar sus contratos.
 
 ## Regresiones automatizadas pendientes
 
@@ -113,12 +114,12 @@ del operador; producción necesita credenciales, redirect HTTPS y despliegue pro
 - Valores fusionados de issuer, autorización por discovery, client ID, redirect
   y scopes comprobados sin mostrar la configuración completa ni secretos.
 - El override rechaza un secreto vacío antes de iniciar contenedores.
-- El Compose base conserva la selección del simulador. No se comprobó su login.
+- El Compose base usa el Keycloak de desarrollo (ADR-0026); su login lo cubre `pruebas/punta-a-punta.sh`.
 
-## Volver al simulador
+## Volver a Keycloak (default)
 
 Retirar de `.env` y del entorno del proceso el secreto real y las variables de
 testing que se hayan definido, incluso si se utilizó el override recomendado.
-De otro modo el Compose base podría enviar el secreto real al simulador o conservar
+De otro modo el Compose base podría usar el secreto real con Keycloak o conservar
 endpoints reales. Después usar solo el Compose base y recrear el central con la
 imagen correspondiente. No basta omitir el override si esas variables siguen activas.

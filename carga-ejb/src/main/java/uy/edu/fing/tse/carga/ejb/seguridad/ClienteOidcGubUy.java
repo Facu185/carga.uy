@@ -203,7 +203,7 @@ public class ClienteOidcGubUy {
     }
 
     private Metadatos cargarMetadatos() {
-        HttpRequest pedido = HttpRequest.newBuilder(URI.create(config.getIssuer() + "/.well-known/openid-configuration"))
+        HttpRequest pedido = HttpRequest.newBuilder(URI.create(config.getDiscoveryUrl()))
                 .timeout(TIMEOUT)
                 .GET()
                 .build();
@@ -237,10 +237,11 @@ public class ClienteOidcGubUy {
         }
         URI uri = URI.create(endpoint);
         boolean https = "https".equalsIgnoreCase(uri.getScheme());
-        // HTTP solo conserva el entorno local existente; un issuer HTTPS no puede degradar a HTTP.
+        // HTTP solo para proveedores alcanzados por HTTP (la red interna de Docker): si el discovery llego por
+        // HTTPS, UserInfo no puede degradar a HTTP.
         if (uri.getHost() == null || uri.getUserInfo() != null || uri.getFragment() != null
                 || !(https || "http".equalsIgnoreCase(uri.getScheme()))
-                || (config.getIssuer().startsWith("https://") && !https)) {
+                || (config.getDiscoveryUrl().startsWith("https://") && !https)) {
             throw new GubUyException("El endpoint UserInfo de gub.uy no es v\u00e1lido");
         }
         return endpoint;

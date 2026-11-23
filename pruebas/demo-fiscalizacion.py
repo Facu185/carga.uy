@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Demo de punta a punta de la fiscalizacion (P3 + P4 + P5), contra el sistema levantado con el
-simulador de gub.uy y los datos de pruebas/datos-demo.sql:
+Keycloak de desarrollo como gub.uy (ADR-0026) y los datos de pruebas/datos-demo.sql:
 
   1. Una guia Montevideo -> Colonia para el camion DEMO11, con un recorrido de tracking que se
      desvia hacia Florida.
@@ -13,15 +13,19 @@ simulador de gub.uy y los datos de pruebas/datos-demo.sql:
 
 Necesita docker compose (usa psql dentro del contenedor db para preparar la guia y el recorrido).
 """
-import http.cookiejar
 import json
+import os
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
 from datetime import datetime, timedelta, timezone
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from ingreso_gubuy import ingresar_sesion  # noqa: E402
 
 FRONT = "http://localhost:3000"
 API = FRONT + "/carga/api"
@@ -50,26 +54,6 @@ def pedir(ruta, token=None, metodo="GET", cuerpo=None, encabezados=None):
             return e.code, json.loads(texto)
         except ValueError:
             return e.code, texto
-
-
-class SinRedireccion(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, *a, **k):
-        return None
-
-
-def ingresar_gubuy(cedula):
-    abrir = urllib.request.build_opener(SinRedireccion, urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())).open
-
-    def ir(url, datos=None):
-        try:
-            return abrir(urllib.request.Request(url, data=datos), timeout=30).headers
-        except urllib.error.HTTPError as e:
-            return e.headers
-
-    autorizar = ir(API + "/auth/gubuy/iniciar?destino=web").get("Location")
-    callback = ir(autorizar, urllib.parse.urlencode({"username": cedula, "claims": "{}"}).encode()).get("Location")
-    fragmento = urllib.parse.parse_qs((ir(callback).get("Location") or "").split("#", 1)[-1])
-    return fragmento["token"][0], fragmento.get("roles", [""])[0]
 
 
 def evento(token, guia, tipo, instante, lat, lon, traza=None):
@@ -105,7 +89,8 @@ def main():
     print(f"   guia {guia}, 20 posiciones")
 
     print("2. El chofer ingresa con gub.uy y registra inicio y fin (como la app movil)")
-    token, roles = ingresar_gubuy(CHOFER)
+    sesion_chofer = ingresar_sesion(CHOFER)  # usuario 41000019 del realm gubuy
+    token, roles = sesion_chofer["token"], sesion_chofer.get("roles", "")
     print(f"   roles: {roles}")
     print("   INICIO:", evento(token, int(guia), "INICIO", (inicio + timedelta(minutes=1)).isoformat(), -34.9011, -56.1645))
     traza = uuid.uuid4().hex

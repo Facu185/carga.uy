@@ -778,7 +778,8 @@ Sin sesión. Servicio `InformacionPublicaLocal` (`@PermitAll`), recurso `/carga/
 | `JWT_SECRET` (≥ 32 caracteres), `JWT_DURACION_MINUTOS` | central | valor de desarrollo, `30` |
 | `ADMIN_INICIAL_USUARIO`, `ADMIN_INICIAL_PASSWORD` | central (solo si no hay cuentas internas) | `admin` / valor de desarrollo |
 | `AUTENTICACION_INTERNA` y `LDAP_*` | central (backoffice) | `bd`; con `ldap` se usan las `LDAP_*` |
-| `GUBUY_ISSUER`, `GUBUY_AUTHORIZATION_ENDPOINT`, `GUBUY_CLIENT_ID`, `GUBUY_CLIENT_SECRET`, `GUBUY_REDIRECT_URI`, `GUBUY_SCOPES` | central (ingreso con gub.uy) | simulador local |
+| `GUBUY_ISSUER`, `GUBUY_AUTHORIZATION_ENDPOINT`, `GUBUY_DISCOVERY_URL`, `GUBUY_CLIENT_ID`, `GUBUY_CLIENT_SECRET`, `GUBUY_REDIRECT_URI`, `GUBUY_SCOPES` | central (ingreso con gub.uy) | Keycloak de desarrollo (ADR-0026): emisor `http://localhost:3000/gubuy/realms/gubuy`, discovery por la red interna `http://keycloak:8080/...` |
+| `KEYCLOAK_URL_PUBLICA`, `KEYCLOAK_ADMIN_USUARIO`, `KEYCLOAK_ADMIN_PASSWORD` | keycloak (y el emisor por defecto del central) | `http://localhost:3000/gubuy`, `admin` / `admin-solo-desarrollo` |
 | `COMPOSE_PROFILES=ldap` | docker compose | sin definir (el directorio LDAP no arranca) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | central (trazas a Jaeger) | `http://jaeger:4318`; vacío = no exporta |
 | `FRONTEND_URL_WEB`, `FRONTEND_URL_MOVIL` | central (a dónde vuelve el ingreso con gub.uy) | `http://localhost:3000`, `cargauy://ingreso` |

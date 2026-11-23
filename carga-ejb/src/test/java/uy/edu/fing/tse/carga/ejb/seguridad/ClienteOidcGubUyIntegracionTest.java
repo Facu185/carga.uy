@@ -141,6 +141,36 @@ class ClienteOidcGubUyIntegracionTest {
     // ---------------- canje del codigo ----------------
 
     @Test
+    void conDiscoveryInternoValidaElEmisorPublico() {
+        // Como el Keycloak en Docker: firma con la URL publica y el central lo lee por la red interna
+        String discoveryInterno = issuer + "/.well-known/openid-configuration";
+        String emisorPublico = "https://carga.example.test/gubuy/realms/gubuy";
+        String emisorInterno = issuer;
+        issuer = emisorPublico;
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        ClienteOidcGubUy cliente = cliente(emisorPublico, null);
+        cliente.config.usarDiscovery(discoveryInterno);
+        issuer = emisorInterno;
+        endpointUserInfo = emisorInterno + "/userinfo";
+
+        // el discovery publica el emisor interno del servidor de prueba, pero lo que se valida es el id_token
+        IdentidadGubUy identidad = cliente.canjearCodigo("codigo-1", "verifier-1", "nonce-1");
+
+        assertEquals("12345672", identidad.documento());
+        assertEquals(1, consultasUserInfo.get());
+    }
+
+    @Test
+    void conDiscoveryInternoRechazaUnIdTokenDelEmisorInterno() {
+        claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
+        ClienteOidcGubUy cliente = cliente("https://carga.example.test/gubuy/realms/gubuy", null);
+        cliente.config.usarDiscovery(issuer + "/.well-known/openid-configuration");
+
+        assertThrows(GubUyException.class, () -> cliente.canjearCodigo("codigo-1", "verifier-1", "nonce-1"));
+        assertEquals(0, consultasUserInfo.get());
+    }
+
+    @Test
     void canjeaElCodigoYDevuelveLaIdentidad() {
         claimsAEmitir = claims(CLIENT_ID, "nonce-1", 300);
 
