@@ -202,6 +202,8 @@ services:
     image: jaegertracing/all-in-one:1.62.0
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
+      # Guarda las trazas en memoria: sin tope crece sin limite (en la nube llego a 2,2 GB en dos semanas)
+      MEMORY_MAX_TRACES: "20000"
     ports:
       - "16686:16686"
 
