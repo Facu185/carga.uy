@@ -52,6 +52,7 @@ public class EventoViajeBean implements EventoViajeLocal {
     static final String METRICA = "carga_eventos_viaje_total";
     static final int FOTO_MAX_BYTES = entero("EVENTOS_FOTO_MAX_BYTES", 2_000_000);
     static final String GUIA_AJENA = "La gu\u00eda no existe o no est\u00e1 asignada a vos.";
+    static final String EVENTO_AJENO = "El evento no existe o no es de una gu\u00eda asignada a vos.";
 
     @PersistenceContext(unitName = "cargaPU")
     EntityManager em;
@@ -164,6 +165,19 @@ public class EventoViajeBean implements EventoViajeLocal {
             throw new RecursoAjenoException(GUIA_AJENA);
         }
         return eventos.deGuia(guiaId);
+    }
+
+    @Override
+    public Optional<byte[]> fotoDeEvento(String idEvento) throws NegocioException {
+        if (idEvento == null || idEvento.isBlank()) throw new NegocioException("El evento es obligatorio.");
+        Chofer chofer = choferAutenticado();
+        EventoViaje evento = eventos.buscarPorIdEvento(idEvento).orElse(null);
+        Guia guia = evento == null ? null : evento.getGuia();
+        // Inexistente y ajeno responden igual: no se revela que idEvento existen en otras guias
+        if (guia == null || guia.getChofer() == null || !guia.getChofer().getId().equals(chofer.getId())) {
+            throw new RecursoAjenoException(EVENTO_AJENO);
+        }
+        return Optional.ofNullable(evento.getFoto());
     }
 
     /** Dentro de la misma transaccion: si algo falla despues, el aviso no sale (ADR-0010). */
