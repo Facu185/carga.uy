@@ -27,13 +27,27 @@ public class ServicioDnicImpl implements ServicioDnic {
 
     private static final Logger LOG = Logger.getLogger(ServicioDnicImpl.class.getName());
 
-    private static final Map<String, PersonaDTO> PADRON = Map.of(
-            "11111111", new PersonaDTO("11111111", "Ana Perez", "1985-04-12"),
-            "22222222", new PersonaDTO("22222222", "Luis Gomez", "1979-09-03"),
-            "33333333", new PersonaDTO("33333333", "Marta Silva", "1990-01-27"),
-            "44444444", new PersonaDTO("44444444", "Jorge Rodriguez", "1968-11-08"),
-            "63224239", new PersonaDTO("63224239", "Roibeth Garcia", "1990-01-01")
+    // Incluye a todos los usuarios de docker/keycloak/gubuy-realm.json, para que el ingreso con gub.uy
+    // de cualquiera de ellos complete la fecha de nacimiento (una cedula que no esta aca queda
+    // "pendiente de verificacion", igual que si la PDI no respondiera)
+    private static final Map<String, PersonaDTO> PADRON = Map.ofEntries(
+            persona("11111111", "Ana Perez", "1985-04-12"),
+            persona("22222222", "Luis Gomez", "1979-09-03"),
+            persona("33333333", "Marta Silva", "1990-01-27"),
+            persona("44444444", "Jorge Rodriguez", "1968-11-08"),
+            persona("63224239", "Roibeth Garcia", "1990-01-01"),
+            persona("41000019", "Chofer Demo Uno", "1982-03-15"),
+            persona("41000025", "Chofer Demo Dos", "1987-07-22"),
+            persona("41000031", "Chofer Demo Tres", "1975-11-02"),
+            persona("41000047", "Chofer Demo Cuatro", "1991-05-30"),
+            persona("41000053", "Chofer Demo Cinco", "1984-09-18"),
+            persona("31234565", "Funcionaria Demo", "1980-02-10"),
+            persona("12345672", "Ciudadana De Prueba", "1995-06-25")
     );
+
+    private static Map.Entry<String, PersonaDTO> persona(String cedula, String nombre, String nacimiento) {
+        return Map.entry(cedula, new PersonaDTO(cedula, nombre, nacimiento));
+    }
 
     static {
         Traza.usarServicio("simulador-pdi");

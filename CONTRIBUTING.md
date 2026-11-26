@@ -32,7 +32,7 @@ tablas compartidas, rutas REST ya publicadas. Si tenés que cambiarlo, avisá **
 ## 5. Base de datos
 
 Cambios de esquema = migración nueva (`V<n>__descripcion.sql`). Nunca editar una ya aplicada, nunca
-usar `hbm2ddl.auto=update`. Ver la sección 6 del [README](README.md).
+usar `hbm2ddl.auto=update`. Ver la sección 6 de la [guía de desarrollo](docs/guia-desarrollo.md).
 
 ## 6. Estilo
 

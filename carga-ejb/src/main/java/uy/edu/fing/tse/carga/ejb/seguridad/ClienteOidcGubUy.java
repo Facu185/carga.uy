@@ -71,7 +71,11 @@ public class ClienteOidcGubUy {
                 + "&state=" + enc(state)
                 + "&nonce=" + enc(nonce)
                 + "&code_challenge=" + enc(desafioPkce(codeVerifier))
-                + "&code_challenge_method=S256";
+                + "&code_challenge_method=S256"
+                // "Salir" cierra la sesion de carga.uy, pero la del proveedor sigue abierta en el navegador:
+                // sin esto, el proximo ingreso entraria directo con la misma persona. prompt=login (OIDC
+                // Core 3.1.2.1) obliga a volver a autenticarse y permite ingresar con otra cuenta.
+                + "&prompt=login";
     }
 
     // ---------------- paso 2: canjear el code y validar el id_token ----------------

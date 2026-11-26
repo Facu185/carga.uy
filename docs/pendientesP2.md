@@ -1,5 +1,11 @@
 # Pendientes P2 — Núcleo de negocio y backoffice
 
+> **Actualización 2026-11-25:** el estado vigente de F10–F15 está en el
+> [inventario general](pendientes-funcionales-laboratorio-2026.md), secciones 3, 5 y 7.
+> F10, F12 y F13 están implementados. F11 tiene pendiente solo la prueba de concurrencia con el
+> inicio de viaje. A F14 le falta solo el historial de eventos para el funcionario (C14-E).
+> Lo que sigue es el registro histórico de las fases.
+
 **Fecha de corte:** 22 de octubre de 2026.
 **Base del inventario original:** `c7041f4` más los cambios locales de vehículos de ADR-0012.
 **Planificación posterior:** contrastada sobre `c3bc924`; ver el

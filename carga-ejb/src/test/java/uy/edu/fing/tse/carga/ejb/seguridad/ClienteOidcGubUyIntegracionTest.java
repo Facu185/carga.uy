@@ -426,6 +426,7 @@ class ClienteOidcGubUyIntegracionTest {
         assertTrue(url.contains("nonce=nonce-1"));
         assertTrue(url.contains("code_challenge=" + ClienteOidcGubUy.desafioPkce("verifier-1")));
         assertTrue(url.contains("code_challenge_method=S256"));
+        assertTrue(url.contains("prompt=login"), "despues de Salir, el proveedor vuelve a pedir credenciales");
         assertFalse(url.contains("verifier-1"), "el verifier nunca sale del central");
     }
 
