@@ -141,7 +141,7 @@ Los DTO de `carga-api` cruzan la red (REST, SOAP, JMS, EJB remoto). Por eso:
 | `/carga/api/usuarios-internos` · `/funcionarios` · `/solicitudes-funcionario` · `/auditoria` | backoffice |
 | `/carga/api/solicitudes-empresa` | frontoffice (solicitante) y backoffice (verificación por funcionario) |
 | `GET /carga/api/mi-perfil` | frontoffice, app móvil |
-| `POST /carga/api/eventos-viaje` · `GET /carga/api/eventos-viaje?guiaId=` | **app móvil** (chofer) — ver "Eventos de viaje P3" |
+| `POST /carga/api/eventos-viaje` · `GET /carga/api/eventos-viaje?guiaId=` · `GET /carga/api/eventos-viaje/{idEvento}/foto` | **app móvil** (chofer) — ver "Eventos de viaje P3" |
 | `GET /carga/api/salud` · `GET /carga/api/salud/listo` | health checks (Docker, nube) |
 | `GET /carga/api/metricas` | Prometheus (texto) |
 
@@ -707,6 +707,10 @@ pendientes de P3. [Regresiones y aceptación ADR-0019](../pruebas/p2-p3-eventos-
 pendientes de ejecución: mocks no acreditan locks, SQL/JDBC ni rollback JTA/JMS.
 
 `GET /carga/api/eventos-viaje?guiaId=`: eventos de una guía del chofer, en orden cronológico, sin las fotos.
+`GET /carga/api/eventos-viaje/{idEvento}/foto`: la foto de un evento, `image/jpeg`, solo para el chofer
+de esa guía (`EventoViajeLocal.fotoDeEvento`). 404 `{"error": ...}` si el evento no tiene foto; 403 si
+no existe o es de una guía de otro chofer (misma respuesta, no revela qué `idEvento` existen).
+`Cache-Control: private, max-age=86400`: la foto de un evento no cambia.
 La lectura C14-E para funcionario sigue pendiente; esta evolución no amplía roles
 del GET/POST ni cierra F14/fase 5.
 

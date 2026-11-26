@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -412,6 +413,51 @@ class EventoViajeBeanTest {
                 () -> bean.registrar(evento("evento-fin-0001", "FIN", "2026-10-20T13:50:00-03:00")));
         // Un bean creado directamente NO verifica rollback de la entidad ni de la insercion.
         assertTrue(avisos.isEmpty());
+    }
+
+    // ---- foto de un evento (GET /eventos-viaje/{idEvento}/foto) ----
+
+    private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 7};
+
+    private void iniciarConFoto() throws NegocioException {
+        EventoViajeDTO e = evento(INICIO, "INICIO", "2026-10-20T08:05:00-03:00");
+        e.setFotoBase64(Base64.getEncoder().encodeToString(JPEG));
+        bean.registrar(e);
+    }
+
+    @Test
+    void elChoferObtieneLaFotoDeUnEventoDeSuGuia() throws NegocioException {
+        iniciarConFoto();
+        assertArrayEquals(JPEG, bean.fotoDeEvento(INICIO).orElseThrow());
+    }
+
+    @Test
+    void unEventoSinFotoNoDevuelveFoto() throws NegocioException {
+        iniciar();
+        assertTrue(bean.fotoDeEvento(INICIO).isEmpty());
+    }
+
+    @Test
+    void laFotoDeUnEventoDeOtroChoferEsAjena() throws NegocioException {
+        iniciarConFoto();
+        assertThrows(RecursoAjenoException.class, () -> bean(otroChofer).fotoDeEvento(INICIO));
+    }
+
+    @Test
+    void unEventoInexistenteSeRespondeIgualQueUnoAjeno() throws NegocioException {
+        iniciarConFoto();
+        RecursoAjenoException inexistente =
+                assertThrows(RecursoAjenoException.class, () -> bean.fotoDeEvento("evento-que-no-existe"));
+        RecursoAjenoException ajeno =
+                assertThrows(RecursoAjenoException.class, () -> bean(otroChofer).fotoDeEvento(INICIO));
+        // Mismo mensaje: la respuesta no revela si el idEvento existe en otra guia
+        assertEquals(ajeno.getMessage(), inexistente.getMessage());
+    }
+
+    @Test
+    void elIdEventoDeLaFotoEsObligatorio() {
+        assertThrows(NegocioException.class, () -> bean.fotoDeEvento(null));
+        assertThrows(NegocioException.class, () -> bean.fotoDeEvento("  "));
     }
 
     private void cambiarVehiculo(Vehiculo nuevo) {

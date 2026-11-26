@@ -6,6 +6,7 @@ import uy.edu.fing.tse.carga.api.dto.viaje.ResultadoEventoDTO;
 import uy.edu.fing.tse.carga.api.exception.NegocioException;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Registro de eventos de viaje desde el componente movil (caso de uso critico 3, frente P3).
@@ -30,4 +31,14 @@ public interface EventoViajeLocal {
 
     /** Eventos de una guia del chofer autenticado, en orden cronologico, sin las fotos. */
     List<EventoViajeDTO> eventosDeGuia(Long guiaId) throws NegocioException;
+
+    /**
+     * Bytes JPEG de la foto de un evento de una guia del chofer autenticado; vacio si el evento no
+     * tiene foto.
+     *
+     * @throws NegocioException idEvento vacio
+     * @throws uy.edu.fing.tse.carga.api.exception.RecursoAjenoException el evento no existe o es de una
+     *         guia de otro chofer (misma respuesta, para no revelar que idEvento existen)
+     */
+    Optional<byte[]> fotoDeEvento(String idEvento) throws NegocioException;
 }
